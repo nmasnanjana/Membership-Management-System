@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container">
+    <h1>Member Detail</h1>
+    <p><strong>Member ID:</strong> {{ member.member_id }}</p>
+    <p><strong>Name:</strong> {{ member.full_name }}</p>
+    <p><strong>Birthday:</strong> {{ member.birthday }}</p>
+    <p><strong>Bank Account Number:</strong> {{ member.bank_account_number }}</p>
+    <p><strong>Contact Number:</strong> {{ member.contact_number }}</p>
+    <a href="{% url 'member_edit' member.member_id %}" class="btn btn-primary">Edit</a>
+    <a href="{% url 'member_delete' member.member_id %}" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this member?')">Delete</a>
+  </div>
+{% endblock %}
