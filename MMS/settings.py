@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'app.apps.AppConfig',
+    'app.templatetags.custom_filters',
     'crispy_forms',
     'crispy_bootstrap4',
 ]

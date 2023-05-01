@@ -1,6 +1,9 @@
 from django.urls import path
 from app import views
 
+def addleadingzeros(value):
+    return str(value).zfill(4)
+
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
     path('user-register/', views.userRegister, name='user_registration'),

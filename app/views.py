@@ -117,11 +117,11 @@ def member_list(request):
     })
 
 def member_detail(request, pk):
-    member = get_object_or_404(models.Member, pk=pk)
+    member = get_object_or_404(models.Member, pk='%04d' % pk)
     return render(request, 'member_detail.html', {'member': member})
 
 def member_edit(request, pk):
-    member = get_object_or_404(models.Member, pk=pk)
+    member = get_object_or_404(models.Member, pk='%04d' % pk)
     if request.method == 'POST':
         form = forms.MemberForm(request.POST, request.FILES, instance=member)
         if form.is_valid():
@@ -133,7 +133,8 @@ def member_edit(request, pk):
     return render(request, 'member_edit.html', {'form': form, 'member': member})
 
 def member_delete(request, pk):
-    member = get_object_or_404(models.Member, pk=pk)
+    print('pk ', pk)
+    member = get_object_or_404(models.Member, pk='%04d' % pk)
     member.delete()
     return redirect('member_list')
 

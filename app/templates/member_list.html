@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} {% load custom_filters %}
 {% block content %}
     <div class="container">
         <h1>Member List</h1>
@@ -28,7 +28,7 @@
         {% for member in members %}
         <tr>
             <td>{{ member.member_id }}</td>
-            <td><a href="{% url 'member_detail' pk=member.pk %}" data-toggle="modal" data-target="#member-modal-{{ member.member_id }}">{{ member.full_name }}</a></td>
+            <td><a href="{% url 'member_detail' pk=member.member_id %}" data-toggle="modal" data-target="#member-modal-{{ member.member_id }}">{{ member.full_name }}</a></td>
             <td>{{ member.birthday }}</td>
             <td>{{ member.bank_account_number }}</td>
             <td>{{ member.contact_number }}</td>
