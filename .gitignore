@@ -388,4 +388,7 @@ pyrightconfig.json
 pyvenv.cfg
 pip-selfcheck.json
 
+static
+app/static
+
 # End of https://www.toptal.com/developers/gitignore/api/pycharm,django,python,venv
