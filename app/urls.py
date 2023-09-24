@@ -2,6 +2,7 @@ from django.urls import path
 from .views_staff import *
 from .views_member import *
 from .views_meeting import *
+from .views_attendance import *
 
 urlpatterns = [
 
@@ -22,5 +23,11 @@ urlpatterns = [
     path('meeting/delete/<meeting_date>', meeting_delete, name="meeting_delete"),
     path('meeting/add/', meeting_add, name='meeting_add'),
     path('meeting/edit/<meeting_date>', meeting_edit, name="meeting_edit"),
+
+    path('attendance/mark/', attendance_mark, name='attendance_mark'),
+    path('attendance/date/all', attendance_full_view, name='attendance_date_all'),
+    path('attendance/date/<meeting_id>', attendance_date_view, name='attendance_date'),
+    path('attendance/delete/<meeting_id>/<attendance_id>', attendance_delete, name='attendance_delete'),
+    path('attendance/edit/<meeting_id>/<attendance_id>', attendance_edit, name='attendance_edit'),
 
 ]

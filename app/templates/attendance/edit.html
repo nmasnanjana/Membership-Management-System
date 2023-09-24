@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+    <div class="container">
+        <br>
+
+        {% if messages %}
+            {% for message in messages%}
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Attendance Details Edit - {{ member_info.member_id.member_first_name }}</h3>
+            </div>
+            <div class="card-body">
+
+                <div class="mb-3 form-group">
+                    <label class="form-label">Date</label>
+                    <input class="form-control" type="text" value="{{ member_info.meeting_date.meeting_date|date:"d M Y" }}" disabled>
+                </div>
+
+                <div class="mb-3 form-group">
+                    <label class="form-label">Member ID</label>
+                    <input class="form-control" type="text" value="{{ member_info.member_id.member_id }}" disabled>
+                </div>
+
+                <div class="mb-3 form-group">
+                    <label class="form-label">Name</label>
+                    <input class="form-control" type="text" value="{{ member_info.member_id.member_initials }} {{ member_info.member_id.member_first_name }} {{ member_info.member_id.member_last_name }}" disabled>
+                </div>
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+                    {{ form | crispy }}
+
+                    <div class="mb-3 form-group">
+                        <div class="row">
+                            <input type="submit" value="Mark Attendance" class="btn btn-primary ">
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+{% endblock content %}

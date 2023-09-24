@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="{% static 'DataTables/datatables.min.css' %}">
+    <script src="{% static 'DataTables/datatables.min.js' %}"></script>
+{% endblock head %}
+
+{% block content %}
+    <div class="container">
+        <br>
+
+        {% if messages %}
+            {% for message in messages%}
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-sm">
+                            <h3>Attendance Full Date-List</h3>
+                        </div>
+                        <div class="col-sm">
+
+                        </div>
+                        <div class="col-sm">
+                            <a class="button btn btn-primary float-end" href="{% url 'meeting_add' %}">Create New Meeting</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <table id="attendance_AllTable" class="table display">
+                    <thead>
+                        <tr>
+                            <th class="text-center">Date</th>
+                            <th class="text-center">Member Fee</th>
+                            <th class="text-center">View</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        {% for attendance in attendance_all_dates reversed %}
+                            <tr>
+                                <td class="text-center">{{ attendance.meeting_date|date:"d M Y" }}</td>
+                                <td class="text-center">{{ attendance.meeting_fee }}</td>
+                                <td class="text-center">
+                                    <a class="button btn btn-warning" href="{% url 'attendance_date' attendance.meeting_id %}">View Attendance</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        $(document).ready(function (){
+           $('#attendance_AllTable').DataTable({
+               paging: true,
+               searching: false,
+               order: false,
+               columnDefs: [
+                   {targets: -1, orderable: false},
+                   {targets: -2, orderable: false},
+               ]
+           });
+        });
+    </script>
+
+{% endblock content %}

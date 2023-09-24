@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="{% static 'DataTables/datatables.min.css' %}">
+    <script src="{% static 'DataTables/datatables.min.js' %}"></script>
+{% endblock head %}
+
+{% block content %}
+    <div class="container">
+        <br>
+
+        {% if messages %}
+            {% for message in messages%}
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header">
+                <div class="container">
+                    <div class="row">
+                        <h3 class="text-center">Attendance - {{ meeting.meeting_date|date:"d M Y" }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <table id="attendanceTable" class="table display">
+                    <thead>
+                        <tr>
+                            <th class="text-center">Member ID</th>
+                            <th class="text-center">Name</th>
+                            <th class="text-center">Attendance</th>
+                            <th class="text-center">Member Fee</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        {% for attendance in attendances %}
+                            <tr>
+                                <td class="text-center">{{ attendance.member_id }}</td>
+                                <td class="text-center">{{ attendance.member_id.member_initials }} {{ attendance.member_id.member_first_name }} {{ attendance.member_id.member_last_name }}</td>
+                                <td class="text-center">
+                                    {% if attendance.attendance_status == True %}
+                                        Present
+                                    {% else %}
+                                        Absent
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if attendance.attendance_fee_status == True %}
+                                        Payed
+                                    {% else %}
+                                        Not Payed
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <a class="button btn btn-warning" href="{% url 'attendance_edit' meeting.meeting_id attendance.attendance_id %}">Edit</a>
+                                    <a class="button btn btn-danger" href="{% url 'attendance_delete' meeting.meeting_id attendance.attendance_id %}">Delete</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        $(document).ready(function (){
+           $('#attendanceTable').DataTable({
+               paging: true,
+               searching: true,
+               order: [[0, 'asc']],
+               columnDefs: [
+                   {targets: -1, orderable: false},
+                   {targets: -2, orderable: false},
+                   {targets: -3, orderable: false},
+                   {targets: -4, orderable: false},
+               ]
+           });
+        });
+    </script>
+
+{% endblock content %}

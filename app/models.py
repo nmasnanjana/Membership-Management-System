@@ -28,3 +28,14 @@ class MeetingInfo(models.Model):
     def __str__(self):
         return str(f"{self.meeting_id} - {self.meeting_date}")
 
+
+class MemberAttendance(models.Model):
+    attendance_id = models.AutoField(primary_key=True)
+    meeting_date = models.ForeignKey(MeetingInfo, on_delete=models.CASCADE)
+    member_id = models.ForeignKey(Member, on_delete=models.DO_NOTHING)
+    attendance_status = models.BooleanField(default=False)
+    attendance_fee_status = models.BooleanField(default=False)
+    attendance_created_at = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.attendance_id)

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+
+{% block head %}
+    <link rel="stylesheet" href="https://unpkg.com/@jarstone/dselect/dist/css/dselect.css">
+    <script src="https://unpkg.com/@jarstone/dselect/dist/js/dselect.js"></script>
+{% endblock head %}
+
+{% block content %}
+    <div class="container">
+        <br>
+
+        {% if messages %}
+            {% for message in messages%}
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Attendance Mark</h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+
+                    {% csrf_token %}
+
+                    {{ form | crispy }}
+
+                    <div class="mb-3 form-group">
+                        <div class="row">
+                            <input type="submit" value="Mark Attendance" class="btn btn-primary ">
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var member_select_box = document.querySelector('#member_select')
+        dselect(member_select_box, {
+            search: true
+        });
+    </script>
+
+{% endblock content %}
