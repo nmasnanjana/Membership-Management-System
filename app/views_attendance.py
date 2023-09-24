@@ -1,11 +1,13 @@
 from django.contrib import messages
 from django.shortcuts import redirect, render
+from django.contrib.auth.decorators import login_required, user_passes_test
 
 from .forms import *
 from .models import MemberAttendance
 from .views import context_data
 
 
+@login_required
 def attendance_mark(request):
     context = context_data(request)
     context['page_name'] = "Attendance Mark"
@@ -39,6 +41,7 @@ def attendance_mark(request):
     return render(request, 'attendance/mark.html', context)
 
 
+@login_required
 def attendance_full_view(request):
     context = context_data(request)
     context['page_name'] = 'Attendance Dates-All'
@@ -47,6 +50,7 @@ def attendance_full_view(request):
     return render(request, 'attendance/all_dates.html', context)
 
 
+@login_required
 def attendance_date_view(request, meeting_id):
     context = context_data(request)
     meeting = MeetingInfo.objects.get(meeting_id=meeting_id)
@@ -57,6 +61,7 @@ def attendance_date_view(request, meeting_id):
     return render(request, 'attendance/attendance.html', context)
 
 
+@user_passes_test(lambda u: u.is_superuser)
 def attendance_delete(request, attendance_id, meeting_id):
     attendance_to_delete = MemberAttendance.objects.get(attendance_id=attendance_id)
     messages.success(request, "Attendance Record have been deleted successfully")
@@ -64,6 +69,7 @@ def attendance_delete(request, attendance_id, meeting_id):
     return redirect('attendance_date', meeting_id)
 
 
+@user_passes_test(lambda u: u.is_superuser)
 def attendance_edit(request, attendance_id, meeting_id):
     context = context_data(request)
     context['page_name'] = "Attendance Edit"

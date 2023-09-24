@@ -3,6 +3,7 @@ from .views_staff import *
 from .views_member import *
 from .views_meeting import *
 from .views_attendance import *
+from .views import *
 
 urlpatterns = [
 
@@ -29,5 +30,11 @@ urlpatterns = [
     path('attendance/date/<meeting_id>', attendance_date_view, name='attendance_date'),
     path('attendance/delete/<meeting_id>/<attendance_id>', attendance_delete, name='attendance_delete'),
     path('attendance/edit/<meeting_id>/<attendance_id>', attendance_edit, name='attendance_edit'),
+
+    path('login/', staff_log_in, name='login'),
+    path('logout/', staff_log_out, name='logout'),
+    path('', dashboard, name='dashboard'),
+    path('member/report/attendance/<str:member_id>', member_attendance_report, name='member_attendance_report'),
+    path('member/qr_code/generator/<str:member_id>', member_qr_generator, name='member_qr_generator'),
 
 ]

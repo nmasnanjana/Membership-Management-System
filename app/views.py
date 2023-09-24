@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from datetime import datetime
 from django.db.models import Count
+from django.contrib.auth.decorators import login_required, user_passes_test
 
 
 def context_data(request):
@@ -61,25 +62,30 @@ def dashboard(request):
     all_meeting = MeetingInfo.objects.all().count()
     context['all_meeting'] = all_meeting
 
-    percentage_active = (active_members / all_members) * 100
-    format_percentage_active = f'{percentage_active:.1f}'
-    context['active_members_percentage'] = format_percentage_active
+    if all_members != 0:
+        percentage_active = (active_members / all_members) * 100
+        format_percentage_active = f'{percentage_active:.1f}'
+        context['active_members_percentage'] = format_percentage_active
 
-    percentage_passive = (passive_members / all_members) * 100
-    format_percentage_passive = f'{percentage_passive:.1f}'
-    context['passive_members_percentage'] = format_percentage_passive
+        percentage_passive = (passive_members / all_members) * 100
+        format_percentage_passive = f'{percentage_passive:.1f}'
+        context['passive_members_percentage'] = format_percentage_passive
 
-    latest_meeting = MemberAttendance.objects.latest('meeting_date')
-    latest_meeting_member_count = MemberAttendance.objects.filter(meeting_date=latest_meeting.meeting_date).values(
-        'member_id').distinct().count()
+    if MemberAttendance.objects.all():
+        latest_meeting = MemberAttendance.objects.latest('meeting_date')
+        latest_meeting_member_count = MemberAttendance.objects.filter(meeting_date=latest_meeting.meeting_date).values(
+            'member_id').distinct().count()
 
-    context['latest_meeting'] = latest_meeting
-    context['latest_meeting_member_count'] = latest_meeting_member_count
+        context['latest_meeting'] = latest_meeting
+        context['latest_meeting_member_count'] = latest_meeting_member_count
 
     return render(request, 'dashboard.html', context)
 
 
+@login_required
 def member_attendance_report(request, member_id):
+    context = context_data(request)
+    context['page_name'] = 'Attendance Report'
 
     current_year = datetime.now().year
     meetings_in_current_year = MeetingInfo.objects.filter(meeting_date__year=current_year).count()
@@ -94,18 +100,16 @@ def member_attendance_report(request, member_id):
         attendance_fee_status=True
     ).count()
 
-    annual_member_present = (member_attendance_current_year / meetings_in_current_year) * 100
-    member_fee_percentage = (member_fee_present_days / member_attendance_current_year) * 100
+    if meetings_in_current_year != 0:
+        annual_member_present = (member_attendance_current_year / meetings_in_current_year) * 100
+        member_fee_percentage = (member_fee_present_days / member_attendance_current_year) * 100
 
-    format_annual_member_present = f"{annual_member_present:.1f}"
-    format_member_fee_percentage = f"{member_fee_percentage:.1f}"
+        format_annual_member_present = f"{annual_member_present:.1f}"
+        format_member_fee_percentage = f"{member_fee_percentage:.1f}"
 
-    context = context_data(request)
-    context['page_name'] = 'Attendance Report'
-
-    context['current_year'] = current_year
-    context['member_attendance_percentage'] = format_annual_member_present
-    context['member_fee_percentage'] = format_member_fee_percentage
+        context['current_year'] = current_year
+        context['member_attendance_percentage'] = format_annual_member_present
+        context['member_fee_percentage'] = format_member_fee_percentage
 
     attendances = MemberAttendance.objects.filter(member_id=member_id)
     member = Member.objects.get(member_id=member_id)

@@ -125,6 +125,7 @@ def member_delete(request, member_id):
         return redirect('member_list')  # Redirect to a member list view
 
 
+@login_required
 def member_edit(request, member_id):
     context = context_data(request)
     context['page_name'] = 'Edit Member'

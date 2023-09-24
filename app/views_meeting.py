@@ -1,11 +1,13 @@
 from django.contrib import messages
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import user_passes_test
 
 from .forms import *
 from .models import *
 from .views import context_data
 
 
+@user_passes_test(lambda u: u.is_superuser)
 def meeting_list(request):
     context = context_data(request)
     context['page_name'] = 'Meeting List'
@@ -14,6 +16,7 @@ def meeting_list(request):
     return render(request, 'meeting/list.html', context)
 
 
+@user_passes_test(lambda u: u.is_superuser)
 def meeting_delete(request, meeting_date):
     meeting_to_delete = MeetingInfo.objects.get(meeting_date=meeting_date)
     messages.success(request, "Meeting Information have been deleted successfully")
@@ -21,6 +24,7 @@ def meeting_delete(request, meeting_date):
     return redirect('meeting_list')
 
 
+@user_passes_test(lambda u: u.is_superuser)
 def meeting_add(request):
     context = context_data(request)
     context['page_name'] = 'Meeting Add'
@@ -37,6 +41,7 @@ def meeting_add(request):
     return render(request, 'meeting/add.html', context)
 
 
+@user_passes_test(lambda u: u.is_superuser)
 def meeting_edit(request, meeting_date):
     context = context_data(request)
     context['page_name'] = "Meeting Edit"
