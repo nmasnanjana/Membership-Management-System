@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="{% static 'DataTables/datatables.min.css' %}">
+    <script src="{% static 'DataTables/datatables.min.js' %}"></script>
+{% endblock head %}
+
+{% block content %}
+    <div class="container">
+        <br>
+
+        {% if messages %}
+            {% for message in messages%}
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-sm">
+                            <h3>Staff List</h3>
+                        </div>
+                        <div class="col-sm">
+
+                        </div>
+                        <div class="col-sm">
+                            <a class="button btn btn-primary float-end" href="{% url 'staff_register' %}">Add Staff</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <table id="staffTable" class="table display">
+                    <thead>
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        {% for user in users %}
+                            <tr>
+                                <td>{{ user.first_name }}</td>
+                                <td>{{ user.last_name }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>
+                                    {% if user.is_superuser %}
+                                        Admin
+                                    {% else %}
+                                        Staff
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a class="button btn btn-primary" href="{% url 'staff_profile_edit' user.id %}">Edit Profile</a>
+                                    <a class="button btn btn-warning" href="{% url 'staff_password_reset' user.id %}">Password Reset</a>
+                                    <a class="button btn btn-danger" href="{% url 'staff_delete' user.id %}">Delete</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        $(document).ready(function (){
+           $('#staffTable').DataTable({
+               paging: true,
+               searching: true,
+               order: [[0, 'asc']],
+               columnDefs: [
+                   {targets: -1, orderable: false},
+                   {targets: -2, orderable: false},
+               ]
+           });
+        });
+    </script>
+
+{% endblock content %}
