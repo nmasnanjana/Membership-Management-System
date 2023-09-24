@@ -1,0 +1,38 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    {% block head %}
+    {% endblock head %}
+    <link rel="icon" href="{% static 'icons/mms Icon.png' %}" type="image/x-icon">
+    <title>  {{ page_name }} | {{ system_name }}</title>
+</head>
+<body>
+
+    <header>
+        {% if navbar_top %}
+            {% include 'navbar.html' %}
+        {% endif %}
+    </header>
+
+    <main>
+        {% block content %}
+        {% endblock content %}
+    </main>
+
+    <footer>
+        {% if footer %}
+            {% include 'footer.html' %}
+        {% endif %}
+    </footer>
+
+    <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
+</body>
+</html>
