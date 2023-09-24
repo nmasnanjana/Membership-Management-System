@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="{% static 'DataTables/datatables.min.css' %}">
+    <script src="{% static 'DataTables/datatables.min.js' %}"></script>
+{% endblock head %}
+
+{% block content %}
+    <div class="container">
+        <br>
+
+        {% if messages %}
+            {% for message in messages%}
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow">
+                    <div class="card-header">
+                        <div class="container">
+                            <div class="row">
+                                <h3 class="text-center">Attendance Report - {{ member.member_initials }} {{ member.member_first_name }} {{ member.member_last_name }}</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <table id="attendanceReportTable" class="table display">
+                            <thead>
+                            <tr>
+                                <th class="text-center">Date</th>
+                                <th class="text-center">Attendance</th>
+                                <th class="text-center">Member Fee</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+
+                            {% for attendance in attendances %}
+                                <tr>
+                                    <td class="text-center">{{ attendance.meeting_date.meeting_date|date:"d M Y" }}</td>
+                                    <td class="text-center">
+                                        {% if attendance.attendance_status == True %}
+                                            Present
+                                        {% else %}
+                                            Absent
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if attendance.attendance_fee_status == True %}
+                                            Payed
+                                        {% else %}
+                                            Not Payed
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Attendance Percentage - {{ current_year }}</h6>
+                    </div>
+                    <div class="card-body">
+                        <h4 class="small font-weight-bold">Attendance <span class="float-right">{{ member_attendance_percentage }}%</span></h4>
+                        <div class="progress mb-4">
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ member_attendance_percentage }}%" aria-valuenow="{{ member_attendance_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <h4 class="small font-weight-bold">Member Fee Payment <span class="float-right">{{ member_fee_percentage }}%</span></h4>
+                        <div class="progress mb-4">
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ member_fee_percentage }}%" aria-valuenow="{{ member_fee_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        $(document).ready(function (){
+           $('#attendanceReportTable').DataTable({
+               paging: true,
+               searching: true,
+               order: [[0, 'asc']],
+               columnDefs: [
+                   {targets: -1, orderable: false},
+                   {targets: -2, orderable: false},
+               ]
+           });
+        });
+    </script>
+
+{% endblock content %}
