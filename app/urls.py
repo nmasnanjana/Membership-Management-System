@@ -1,6 +1,7 @@
 from django.urls import path
 from .views_staff import *
 from .views_member import *
+from .views_meeting import *
 
 urlpatterns = [
 
@@ -16,5 +17,10 @@ urlpatterns = [
     path('member/delete/<str:member_id>', member_delete, name="member_delete"),
     path('member/view/<str:member_id>', member_view, name="member_view"),
     path('member/edit/<str:member_id>', member_edit, name="member_edit"),
+
+    path('meeting/list/', meeting_list, name='meeting_list'),
+    path('meeting/delete/<meeting_date>', meeting_delete, name="meeting_delete"),
+    path('meeting/add/', meeting_add, name='meeting_add'),
+    path('meeting/edit/<meeting_date>', meeting_edit, name="meeting_edit"),
 
 ]

@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="{% static 'DataTables/datatables.min.css' %}">
+    <script src="{% static 'DataTables/datatables.min.js' %}"></script>
+{% endblock head %}
+
+{% block content %}
+    <div class="container">
+        <br>
+
+        {% if messages %}
+            {% for message in messages%}
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-sm">
+                            <h3>Meeting List</h3>
+                        </div>
+                        <div class="col-sm">
+
+                        </div>
+                        <div class="col-sm">
+                            <a class="button btn btn-primary float-end" href="{% url 'meeting_add' %}">Create New Meeting</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <table id="meetingTable" class="table display">
+                    <thead>
+                        <tr>
+                            <th>Meeting Date</th>
+                            <th>Member Fee</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        {% for meeting in meetings reversed %}
+                            <tr>
+                                <td class="align-middle">{{ meeting.meeting_date|date:"d M Y" }}</td>
+                                <td class="align-middle">{{ meeting.meeting_fee }}</td>
+                                <td class="align-middle">
+                                    <a class="button btn btn-warning" href="{% url 'meeting_edit' meeting.meeting_date %}">Edit</a>
+                                    <a class="button btn btn-danger" href="{% url 'meeting_delete' meeting.meeting_date %}">Delete</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        $(document).ready(function (){
+           $('#meetingTable').DataTable({
+               paging: true,
+               searching: false,
+               order: false,
+               columnDefs: [
+                   {targets: -1, orderable: false},
+                   {targets: -2, orderable: false},
+                   {targets: -3, orderable: false},
+               ]
+           });
+        });
+    </script>
+
+{% endblock content %}

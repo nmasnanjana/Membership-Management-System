@@ -122,3 +122,18 @@ class MemberEditForm(forms.ModelForm):
     member_profile_picture = forms.ImageField(widget=forms.FileInput(attrs={
         'type': 'file',
         "class": "form-control"}))
+
+
+class MeetingAddForm(forms.ModelForm):
+    class Meta:
+        model = MeetingInfo
+        fields = ('meeting_date', 'meeting_fee')
+
+    meeting_date = forms.DateField(widget=forms.DateInput(attrs={
+        'type': 'date',
+        "class": "form-control"}))
+
+    meeting_fee = forms.IntegerField(widget=forms.TextInput(attrs={
+        'type': 'number',
+        "class": "form-control"}))
+

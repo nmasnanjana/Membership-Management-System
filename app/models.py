@@ -18,3 +18,13 @@ class Member(models.Model):
 
     def __str__(self):
         return self.member_id
+
+
+class MeetingInfo(models.Model):
+    meeting_id = models.AutoField(primary_key=True)
+    meeting_date = models.DateField()
+    meeting_fee = models.IntegerField()
+
+    def __str__(self):
+        return str(f"{self.meeting_id} - {self.meeting_date}")
+
