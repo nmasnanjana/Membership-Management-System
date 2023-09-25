@@ -16,56 +16,66 @@
 {% block content %}
 
     <div class="container">
-
+        <br>
         <div class="row h-100 justify-content-center align-items-center">
             <div class="col-12 col-md-6">
-                <div class="card-body text-center">
-                    <video id="preview"></video>
+                <div class="card shadow">
+                    <div class="card-header text-center">
+                        <h3>QR Code Scanner</h3>
+                    </div>
+                    <div class="card-body text-center">
+                        <video id="preview"></video>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <script type="text/javascript">
+        let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
 
-        <script type="text/javascript">
-            let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+        scanner.addListener('scan', function (content) {
+            document.getElementById('id_member_id').value = content;
+            submitForm();
+        });
 
-            scanner.addListener('scan', function (content) {
-                document.getElementById('id_member_id').value = content;
-                submitForm();
-            });
-
-            Instascan.Camera.getCameras().then(function (cameras) {
-                if (cameras.length > 0) {
-                    scanner.start(cameras[0]);
-                } else {
-                    console.error('No cameras found.');
-                }
-            }).catch(function (e) {
-                console.error(e);
-            });
-        </script>
-
-        <form method="post" id="myForm" style="display:none;">
-            {% csrf_token %}
-            <label class="form-label">Member ID:</label>
-            {{ form.member_id }}
-            <input type="submit" style="display:none;" id="submitBtn">
-        </form>
-
-        <script>
-            const form = document.getElementById('myForm');
-            const field1 = document.getElementById('id_member_id');
-            const submitButton = document.getElementById('submitBtn');
-
-            field1.addEventListener('input', function () {
-                form.submit();
-            });
-
-            function submitForm() {
-                form.submit();
+        Instascan.Camera.getCameras().then(function (cameras) {
+            if (cameras.length > 0) {
+                scanner.start(cameras[0]);
+            } else {
+                console.error('No cameras found.');
             }
-        </script>
+        }).catch(function (e) {
+            console.error(e);
+        });
+    </script>
+
+    <form method="post" id="myForm" style="display:none;">
+        {% csrf_token %}
+        <div class="card mt-3">
+            <div class="card-body">
+                <label class="form-label">Member ID:</label>
+                {{ form.member_id }}
+            </div>
+            <div class="card-footer">
+                <input type="submit" style="display:none;" id="submitBtn">
+            </div>
+        </div>
+    </form>
+
+    <script>
+        const form = document.getElementById('myForm');
+        const field1 = document.getElementById('id_member_id');
+        const submitButton = document.getElementById('submitBtn');
+
+        field1.addEventListener('input', function () {
+            form.submit();
+        });
+
+        function submitForm() {
+            form.submit();
+        }
+    </script>
 
     </div>
 

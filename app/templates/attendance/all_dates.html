@@ -13,7 +13,7 @@
         <br>
 
         {% if messages %}
-            {% for message in messages%}
+            {% for message in messages %}
                 <div class="alert alert-warning alert-dismissible fade show" role="alert">
                     {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -21,7 +21,7 @@
             {% endfor %}
         {% endif %}
 
-        <div class="card">
+        <div class="card shadow">
             <div class="card-header">
                 <div class="container">
                     <div class="row">
@@ -30,47 +30,47 @@
                 </div>
             </div>
             <div class="card-body">
-                <table id="attendance_AllTable" class="table display">
-                    <thead>
+                <div class="table-responsive">
+                    <table id="attendance_AllTable" class="table display">
+                        <thead>
                         <tr>
                             <th class="text-center">Date</th>
                             <th class="text-center">Member Fee</th>
                             <th class="text-center">View</th>
                         </tr>
-                    </thead>
-                    <tbody>
-
+                        </thead>
+                        <tbody>
                         {% for attendance in attendance_all_dates reversed %}
                             <tr>
                                 <td class="text-center">{{ attendance.meeting_date|date:"d M Y" }}</td>
                                 <td class="text-center">{{ attendance.meeting_fee }}</td>
                                 <td class="text-center">
-                                    <a class="button btn btn-warning" href="{% url 'attendance_date' attendance.meeting_id %}">View Attendance</a>
-                                    <a class="button btn btn-secondary" href="{% url 'export_attendance_report' attendance.meeting_id %}">Download Attendance</a>
+                                    <a class="btn btn-warning" href="{% url 'attendance_date' attendance.meeting_id %}">View Attendance</a>
+                                    {% if user.is_superuser %}
+                                        <a class="btn btn-secondary" href="{% url 'export_attendance_report' attendance.meeting_id %}">Download Attendance</a>
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% endfor %}
-
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-
         $(document).ready(function (){
-           $('#attendance_AllTable').DataTable({
-               paging: true,
-               searching: true,
-               order: false,
-               columnDefs: [
-                   {targets: -1, orderable: false},
-                   {targets: -2, orderable: false},
-                   {targets: -3, orderable: false},
-               ]
-           });
+            $('#attendance_AllTable').DataTable({
+                paging: true,
+                searching: true,
+                order: false,
+                columnDefs: [
+                    {targets: -1, orderable: false},
+                    {targets: -2, orderable: false},
+                    {targets: -3, orderable: false},
+                ]
+            });
         });
     </script>
-
 {% endblock content %}

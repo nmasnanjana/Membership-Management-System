@@ -5,7 +5,7 @@
     <div class="container">
         <br>
 
-        <div class="card">
+        <div class="card shadow">
             <div class="card-header">
                 <h3 class="text-center">Member Details - {{ member.member_first_name }} {{ member.member_last_name }}</h3>
             </div>
@@ -14,11 +14,11 @@
                 <div class="container">
                     <div class="row">
                         <div class="col-sm">
-                            <img src="{{ member.member_profile_picture.url }}" class="rounded float-end" alt="{{ member.member_first_name }} profile picture" height="300" width="300">
+                            <img src="{{ member.member_profile_picture.url }}" class="rounded float-end img-fluid mx-auto d-block" alt="{{ member.member_first_name }} profile picture" height="300" width="300">
                         </div>
 
                         <div class="col-sm">
-                            <img src="{{ member.member_qr_code.url }}" class="rounded float-start" alt="{{ member.member_first_name }} qr code" height="300" width="300">
+                            <img src="{{ member.member_qr_code.url }}" class="rounded float-start img-fluid mx-auto d-block qr-code" alt="{{ member.member_first_name }} qr code" height="300" width="300">
                         </div>
                     </div>
                 </div>
@@ -63,39 +63,47 @@
                     <input type="text" class="form-control" value="{{ member.member_join_at }}" disabled>
                 </div>
 
-                <div class="container">
-                    <div class="row">
+                {% if user.is_authenticated %}
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-sm mb-2">
+                                <div class="row">
+                                    <a class="btn btn-warning button" type="button" href="{% url 'member_edit' member.member_id %}" >Edit</a>
+                                </div>
+                            </div>
 
-                        <div class="col-sm">
-                            <div class="row">
-                                <a class="btn btn-warning button" type="button" href="{% url 'member_edit' member.member_id %}" >Edit</a>
-                            </div>
-                        </div>
-                        <div class="col-sm">
-                            <div class="row">
-                                {% if user.is_superuser %}
-                                    <a class="btn btn-danger button" type="button" href="{% url 'member_delete' member.member_id %}" >Delete</a>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-sm">
-                            <div class="row">
-                                <a class="btn btn-secondary button" type="button" href="{% url 'member_attendance_report' member.member_id %}" >Member Report</a>
-                            </div>
-                        </div>
-                        <div class="col-sm">
-                            <div class="row">
-                                <a class="btn btn-secondary button" type="button" href="{% url 'member_attendance_export' member.member_id %}" >Member Report Download</a>
-                            </div>
-                        </div>
-                        <div class="col-sm">
-                            <div class="row">
-                                <a class="btn btn-info button" type="button" href="{% url 'member_qr_generator' member.member_id %}" >Member QR Generator</a>
-                            </div>
-                        </div>
+                            {% if user.is_superuser %}
+                                <div class="col-sm mb-2">
+                                    <div class="row">
+                                        <a class="btn btn-danger button" type="button" href="{% url 'member_delete' member.member_id %}" >Delete</a>
+                                    </div>
+                                </div>
+                            {% endif %}
 
+                            <div class="col-sm mb-2">
+                                <div class="row">
+                                    <a class="btn btn-secondary button" type="button" href="{% url 'member_attendance_report' member.member_id %}" >Member Report</a>
+                                </div>
+                            </div>
+
+                            {% if user.is_superuser %}
+                                <div class="col-sm mb-2">
+                                    <div class="row">
+                                        <a class="btn btn-secondary button" type="button" href="{% url 'member_attendance_export' member.member_id %}" >Member Report Download</a>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <div class="col-sm mb-2">
+                                <div class="row">
+                                    <a class="btn btn-info button" type="button" href="{% url 'member_qr_generator' member.member_id %}" >Member QR Generator</a>
+                                </div>
+                            </div>
+
+                        </div>
                     </div>
-                </div>
+                {% endif %}
+
             </div>
         </div>
         <br>

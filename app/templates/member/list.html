@@ -13,7 +13,7 @@
         <br>
 
         {% if messages %}
-            {% for message in messages%}
+            {% for message in messages %}
                 <div class="alert alert-warning alert-dismissible fade show" role="alert">
                     {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -21,26 +21,32 @@
             {% endfor %}
         {% endif %}
 
-        <div class="card">
+        <div class="card shadow">
             <div class="card-header">
                 <div class="container">
                     <div class="row">
-                        <div class="col-sm">
+                        <div class="col-md">
                             <h3>Member List</h3>
                         </div>
-                        <div class="col-sm">
-
-                        </div>
-                        <div class="col-sm">
-                            <a class="button btn btn-primary float-end" href="{% url 'member_register' %}">Add Members</a>
-                            <a href="{% url 'member_info_export' %}" class="float-end btn btn-info"><i class="fas fa-download fa-sm text-white-50"></i> Generate Report</a>
+                        <div class="col-md">
+                            <!-- Add margin to the buttons to separate them on mobile -->
+                            <div class="d-flex justify-content-end">
+                                <a class="btn btn-primary me-2" href="{% url 'member_register' %}">Add Members</a>
+                                {% if user.is_superuser %}
+                                    <a href="{% url 'member_info_export' %}" class="btn btn-info">
+                                        <i class="fas fa-download fa-sm text-white-50"></i> Generate Report
+                                    </a>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="card-body">
-                <table id="memberTable" class="table display">
-                    <thead>
+                <div class="table-responsive">
+                    <!-- Add the 'table' class to make the table responsive -->
+                    <table id="memberTable" class="table display">
+                        <thead>
                         <tr>
                             <th>Profile Picture</th>
                             <th>Member ID</th>
@@ -50,45 +56,74 @@
                             <th>Date Joined</th>
                             <th>Actions</th>
                         </tr>
-                    </thead>
-                    <tbody>
-
+                        </thead>
+                        <tbody>
                         {% for member in members %}
                             <tr>
-                                <td class="align-middle"> <img class="rounded" src="{{ member.member_profile_picture.url }}" alt="member_profile picture" width="75px" height="75px"> </td>
+                                <td class="align-middle">
+                                    <!-- Use media queries to adjust image size -->
+                                    <img class="rounded img-fluid desktop-image" src="{{ member.member_profile_picture.url }}" alt="member_profile picture">
+                                    <img class="rounded img-fluid mobile-image" src="{{ member.member_profile_picture.url }}" alt="member_profile picture">
+                                </td>
                                 <td class="align-middle">{{ member.member_id }}</td>
                                 <td class="align-middle">{{ member.member_first_name }}</td>
                                 <td class="align-middle">{{ member.member_last_name }}</td>
                                 <td class="align-middle">{{ member.member_tp_number }}</td>
-                                <td class="align-middle">{{ member.member_join_at }}</td>
+                                <td class="align-middle">{{ member.member_join_at|date:"d M Y" }}</td>
                                 <td class="align-middle">
-                                    <a class="button btn btn-primary" href="{% url 'member_view' member.member_id %}">View</a>
-                                    <a class="button btn btn-warning" href="{% url 'member_edit' member.member_id %}">Edit</a>
-                                    <a class="button btn btn-danger" href="{% url 'member_delete' member.member_id %}">Delete</a>
+                                    <a class="btn btn-primary me-2" href="{% url 'member_view' member.member_id %}">View</a>
+                                    <a class="btn btn-warning me-2" href="{% url 'member_edit' member.member_id %}">Edit</a>
+                                    {% if user.is_superuser %}
+                                        <a class="btn btn-danger" href="{% url 'member_delete' member.member_id %}">Delete</a>
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% endfor %}
-
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
-    <script>
+    <style>
+        /* Adjust the image size based on screen size */
+        @media (min-width: 768px) {
+            .desktop-image {
+                max-width: 75px; /* Adjust the desired size */
+                height: auto;
+            }
 
+            .mobile-image {
+                display: none;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .desktop-image {
+                display: none;
+            }
+
+            .mobile-image {
+                max-width: 75px; /* Adjust the desired size */
+                height: auto;
+                display: inline;
+            }
+        }
+    </style>
+
+    <script>
         $(document).ready(function (){
-           $('#memberTable').DataTable({
-               paging: true,
-               searching: true,
-               order: [[1, 'asc']],
-               columnDefs: [
-                   {targets: -1, orderable: false},
-                   {targets: -2, orderable: false},
-                   {targets: -3, orderable: false},
-               ]
-           });
+            $('#memberTable').DataTable({
+                paging: true,
+                searching: true,
+                order: [[1, 'asc']],
+                columnDefs: [
+                    {targets: -1, orderable: false},
+                    {targets: -2, orderable: false},
+                    {targets: -3, orderable: false},
+                ]
+            });
         });
     </script>
-
 {% endblock content %}

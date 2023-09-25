@@ -23,9 +23,18 @@ class StaffRegisterForm(UserCreationForm):
 
 
 class CustomUserChangeForm(UserChangeForm):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['password'].widget.attrs.pop('help_text', None)
+        if not self.instance.is_superuser:
+            del self.fields['is_superuser']
+
+    is_superuser = forms.BooleanField(label='Is Superuser', required=False)
+
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name')
+        fields = ('username', 'first_name', 'last_name', 'is_superuser')
 
 
 class MemberRegisterForm(forms.ModelForm):

@@ -7,7 +7,7 @@
         <br>
 
         {% if messages %}
-            {% for message in messages%}
+            {% for message in messages %}
                 <div class="alert alert-warning alert-dismissible fade show" role="alert">
                     {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -15,7 +15,7 @@
             {% endfor %}
         {% endif %}
 
-        <div class="card">
+        <div class="card shadow">
             <div class="card-header">
                 <h3 class="text-center">Edit Member Details - {{ member.member_first_name }} {{ member.member_last_name }}</h3>
             </div>
@@ -24,59 +24,60 @@
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
 
-                    <div class="mb-3 form-group">
+                    <div class="mb-3">
                         <label class="form-label">Member ID</label>
                         {{ form.member_id }}
                     </div>
 
-                    <div class="mb-3 form-group">
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
                         <div class="row">
-                            <label class="form-label"> Full Name </label>
-                            <div class="col-sm">{{ form.member_initials }}</div>
-                            <div class="col-sm">{{ form.member_first_name }}</div>
-                            <div class="col-sm">{{ form.member_last_name }}</div>
+                            <div class="col-sm-4">{{ form.member_initials }}</div>
+                            <div class="col-sm-4">{{ form.member_first_name }}</div>
+                            <div class="col-sm-4">{{ form.member_last_name }}</div>
                         </div>
                     </div>
 
-                    <div class="mb-3 form-group">
+                    <div class="mb-3">
                         <label class="form-label">Address</label>
                         {{ form.member_address }}
                     </div>
 
-                    <div class="mb-3 form-group">
+                    <div class="mb-3">
                         <label class="form-label">Date of Birth</label>
                         {{ form.member_dob }}
                     </div>
 
-                    <div class="mb-3 form-group">
+                    <div class="mb-3">
                         <label class="form-label">Telephone Number</label>
                         {{ form.member_tp_number }}
                     </div>
 
-                    <div class="mb-3 form-group">
+                    <div class="mb-3">
                         <label class="form-label">Account Number</label>
                         {{ form.member_acc_number }}
                     </div>
 
-                    <div class="mb-3 form-group">
+                    <div class="mb-3">
                         <label class="form-label">Guardian/Parent Name</label>
                         {{ form.member_guardian_name }}
                     </div>
 
-                    <div class="mb-3 form-group">
+                    <div class="mb-3">
                         <label class="form-label">Profile Picture</label>
                         {{ form.member_profile_picture }}
                     </div>
 
                     <div class="container">
                         <div class="row">
-                            <button class="btn btn-warning" type="submit">Update</button>
+                            <div class="col-12 text-center">
+                                <button class="btn btn-warning" type="submit">Update</button>
+                            </div>
                         </div>
                     </div>
-
                 </form>
             </div>
-
         </div>
+        <br>
     </div>
 {% endblock content %}

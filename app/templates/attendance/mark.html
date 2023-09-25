@@ -12,7 +12,7 @@
         <br>
 
         {% if messages %}
-            {% for message in messages%}
+            {% for message in messages %}
                 <div class="alert alert-warning alert-dismissible fade show" role="alert">
                     {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -20,23 +20,25 @@
             {% endfor %}
         {% endif %}
 
-        <div class="card">
+        <div class="card shadow">
             <div class="card-header">
                 <h3 class="text-center">Attendance Mark</h3>
             </div>
             <div class="card-body">
                 <form method="post">
-
                     {% csrf_token %}
 
-                    {{ form | crispy }}
+                    <div class="mb-3">
+                        {{ form | crispy }}
+                    </div>
 
                     <div class="mb-3 form-group">
                         <div class="row">
-                            <input type="submit" value="Mark Attendance" class="btn btn-primary ">
+                            <div class="col-md-6">
+                                <input type="submit" value="Mark Attendance" class="btn btn-primary btn-block">
+                            </div>
                         </div>
                     </div>
-
                 </form>
             </div>
         </div>

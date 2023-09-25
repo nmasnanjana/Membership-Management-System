@@ -21,63 +21,57 @@
             {% endfor %}
         {% endif %}
 
-        <div class="card">
+        <div class="card shadow">
             <div class="card-header">
                 <div class="container">
-                    <div class="row">
-                        <div class="col-sm">
+                    <div class="row justify-content-between">
+                        <div class="col-auto mr-auto">
                             <h3>Meeting List</h3>
                         </div>
-                        <div class="col-sm">
-
-                        </div>
-                        <div class="col-sm">
-                            <a class="button btn btn-primary float-end" href="{% url 'meeting_add' %}">Create New Meeting</a>
+                        <div class="col-auto">
+                            <a class="btn btn-primary float-end" href="{% url 'meeting_add' %}">Create New Meeting</a>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="card-body">
-                <table id="meetingTable" class="table display">
-                    <thead>
+                <div class="table-responsive">
+                    <table id="meetingTable" class="table table-striped table-bordered">
+                        <thead>
                         <tr>
                             <th>Meeting Date</th>
                             <th>Member Fee</th>
                             <th>Actions</th>
                         </tr>
-                    </thead>
-                    <tbody>
+                        </thead>
+                        <tbody>
 
                         {% for meeting in meetings reversed %}
                             <tr>
-                                <td class="align-middle">{{ meeting.meeting_date|date:"d M Y" }}</td>
-                                <td class="align-middle">{{ meeting.meeting_fee }}</td>
-                                <td class="align-middle">
-                                    <a class="button btn btn-warning" href="{% url 'meeting_edit' meeting.meeting_date %}">Edit</a>
-                                    <a class="button btn btn-danger" href="{% url 'meeting_delete' meeting.meeting_date %}">Delete</a>
+                                <td>{{ meeting.meeting_date|date:"d M Y" }}</td>
+                                <td>{{ meeting.meeting_fee }}</td>
+                                <td>
+                                    <a class="btn btn-warning" href="{% url 'meeting_edit' meeting.meeting_date %}">Edit</a>
+                                    <a class="btn btn-danger" href="{% url 'meeting_delete' meeting.meeting_date %}">Delete</a>
                                 </td>
                             </tr>
                         {% endfor %}
 
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-
         $(document).ready(function (){
-           $('#meetingTable').DataTable({
-               paging: true,
-               searching: false,
-               order: false,
-               columnDefs: [
-                   {targets: -1, orderable: false},
-                   {targets: -2, orderable: false},
-                   {targets: -3, orderable: false},
-               ]
-           });
+            $('#meetingTable').DataTable({
+                paging: true,
+                searching: false,
+                ordering: false,
+                responsive: true // Enable responsive features
+            });
         });
     </script>
 

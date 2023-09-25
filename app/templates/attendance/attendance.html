@@ -13,7 +13,7 @@
         <br>
 
         {% if messages %}
-            {% for message in messages%}
+            {% for message in messages %}
                 <div class="alert alert-warning alert-dismissible fade show" role="alert">
                     {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -21,7 +21,7 @@
             {% endfor %}
         {% endif %}
 
-        <div class="card">
+        <div class="card shadow">
             <div class="card-header">
                 <div class="container">
                     <div class="row">
@@ -30,8 +30,9 @@
                 </div>
             </div>
             <div class="card-body">
-                <table id="attendanceTable" class="table display">
-                    <thead>
+                <div class="table-responsive">
+                    <table id="attendanceTable" class="table display">
+                        <thead>
                         <tr>
                             <th class="text-center">Member ID</th>
                             <th class="text-center">Name</th>
@@ -39,9 +40,8 @@
                             <th class="text-center">Member Fee</th>
                             <th class="text-center">Action</th>
                         </tr>
-                    </thead>
-                    <tbody>
-
+                        </thead>
+                        <tbody>
                         {% for attendance in attendances %}
                             <tr>
                                 <td class="text-center">{{ attendance.member_id }}</td>
@@ -55,39 +55,39 @@
                                 </td>
                                 <td class="text-center">
                                     {% if attendance.attendance_fee_status == True %}
-                                        Payed
+                                        Paid
                                     {% else %}
-                                        Not Payed
+                                        Not Paid
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
-                                    <a class="button btn btn-warning" href="{% url 'attendance_edit' meeting.meeting_id attendance.attendance_id %}">Edit</a>
-                                    <a class="button btn btn-danger" href="{% url 'attendance_delete' meeting.meeting_id attendance.attendance_id %}">Delete</a>
+                                    <a class="btn btn-warning" href="{% url 'attendance_edit' meeting.meeting_id attendance.attendance_id %}">Edit</a>
+                                    {% if user.is_superuser %}
+                                        <a class="btn btn-danger" href="{% url 'attendance_delete' meeting.meeting_id attendance.attendance_id %}">Delete</a>
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% endfor %}
-
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-
         $(document).ready(function (){
-           $('#attendanceTable').DataTable({
-               paging: true,
-               searching: true,
-               order: [[0, 'asc']],
-               columnDefs: [
-                   {targets: -1, orderable: false},
-                   {targets: -2, orderable: false},
-                   {targets: -3, orderable: false},
-                   {targets: -4, orderable: false},
-               ]
-           });
+            $('#attendanceTable').DataTable({
+                paging: true,
+                searching: true,
+                order: [[0, 'asc']],
+                columnDefs: [
+                    {targets: -1, orderable: false},
+                    {targets: -2, orderable: false},
+                    {targets: -3, orderable: false},
+                    {targets: -4, orderable: false},
+                ]
+            });
         });
     </script>
-
 {% endblock content %}
