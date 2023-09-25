@@ -37,4 +37,10 @@ urlpatterns = [
     path('member/report/attendance/<str:member_id>', member_attendance_report, name='member_attendance_report'),
     path('member/qr_code/generator/<str:member_id>', member_qr_generator, name='member_qr_generator'),
 
+    path('export/member/', export_member_details, name='member_info_export'),
+    path('export/member/attendance/<str:member_id>', export_member_attendance_report, name='member_attendance_export'),
+    path('export/attendance/<meeting_id>', export_attendance_report, name='export_attendance_report'),
+
+    path('qr_scan/', qr_scanner, name='qr_scann'),
+
 ]

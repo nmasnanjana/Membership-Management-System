@@ -1,12 +1,18 @@
+import PIL.Image
 from django.shortcuts import render, redirect
+from PIL import Image, ImageDraw, ImageFont
+from .forms import *
 from .models import *
 import os
+import io
 import qrcode
 from django.conf import settings
 from django.contrib.auth.models import User
 from datetime import datetime
 from django.db.models import Count
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.http import HttpResponse, FileResponse
+from openpyxl import Workbook
 
 
 def context_data(request):
@@ -133,3 +139,91 @@ def member_qr_generator(request, member_id):
 
     member.member_qr_code = os.path.relpath(qr_code_path, settings.MEDIA_ROOT)
     return redirect('member_view', member_id)
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def export_member_details(request):
+    response = HttpResponse(content_type='application/ms-excel')
+    response['Content-Disposition'] = 'attachment; filename="Member Details.xlsx"'
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Member Details"
+
+    headers = ["Member ID", "Full Name", "Address", "Date of Birth", "Telephone Number", "Account Number", "Join Date"]
+    ws.append(headers)
+
+    members = Member.objects.all()
+    for member in members:
+        ws.append([member.member_id, f'{member.member_initials}{member.member_first_name} {member.member_last_name}',
+                   member.member_address, member.member_dob.strftime("%d/%m/%Y"), member.member_tp_number,
+                   member.member_acc_number, member.member_join_at.strftime("%d/%m/%Y")])
+
+    wb.save(response)
+    return response
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def export_member_attendance_report(request, member_id):
+    member = Member.objects.get(member_id=member_id)
+    response = HttpResponse(content_type='application/ms-excel')
+    response['Content-Disposition'] = f'attachment; filename="{member.member_id} - {member.member_initials}{member.member_first_name} {member.member_last_name} Attendance Report.xlsx"'
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Member Attendance Report"
+
+    headers = ["Date", "Attendance State", "Member Fee State"]
+    ws.append(headers)
+
+    attendances = MemberAttendance.objects.filter(member_id=member_id)
+    for attendance in attendances:
+
+        member_attendance = 'Present' if attendance.attendance_status else 'Absent'
+        member_fee = 'Payed' if attendance.attendance_fee_status else 'Not Payed'
+
+        ws.append([attendance.meeting_date.meeting_date.strftime("%d/%m/%Y"), member_attendance, member_fee])
+
+    wb.save(response)
+    return response
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def export_attendance_report(request, meeting_id):
+    attendances = MemberAttendance.objects.filter(meeting_date=meeting_id)
+    meeting = MeetingInfo.objects.get(meeting_id=meeting_id)
+
+    response = HttpResponse(content_type='application/ms-excel')
+    response['Content-Disposition'] = f'attachment; filename="{meeting.meeting_date.strftime("%d/%m/%Y")} - Attendance Report.xlsx"'
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Attendance Report"
+
+    headers = ["Member ID", "Full Name", "Attendance State", "Member Fee State"]
+    ws.append(headers)
+
+    for attendance in attendances:
+
+        member_attendance = 'Present' if attendance.attendance_status else 'Absent'
+        member_fee = 'Payed' if attendance.attendance_fee_status else 'Not Payed'
+
+        ws.append([attendance.meeting_date.meeting_date.strftime("%d/%m/%Y"), member_attendance, member_fee])
+
+    wb.save(response)
+    return response
+
+
+def qr_scanner(request):
+    context = context_data(request)
+    context['page_name'] = 'QR Scanner'
+    if request.method == "POST":
+        form = QRScann(request.POST)
+        if form.is_valid():
+            member_id = form.cleaned_data['member_id']
+            return redirect('member_view', member_id)
+
+    form = QRScann()
+    context['form'] = form
+    return render(request, 'scann/scan.html', context)
+

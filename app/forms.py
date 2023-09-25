@@ -190,3 +190,11 @@ class AttendanceEditForm(forms.ModelForm):
                                                   widget=forms.RadioSelect(attrs={'class': "form-check-label"}),
                                                   initial=False,
                                                   label="Member Fee")
+
+
+class QRScann(forms.Form):
+
+    member_id = forms.CharField(max_length=10,
+                                widget=forms.TextInput(attrs={"class": "form-control"}),
+                                label="Member ID")
+

@@ -46,6 +46,7 @@
                                 <td class="text-center">{{ attendance.meeting_fee }}</td>
                                 <td class="text-center">
                                     <a class="button btn btn-warning" href="{% url 'attendance_date' attendance.meeting_id %}">View Attendance</a>
+                                    <a class="button btn btn-secondary" href="{% url 'export_attendance_report' attendance.meeting_id %}">Download Attendance</a>
                                 </td>
                             </tr>
                         {% endfor %}

@@ -71,7 +71,6 @@
                                 <a class="btn btn-warning button" type="button" href="{% url 'member_edit' member.member_id %}" >Edit</a>
                             </div>
                         </div>
-
                         <div class="col-sm">
                             <div class="row">
                                 {% if user.is_superuser %}
@@ -79,7 +78,6 @@
                                 {% endif %}
                             </div>
                         </div>
-
                         <div class="col-sm">
                             <div class="row">
                                 <a class="btn btn-secondary button" type="button" href="{% url 'member_attendance_report' member.member_id %}" >Member Report</a>
@@ -87,9 +85,15 @@
                         </div>
                         <div class="col-sm">
                             <div class="row">
+                                <a class="btn btn-secondary button" type="button" href="{% url 'member_attendance_export' member.member_id %}" >Member Report Download</a>
+                            </div>
+                        </div>
+                        <div class="col-sm">
+                            <div class="row">
                                 <a class="btn btn-info button" type="button" href="{% url 'member_qr_generator' member.member_id %}" >Member QR Generator</a>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
