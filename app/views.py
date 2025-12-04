@@ -24,61 +24,148 @@ def context_data(request):
 
 
 def dashboard(request):
+    from django.db.models import Q, Sum, Avg
+    from collections import defaultdict
 
     current_year = datetime.now().year
+    current_month = datetime.now().month
 
+    # Basic counts
+    all_members = Member.objects.all().count()
+    active_members = Member.objects.filter(member_is_active=True).count()
+    passive_members = Member.objects.filter(member_is_active=False).count()
+    all_staff = User.objects.all().count()
+    all_meeting = MeetingInfo.objects.all().count()
+
+    # Current year statistics
+    meetings_this_year = MeetingInfo.objects.filter(meeting_date__year=current_year).count()
+    total_attendance_this_year = MemberAttendance.objects.filter(
+        meeting_date__meeting_date__year=current_year
+    ).count()
+    present_count_this_year = MemberAttendance.objects.filter(
+        meeting_date__meeting_date__year=current_year,
+        attendance_status=True
+    ).count()
+    paid_count_this_year = MemberAttendance.objects.filter(
+        meeting_date__meeting_date__year=current_year,
+        attendance_fee_status=True
+    ).count()
+
+    # Calculate attendance rate
+    if total_attendance_this_year > 0:
+        attendance_rate = (present_count_this_year / total_attendance_this_year) * 100
+    else:
+        attendance_rate = 0
+
+    # Calculate fee payment rate
+    if present_count_this_year > 0:
+        fee_payment_rate = (paid_count_this_year / present_count_this_year) * 100
+    else:
+        fee_payment_rate = 0
+
+    # Monthly attendance data for current year
+    monthly_attendance = (
+        MemberAttendance.objects
+        .filter(meeting_date__meeting_date__year=current_year, attendance_status=True)
+        .select_related('meeting_date')
+    )
+    
+    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    monthly_data = [0] * 12
+    for attendance in monthly_attendance:
+        month_index = attendance.meeting_date.meeting_date.month - 1
+        if 0 <= month_index < 12:
+            monthly_data[month_index] += 1
+
+    # Meeting attendance over time (current year)
     meeting_attendance_counts = (
         MemberAttendance.objects
-        .filter(meeting_date__meeting_date__year=current_year)
+        .filter(meeting_date__meeting_date__year=current_year, attendance_status=True)
         .values('meeting_date__meeting_date')
         .annotate(attendance_count=Count('attendance_id'))
         .order_by('meeting_date__meeting_date')
     )
 
-    meeting_dates = [entry['meeting_date__meeting_date'].strftime('%Y-%m-%d') for entry in meeting_attendance_counts]
+    meeting_dates = [entry['meeting_date__meeting_date'].strftime('%d %b') for entry in meeting_attendance_counts]
     attendance_counts = [entry['attendance_count'] for entry in meeting_attendance_counts]
+
+    # Attendance vs Fee Payment comparison
+    attendance_vs_fee = {
+        'present_paid': MemberAttendance.objects.filter(
+            meeting_date__meeting_date__year=current_year,
+            attendance_status=True,
+            attendance_fee_status=True
+        ).count(),
+        'present_unpaid': MemberAttendance.objects.filter(
+            meeting_date__meeting_date__year=current_year,
+            attendance_status=True,
+            attendance_fee_status=False
+        ).count(),
+        'absent': MemberAttendance.objects.filter(
+            meeting_date__meeting_date__year=current_year,
+            attendance_status=False
+        ).count(),
+    }
+
+    # Latest meeting info
+    latest_meeting = None
+    latest_meeting_member_count = 0
+    try:
+        if MemberAttendance.objects.exists():
+            latest_meeting = MemberAttendance.objects.latest('meeting_date')
+            latest_meeting_member_count = MemberAttendance.objects.filter(
+                meeting_date=latest_meeting.meeting_date
+            ).values('member_id').distinct().count()
+    except:
+        latest_meeting = None
+        latest_meeting_member_count = 0
+
+    # Member status distribution for pie chart
+    member_status_data = {
+        'active': active_members,
+        'passive': passive_members
+    }
+
+    # Calculate percentages
+    if all_members != 0:
+        percentage_active = (active_members / all_members) * 100
+        percentage_passive = (passive_members / all_members) * 100
+    else:
+        percentage_active = 0
+        percentage_passive = 0
 
     context = context_data(request)
     context['page_name'] = 'Dashboard'
-
-    combine_date_attendance = zip(meeting_dates, attendance_counts)
-    context['attendance_data'] = combine_date_attendance
-
-    context['meeting_dates'] = meeting_dates
-    context['attendance_counts'] = attendance_counts
     context['current_year'] = current_year
-
-    all_members = Member.objects.all().count()
+    
+    # Basic stats
     context['all_members'] = all_members
-
-    active_members = Member.objects.filter(member_is_active=True).count()
     context['active_members'] = active_members
-
-    passive_members = Member.objects.filter(member_is_active=False).count()
     context['passive_members'] = passive_members
-
-    all_staff = User.objects.all().count()
     context['all_staff'] = all_staff
-
-    all_meeting = MeetingInfo.objects.all().count()
     context['all_meeting'] = all_meeting
-
-    if all_members != 0:
-        percentage_active = (active_members / all_members) * 100
-        format_percentage_active = f'{percentage_active:.1f}'
-        context['active_members_percentage'] = format_percentage_active
-
-        percentage_passive = (passive_members / all_members) * 100
-        format_percentage_passive = f'{percentage_passive:.1f}'
-        context['passive_members_percentage'] = format_percentage_passive
-
-    if MemberAttendance.objects.all():
-        latest_meeting = MemberAttendance.objects.latest('meeting_date')
-        latest_meeting_member_count = MemberAttendance.objects.filter(meeting_date=latest_meeting.meeting_date).values(
-            'member_id').distinct().count()
-
-        context['latest_meeting'] = latest_meeting
-        context['latest_meeting_member_count'] = latest_meeting_member_count
+    context['meetings_this_year'] = meetings_this_year
+    
+    # Percentages
+    context['active_members_percentage'] = f'{percentage_active:.1f}'
+    context['passive_members_percentage'] = f'{percentage_passive:.1f}'
+    context['attendance_rate'] = f'{attendance_rate:.1f}'
+    context['fee_payment_rate'] = f'{fee_payment_rate:.1f}'
+    
+    # Chart data - format for JavaScript
+    import json
+    context['meeting_dates'] = json.dumps(meeting_dates)
+    context['attendance_counts'] = json.dumps(attendance_counts)
+    context['months'] = json.dumps(months)
+    context['monthly_data'] = json.dumps(monthly_data)
+    context['member_status_data'] = member_status_data
+    context['attendance_vs_fee'] = attendance_vs_fee
+    
+    # Latest meeting
+    context['latest_meeting'] = latest_meeting
+    context['latest_meeting_member_count'] = latest_meeting_member_count
+    context['present_count_this_year'] = present_count_this_year
+    context['paid_count_this_year'] = paid_count_this_year
 
     return render(request, 'dashboard.html', context)
 
@@ -113,9 +200,28 @@ def member_attendance_report(request, member_id):
         context['member_fee_percentage'] = format_member_fee_percentage
 
     try:
+        from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+        
         member = get_object_or_404(Member, member_id=member_id)
-        attendances = MemberAttendance.objects.filter(member_id=member_id)
+        
+        # Optimize query with select_related
+        attendances_list = MemberAttendance.objects.filter(
+            member_id=member_id
+        ).select_related('meeting_date').order_by('-meeting_date__meeting_date')
+        
+        # Pagination - 30 items per page
+        paginator = Paginator(attendances_list, 30)
+        page = request.GET.get('page', 1)
+        
+        try:
+            attendances = paginator.page(page)
+        except PageNotAnInteger:
+            attendances = paginator.page(1)
+        except EmptyPage:
+            attendances = paginator.page(paginator.num_pages)
+        
         context['attendances'] = attendances
+        context['page_obj'] = attendances  # For pagination template
         context['member'] = member
         return render(request, 'report/member_attendance.html', context)
     except Exception as e:

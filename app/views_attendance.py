@@ -43,21 +43,55 @@ def attendance_mark(request):
 
 @login_required
 def attendance_full_view(request):
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    
     context = context_data(request)
     context['page_name'] = 'Attendance Dates-All'
-    attendance_all_dates = MeetingInfo.objects.all()
+    
+    # Pagination - 25 items per page, ordered by date (newest first)
+    attendance_all_dates_list = MeetingInfo.objects.all().order_by('-meeting_date')
+    paginator = Paginator(attendance_all_dates_list, 25)
+    page = request.GET.get('page', 1)
+    
+    try:
+        attendance_all_dates = paginator.page(page)
+    except PageNotAnInteger:
+        attendance_all_dates = paginator.page(1)
+    except EmptyPage:
+        attendance_all_dates = paginator.page(paginator.num_pages)
+    
     context['attendance_all_dates'] = attendance_all_dates
+    context['page_obj'] = attendance_all_dates  # For pagination template
     return render(request, 'attendance/all_dates.html', context)
 
 
 @login_required
 def attendance_date_view(request, meeting_id):
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    
     context = context_data(request)
     try:
         meeting = get_object_or_404(MeetingInfo, meeting_id=meeting_id)
         context['page_name'] = f'Attendance Date {meeting.meeting_date}'
-        attendances = MemberAttendance.objects.filter(meeting_date=meeting_id)
+        
+        # Optimize query with select_related to reduce database queries
+        attendances_list = MemberAttendance.objects.filter(
+            meeting_date=meeting_id
+        ).select_related('member_id', 'meeting_date').order_by('member_id__member_id')
+        
+        # Pagination - 50 items per page
+        paginator = Paginator(attendances_list, 50)
+        page = request.GET.get('page', 1)
+        
+        try:
+            attendances = paginator.page(page)
+        except PageNotAnInteger:
+            attendances = paginator.page(1)
+        except EmptyPage:
+            attendances = paginator.page(paginator.num_pages)
+        
         context['attendances'] = attendances
+        context['page_obj'] = attendances  # For pagination template
         context['meeting'] = meeting
         return render(request, 'attendance/attendance.html', context)
     except Exception as e:

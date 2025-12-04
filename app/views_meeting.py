@@ -10,10 +10,25 @@ from .views import context_data
 
 @user_passes_test(lambda u: u.is_superuser)
 def meeting_list(request):
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    
     context = context_data(request)
     context['page_name'] = 'Meeting List'
-    meetings = MeetingInfo.objects.all()
+    
+    # Pagination - 25 items per page, ordered by date (newest first)
+    meetings_list = MeetingInfo.objects.all().order_by('-meeting_date')
+    paginator = Paginator(meetings_list, 25)
+    page = request.GET.get('page', 1)
+    
+    try:
+        meetings = paginator.page(page)
+    except PageNotAnInteger:
+        meetings = paginator.page(1)
+    except EmptyPage:
+        meetings = paginator.page(paginator.num_pages)
+    
     context['meetings'] = meetings
+    context['page_obj'] = meetings  # For pagination template
     return render(request, 'meeting/list.html', context)
 
 

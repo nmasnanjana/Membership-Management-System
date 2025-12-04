@@ -59,10 +59,25 @@ def staff_register(request):
 
 @user_passes_test(lambda u: u.is_superuser)
 def staff_list(request):
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    
     context = context_data(request)
     context['page_name'] = 'Staff List'
-    users = User.objects.all()
+    
+    # Pagination - 25 items per page
+    users_list = User.objects.all().order_by('-date_joined')
+    paginator = Paginator(users_list, 25)
+    page = request.GET.get('page', 1)
+    
+    try:
+        users = paginator.page(page)
+    except PageNotAnInteger:
+        users = paginator.page(1)
+    except EmptyPage:
+        users = paginator.page(paginator.num_pages)
+    
     context['users'] = users
+    context['page_obj'] = users  # For pagination template
     return render(request, 'staff/list.html', context)
 
 

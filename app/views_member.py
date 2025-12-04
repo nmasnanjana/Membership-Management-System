@@ -10,10 +10,27 @@ from .utils import generate_qr_code
 
 @login_required
 def member_list(request):
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    
     context = context_data(request)
     context['page_name'] = 'List Members'
-    members = Member.objects.all()
+    
+    # Optimize query - only fetch what we need
+    members_list = Member.objects.all().order_by('-member_join_at')
+    
+    # Pagination - 25 items per page
+    paginator = Paginator(members_list, 25)
+    page = request.GET.get('page', 1)
+    
+    try:
+        members = paginator.page(page)
+    except PageNotAnInteger:
+        members = paginator.page(1)
+    except EmptyPage:
+        members = paginator.page(paginator.num_pages)
+    
     context['members'] = members
+    context['page_obj'] = members  # For pagination template
     return render(request, 'member/list.html', context)
 
 
