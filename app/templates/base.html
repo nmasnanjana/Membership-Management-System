@@ -3,25 +3,423 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    
+    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
+    <!-- Google Fonts - Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
     {% block head %}
     {% endblock head %}
+    
     <link rel="icon" href="{% static 'icons/mms Icon.png' %}" type="image/x-icon">
-    <title>  {{ page_name }} | {{ system_name }}</title>
+    <title>{{ page_name }} | {{ system_name }}</title>
+    
+    <!-- Dark Mode Minimal Styles -->
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-dark: #2563eb;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #06b6d4;
+            --bg-primary: #1f2937;
+            --bg-secondary: #374151;
+            --bg-tertiary: #4b5563;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-muted: #9ca3af;
+            --border-color: #4b5563;
+            --border-light: #374151;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .login-page {
+            background: var(--bg-primary);
+        }
+
+        .main-content {
+            background: var(--bg-primary);
+            min-height: calc(100vh - 70px);
+            margin-top: 70px;
+            padding: 2rem 0;
+        }
+
+        /* Dark Card Styling */
+        .modern-card,
+        .card {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            transition: box-shadow 0.2s ease;
+        }
+
+        .modern-card:hover,
+        .card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card-header {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+        }
+
+        .modern-card-header {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .modern-card-body {
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+        }
+
+        /* Simple Button Styling */
+        .btn-modern,
+        .btn {
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .btn-modern:hover,
+        .btn:hover {
+            opacity: 0.9;
+        }
+        
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-primary-modern {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary-modern:hover {
+            background: var(--primary-dark);
+            color: white;
+        }
+
+        .btn-success-modern {
+            background: var(--success-color);
+            color: white;
+            border-color: var(--success-color);
+        }
+
+        .btn-warning-modern {
+            background: var(--warning-color);
+            color: white;
+            border-color: var(--warning-color);
+        }
+
+        .btn-danger-modern {
+            background: var(--danger-color);
+            color: white;
+            border-color: var(--danger-color);
+        }
+
+        /* Dark Table Styling */
+        .modern-table {
+            border-radius: 0;
+            color: var(--text-primary);
+        }
+
+        .modern-table thead {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .modern-table thead th {
+            border-bottom: 2px solid var(--border-color);
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: none;
+            color: var(--text-primary);
+        }
+
+        .modern-table tbody tr {
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .modern-table tbody tr:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .modern-table tbody td {
+            padding: 0.75rem 1rem;
+            vertical-align: middle;
+            color: var(--text-primary);
+        }
+
+        /* Dark Form Styling */
+        .form-control-modern,
+        .form-control,
+        .form-select,
+        select.form-control,
+        input.form-control,
+        input[type="text"],
+        input[type="password"],
+        input[type="email"],
+        input[type="date"],
+        input[type="number"],
+        select,
+        textarea {
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 0.75rem;
+            transition: border-color 0.2s ease;
+            font-size: 0.875rem;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .form-control-modern:focus,
+        .form-control:focus,
+        .form-select:focus,
+        select.form-control:focus,
+        input.form-control:focus,
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        input[type="email"]:focus,
+        input[type="date"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            outline: none;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .form-control-modern::placeholder,
+        .form-control::placeholder,
+        input::placeholder {
+            color: var(--text-muted);
+        }
+
+        input:disabled,
+        select:disabled,
+        textarea:disabled,
+        .form-control:disabled {
+            background: var(--bg-tertiary) !important;
+            color: var(--text-muted) !important;
+            border-color: var(--border-color) !important;
+            opacity: 0.7;
+        }
+        
+        .form-check-input {
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-tertiary);
+        }
+        
+        .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .form-check-label {
+            color: var(--text-primary);
+        }
+        
+        .form-label {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+
+        /* Dark Alert Styling */
+        .alert-modern {
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1rem;
+            font-weight: 400;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--success-color);
+            color: var(--success-color);
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--warning-color);
+            color: var(--warning-color);
+        }
+
+        .alert-danger, .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .alert-info {
+            background: rgba(6, 182, 212, 0.1);
+            border-color: var(--info-color);
+            color: var(--info-color);
+        }
+
+        /* Page Title Styling */
+        .page-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem 0;
+                margin-top: 60px;
+            }
+            
+            .page-title {
+                font-size: 1.25rem;
+            }
+            
+            .modern-card-body {
+                padding: 1rem;
+            }
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Badge styling */
+        .badge {
+            padding: 0.25em 0.5em;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+
+        .bg-light {
+            background: var(--bg-tertiary) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .bg-secondary {
+            background: var(--bg-tertiary) !important;
+            color: var(--text-primary) !important;
+        }
+        
+        /* Select dropdown styling */
+        select.form-control-modern,
+        select.form-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 16px 12px;
+            padding-right: 2.5rem;
+        }
+        
+        /* Radio button styling */
+        input[type="radio"].form-check-input {
+            border-radius: 50%;
+        }
+        
+        /* Button groups */
+        .btn-group .btn {
+            margin: 0;
+        }
+        
+        /* Table improvements */
+        .table {
+            color: var(--text-primary);
+        }
+
+        .table tbody tr {
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .table tbody tr:hover {
+            background: var(--bg-tertiary);
+        }
+        
+        /* Dark Pagination */
+        .pagination .page-link {
+            border-radius: 4px;
+            margin: 0 2px;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+        }
+        
+        .pagination .page-item.active .page-link {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        .pagination .page-link:hover {
+            background-color: var(--bg-tertiary);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+    </style>
 </head>
 <body>
-
     <header>
         {% if navbar_top %}
             {% include 'navbar.html' %}
         {% endif %}
     </header>
 
-    <main>
+    <main class="main-content">
         {% block content %}
         {% endblock content %}
     </main>
@@ -33,6 +431,16 @@
     </footer>
 
     <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-
+    
+    <script>
+        // Add fade-in animation to cards
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.modern-card, .card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.classList.add('fade-in');
+            });
+        });
+    </script>
 </body>
 </html>
