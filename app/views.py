@@ -1,17 +1,12 @@
-import PIL.Image
-from django.shortcuts import render, redirect
-from PIL import Image, ImageDraw, ImageFont
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 from .forms import *
 from .models import *
-import os
-import io
-import qrcode
-from django.conf import settings
 from django.contrib.auth.models import User
 from datetime import datetime
 from django.db.models import Count
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import HttpResponse, FileResponse
+from django.http import HttpResponse
 from openpyxl import Workbook
 
 
@@ -117,28 +112,29 @@ def member_attendance_report(request, member_id):
         context['member_attendance_percentage'] = format_annual_member_present
         context['member_fee_percentage'] = format_member_fee_percentage
 
-    attendances = MemberAttendance.objects.filter(member_id=member_id)
-    member = Member.objects.get(member_id=member_id)
-    context['attendances'] = attendances
-    context['member'] = member
-    return render(request, 'report/member_attendance.html', context)
+    try:
+        member = get_object_or_404(Member, member_id=member_id)
+        attendances = MemberAttendance.objects.filter(member_id=member_id)
+        context['attendances'] = attendances
+        context['member'] = member
+        return render(request, 'report/member_attendance.html', context)
+    except Exception as e:
+        messages.error(request, f"Error loading attendance report: {str(e)}")
+        return redirect('member_list')
 
 
 def member_qr_generator(request, member_id):
-    member = Member.objects.get(member_id=member_id)
-
-    profile_picture_directory = os.path.join(settings.MEDIA_ROOT, 'profiles', member_id)
-
-    qr_code = qrcode.make(member_id)
-    qr_code_name = f"{member_id}_qr.png"
-    qr_code_path = os.path.join(profile_picture_directory, qr_code_name)
-
-    os.makedirs(os.path.dirname(qr_code_path), exist_ok=True)
-
-    qr_code.save(qr_code_path)
-
-    member.member_qr_code = os.path.relpath(qr_code_path, settings.MEDIA_ROOT)
-    return redirect('member_view', member_id)
+    try:
+        member = get_object_or_404(Member, member_id=member_id)
+        from .utils import generate_qr_code
+        
+        member.member_qr_code = generate_qr_code(member_id)
+        member.save()
+        messages.success(request, 'QR code generated successfully.')
+        return redirect('member_view', member_id)
+    except Exception as e:
+        messages.error(request, f"Error generating QR code: {str(e)}")
+        return redirect('member_list')
 
 
 @user_passes_test(lambda u: u.is_superuser)
@@ -165,53 +161,59 @@ def export_member_details(request):
 
 @user_passes_test(lambda u: u.is_superuser)
 def export_member_attendance_report(request, member_id):
-    member = Member.objects.get(member_id=member_id)
-    response = HttpResponse(content_type='application/ms-excel')
-    response['Content-Disposition'] = f'attachment; filename="{member.member_id} - {member.member_initials}{member.member_first_name} {member.member_last_name} Attendance Report.xlsx"'
+    try:
+        member = get_object_or_404(Member, member_id=member_id)
+        response = HttpResponse(content_type='application/ms-excel')
+        response['Content-Disposition'] = f'attachment; filename="{member.member_id} - {member.member_initials}{member.member_first_name} {member.member_last_name} Attendance Report.xlsx"'
 
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Member Attendance Report"
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Member Attendance Report"
 
-    headers = ["Date", "Attendance State", "Member Fee State"]
-    ws.append(headers)
+        headers = ["Date", "Attendance State", "Member Fee State"]
+        ws.append(headers)
 
-    attendances = MemberAttendance.objects.filter(member_id=member_id)
-    for attendance in attendances:
+        attendances = MemberAttendance.objects.filter(member_id=member_id)
+        for attendance in attendances:
+            member_attendance = 'Present' if attendance.attendance_status else 'Absent'
+            member_fee = 'Payed' if attendance.attendance_fee_status else 'Not Payed'
+            ws.append([attendance.meeting_date.meeting_date.strftime("%d/%m/%Y"), member_attendance, member_fee])
 
-        member_attendance = 'Present' if attendance.attendance_status else 'Absent'
-        member_fee = 'Payed' if attendance.attendance_fee_status else 'Not Payed'
-
-        ws.append([attendance.meeting_date.meeting_date.strftime("%d/%m/%Y"), member_attendance, member_fee])
-
-    wb.save(response)
-    return response
+        wb.save(response)
+        return response
+    except Exception as e:
+        messages.error(request, f"Error exporting report: {str(e)}")
+        return redirect('member_list')
 
 
 @user_passes_test(lambda u: u.is_superuser)
 def export_attendance_report(request, meeting_id):
-    attendances = MemberAttendance.objects.filter(meeting_date=meeting_id)
-    meeting = MeetingInfo.objects.get(meeting_id=meeting_id)
+    try:
+        meeting = get_object_or_404(MeetingInfo, meeting_id=meeting_id)
+        attendances = MemberAttendance.objects.filter(meeting_date=meeting_id)
 
-    response = HttpResponse(content_type='application/ms-excel')
-    response['Content-Disposition'] = f'attachment; filename="{meeting.meeting_date.strftime("%d/%m/%Y")} - Attendance Report.xlsx"'
+        response = HttpResponse(content_type='application/ms-excel')
+        response['Content-Disposition'] = f'attachment; filename="{meeting.meeting_date.strftime("%d/%m/%Y")} - Attendance Report.xlsx"'
 
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Attendance Report"
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Attendance Report"
 
-    headers = ["Member ID", "Full Name", "Attendance State", "Member Fee State"]
-    ws.append(headers)
+        headers = ["Member ID", "Full Name", "Attendance State", "Member Fee State"]
+        ws.append(headers)
 
-    for attendance in attendances:
+        for attendance in attendances:
+            member = attendance.member_id
+            member_attendance = 'Present' if attendance.attendance_status else 'Absent'
+            member_fee = 'Payed' if attendance.attendance_fee_status else 'Not Payed'
+            full_name = f"{member.member_initials} {member.member_first_name} {member.member_last_name}"
+            ws.append([member.member_id, full_name, member_attendance, member_fee])
 
-        member_attendance = 'Present' if attendance.attendance_status else 'Absent'
-        member_fee = 'Payed' if attendance.attendance_fee_status else 'Not Payed'
-
-        ws.append([attendance.meeting_date.meeting_date.strftime("%d/%m/%Y"), member_attendance, member_fee])
-
-    wb.save(response)
-    return response
+        wb.save(response)
+        return response
+    except Exception as e:
+        messages.error(request, f"Error exporting report: {str(e)}")
+        return redirect('attendance_date_all')
 
 
 def qr_scanner(request):
