@@ -9,35 +9,91 @@
 
 {% block content %}
     <div class="container">
-        <br>
+        <div class="mb-4">
+            <h1 class="page-title">
+                <i class="fas fa-check-circle text-primary me-2"></i>Mark Attendance
+            </h1>
+        </div>
 
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <div class="alert alert-modern alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'error' %}
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                    {% else %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% endif %}
                     {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             {% endfor %}
         {% endif %}
 
-        <div class="card shadow">
-            <div class="card-header">
-                <h3 class="text-center">Attendance Mark</h3>
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clipboard-check me-2"></i>Record Attendance
+                </h5>
             </div>
-            <div class="card-body">
+            <div class="modern-card-body">
                 <form method="post">
                     {% csrf_token %}
-
-                    <div class="mb-3">
-                        {{ form | crispy }}
-                    </div>
-
-                    <div class="mb-3 form-group">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <input type="submit" value="Mark Attendance" class="btn btn-primary btn-block">
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-calendar me-1 text-primary"></i>Meeting Date
+                            </label>
+                            {{ form.meeting_date }}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-user me-1 text-primary"></i>Member
+                            </label>
+                            {{ form.member_id }}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-check-circle me-1 text-primary"></i>Attendance Status
+                            </label>
+                            <div class="mt-2">
+                                {% for choice in form.attendance_status %}
+                                    <div class="form-check form-check-inline">
+                                        {{ choice.tag }}
+                                        <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                            {{ choice.choice_label }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
                             </div>
                         </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-money-bill-wave me-1 text-primary"></i>Fee Payment Status
+                            </label>
+                            <div class="mt-2">
+                                {% for choice in form.attendance_fee_status %}
+                                    <div class="form-check form-check-inline">
+                                        {{ choice.tag }}
+                                        <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                            {{ choice.choice_label }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary-modern btn-modern">
+                            <i class="fas fa-save me-2"></i>Mark Attendance
+                        </button>
+                        <a href="{% url 'attendance_date_all' %}" class="btn btn-secondary btn-modern">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
                     </div>
                 </form>
             </div>

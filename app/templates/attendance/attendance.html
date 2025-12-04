@@ -10,28 +10,35 @@
 
 {% block content %}
     <div class="container">
-        <br>
+        <div class="mb-4">
+            <h1 class="page-title">
+                <i class="fas fa-clipboard-list text-primary me-2"></i>Attendance - {{ meeting.meeting_date|date:"d M Y" }}
+            </h1>
+        </div>
 
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <div class="alert alert-modern alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'error' %}
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                    {% else %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% endif %}
                     {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             {% endfor %}
         {% endif %}
 
-        <div class="card shadow">
-            <div class="card-header">
-                <div class="container">
-                    <div class="row">
-                        <h3 class="text-center">Attendance - {{ meeting.meeting_date|date:"d M Y" }}</h3>
-                    </div>
-                </div>
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-check me-2"></i>Meeting Attendance Records
+                </h5>
             </div>
-            <div class="card-body">
+            <div class="modern-card-body">
                 <div class="table-responsive">
-                    <table id="attendanceTable" class="table display">
+                    <table id="attendanceTable" class="table modern-table">
                         <thead>
                         <tr>
                             <th class="text-center">Member ID</th>
@@ -48,29 +55,37 @@
                                 <td class="text-center">{{ attendance.member_id.member_initials }} {{ attendance.member_id.member_first_name }} {{ attendance.member_id.member_last_name }}</td>
                                 <td class="text-center">
                                     {% if attendance.attendance_status == True %}
-                                        Present
+                                        <span class="badge bg-success">Present</span>
                                     {% else %}
-                                        Absent
+                                        <span class="badge bg-danger">Absent</span>
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
                                     {% if attendance.attendance_fee_status == True %}
-                                        Paid
+                                        <span class="badge bg-success">Paid</span>
                                     {% else %}
-                                        Not Paid
+                                        <span class="badge bg-warning">Not Paid</span>
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
-                                    <a class="btn btn-warning" href="{% url 'attendance_edit' meeting.meeting_id attendance.attendance_id %}">Edit</a>
-                                    {% if user.is_superuser %}
-                                        <a class="btn btn-danger" href="{% url 'attendance_delete' meeting.meeting_id attendance.attendance_id %}">Delete</a>
-                                    {% endif %}
+                                    <div class="btn-group" role="group">
+                                        <a class="btn btn-sm btn-warning-modern" href="{% url 'attendance_edit' meeting.meeting_id attendance.attendance_id %}" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if user.is_superuser %}
+                                            <a class="btn btn-sm btn-danger-modern" href="{% url 'attendance_delete' meeting.meeting_id attendance.attendance_id %}" 
+                                               onclick="return confirm('Are you sure?')" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                         {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                {% include 'pagination.html' %}
             </div>
         </div>
     </div>
@@ -78,14 +93,12 @@
     <script>
         $(document).ready(function (){
             $('#attendanceTable').DataTable({
-                paging: true,
+                paging: false,  // Disabled - using Django pagination
                 searching: true,
                 order: [[0, 'asc']],
+                info: false,  // Hide DataTables info since we show it in pagination
                 columnDefs: [
                     {targets: -1, orderable: false},
-                    {targets: -2, orderable: false},
-                    {targets: -3, orderable: false},
-                    {targets: -4, orderable: false},
                 ]
             });
         });

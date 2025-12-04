@@ -4,56 +4,103 @@
 
 {% block content %}
     <div class="container">
-        <br>
+        <div class="mb-4">
+            <h1 class="page-title">
+                <i class="fas fa-edit text-primary me-2"></i>Edit Attendance Record
+            </h1>
+        </div>
 
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <div class="alert alert-modern alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'error' %}
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                    {% else %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% endif %}
                     {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             {% endfor %}
         {% endif %}
 
-        <div class="card shadow">
-            <div class="card-header">
-                <h3 class="text-center">Attendance Details Edit - {{ member_info.member_id.member_first_name }}</h3>
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clipboard-check me-2"></i>{{ member_info.member_id.member_first_name }} {{ member_info.member_id.member_last_name }}
+                </h5>
             </div>
-            <div class="card-body">
-
-                <div class="mb-3">
-                    <label class="form-label">Date</label>
-                    <input class="form-control" type="text" value="{{ member_info.meeting_date.meeting_date|date:"d M Y" }}" disabled>
+            <div class="modern-card-body">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-muted">Meeting Date</label>
+                        <div class="form-control-modern bg-light">
+                            {{ member_info.meeting_date.meeting_date|date:"d M Y" }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-muted">Member ID</label>
+                        <div class="form-control-modern bg-light">
+                            {{ member_info.member_id.member_id }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-muted">Member Name</label>
+                        <div class="form-control-modern bg-light">
+                            {{ member_info.member_id.member_initials }} {{ member_info.member_id.member_first_name }} {{ member_info.member_id.member_last_name }}
+                        </div>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Member ID</label>
-                    <input class="form-control" type="text" value="{{ member_info.member_id.member_id }}" disabled>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Name</label>
-                    <input class="form-control" type="text" value="{{ member_info.member_id.member_initials }} {{ member_info.member_id.member_first_name }} {{ member_info.member_id.member_last_name }}" disabled>
-                </div>
+                <hr class="my-4">
 
                 <form method="post">
-
                     {% csrf_token %}
-
-                    {{ form | crispy }}
-
-                    <div class="mb-3 form-group">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <input type="submit" value="Mark Attendance" class="btn btn-primary btn-block">
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-check-circle me-1 text-primary"></i>Attendance Status
+                            </label>
+                            <div class="mt-2">
+                                {% for choice in form.attendance_status %}
+                                    <div class="form-check form-check-inline">
+                                        {{ choice.tag }}
+                                        <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                            {{ choice.choice_label }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-money-bill-wave me-1 text-primary"></i>Fee Payment Status
+                            </label>
+                            <div class="mt-2">
+                                {% for choice in form.attendance_fee_status %}
+                                    <div class="form-check form-check-inline">
+                                        {{ choice.tag }}
+                                        <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                            {{ choice.choice_label }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
                             </div>
                         </div>
                     </div>
 
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary-modern btn-modern">
+                            <i class="fas fa-save me-2"></i>Update Attendance
+                        </button>
+                        <a href="{% url 'attendance_date' meeting_id %}" class="btn btn-secondary btn-modern">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
                 </form>
             </div>
         </div>
-        <br>
     </div>
-
 {% endblock content %}
