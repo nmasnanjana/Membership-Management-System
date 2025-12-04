@@ -4,31 +4,91 @@
 
 {% block content %}
     <div class="container">
-        <br>
+        <div class="mb-4">
+            <h1 class="page-title">
+                <i class="fas fa-user-plus text-primary me-2"></i>Register New Staff Member
+            </h1>
+        </div>
+        
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <div class="alert alert-modern alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'error' %}
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                    {% else %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% endif %}
                     {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             {% endfor %}
         {% endif %}
-        <div class="card shadow">
-            <div class="card-header">
-                <h3 class="text-center">Staff Register</h3>
+        
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-id-card me-2"></i>Staff Information
+                </h5>
             </div>
-
-            <div class="card-body">
+            <div class="modern-card-body">
                 <form method="post" class="needs-validation" novalidate>
                     {% csrf_token %}
-                    {{ form | crispy }}
-                    <div class="text-center mt-3">
-                        <button class="btn btn-primary" type="submit">Register</button>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-user me-1 text-primary"></i>Username
+                            </label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small mt-1">{{ form.username.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-user me-1 text-primary"></i>First Name
+                            </label>
+                            {{ form.first_name }}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-user me-1 text-primary"></i>Last Name
+                            </label>
+                            {{ form.last_name }}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-lock me-1 text-primary"></i>Password
+                            </label>
+                            {{ form.password1 }}
+                            {% if form.password1.help_text %}
+                                <small class="text-muted">{{ form.password1.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-lock me-1 text-primary"></i>Confirm Password
+                            </label>
+                            {{ form.password2 }}
+                            {% if form.password2.help_text %}
+                                <small class="text-muted">{{ form.password2.help_text }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary-modern btn-modern">
+                            <i class="fas fa-save me-2"></i>Register Staff
+                        </button>
+                        <a href="{% url 'staff_list' %}" class="btn btn-secondary btn-modern">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
                     </div>
                 </form>
             </div>
-
         </div>
-        <br>
     </div>
 {% endblock content %}

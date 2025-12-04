@@ -4,31 +4,92 @@
 
 {% block content %}
     <div class="container">
-        <br>
+        <div class="mb-4">
+            <h1 class="page-title">
+                <i class="fas fa-user-edit text-primary me-2"></i>Edit Profile
+            </h1>
+        </div>
+        
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <div class="alert alert-modern alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'error' %}
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                    {% else %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% endif %}
                     {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             {% endfor %}
         {% endif %}
-        <div class="card shadow">
-            <div class="card-header">
-                <h3 class="text-center">Profile Change Form - {{ user.first_name }}</h3>
+        
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-id-card me-2"></i>{{ user.first_name|default:user.username }}'s Profile
+                </h5>
             </div>
-
-            <div class="card-body">
+            <div class="modern-card-body">
                 <form method="post" class="needs-validation" novalidate>
                     {% csrf_token %}
-                    {{ form | crispy }}
-                    <div class="text-center mt-4">
-                        <button class="btn btn-primary" type="submit">Change Info</button>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-user me-1 text-primary"></i>Username
+                            </label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small mt-1">{{ form.username.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-user me-1 text-primary"></i>First Name
+                            </label>
+                            {{ form.first_name }}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-user me-1 text-primary"></i>Last Name
+                            </label>
+                            {{ form.last_name }}
+                        </div>
+                        
+                        {% if form.is_superuser %}
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-shield-alt me-1 text-primary"></i>Administrator
+                            </label>
+                            <div class="form-check form-switch mt-2">
+                                {{ form.is_superuser }}
+                                <label class="form-check-label" for="{{ form.is_superuser.id_for_label }}">
+                                    Grant administrator privileges
+                                </label>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary-modern btn-modern">
+                            <i class="fas fa-save me-2"></i>Update Profile
+                        </button>
+                        {% if user.is_superuser %}
+                            <a href="{% url 'staff_list' %}" class="btn btn-secondary btn-modern">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                        {% else %}
+                            <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-modern">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                        {% endif %}
                     </div>
                 </form>
             </div>
-
         </div>
-        <br>
     </div>
 {% endblock content %}

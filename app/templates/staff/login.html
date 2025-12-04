@@ -1,64 +1,176 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block content%}
-    <div class="login-page bg-light vh-100 d-flex align-items-center">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-10 offset-lg-1">
-                    <h3 class="mb-3 text-center">Login Now</h3>
-                    <div class="bg-white shadow rounded">
-                        <div class="row">
-                            <div class="col-md-7 pe-0">
-                                <div class="form-left h-100 py-5 px-4 px-sm-5">
+{% block head %}
+<style>
+    .login-page {
+        background: #1f2937;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+    
+    .login-card {
+        background: #374151;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+        border: 1px solid #4b5563;
+        overflow: hidden;
+        max-width: 900px;
+    }
+    
+    .login-form-section {
+        padding: 2rem;
+        background: #374151;
+    }
+    
+    .login-image-section {
+        background: #4b5563;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #d1d5db;
+    }
+    
+    .login-title {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 700;
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: #f9fafb;
+    }
+    
+    .login-subtitle {
+        color: #9ca3af;
+        margin-bottom: 2rem;
+    }
+    
+    .form-input-group {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-input-group i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        z-index: 10;
+    }
+    
+    .form-input-group input {
+        padding-left: 3rem;
+        border-radius: 12px;
+        border: 2px solid #e5e7eb;
+        height: 50px;
+        transition: all 0.3s;
+    }
+    
+    .form-input-group input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    
+    .btn-login {
+        background: #2563eb;
+        border: none;
+        border-radius: 6px;
+        padding: 0.75rem 2rem;
+        font-weight: 500;
+        font-size: 0.875rem;
+        color: white;
+        width: 100%;
+        height: 50px;
+        transition: background-color 0.2s;
+    }
+    
+    .btn-login:hover {
+        background: #1e40af;
+        color: white;
+    }
+    
+    @media (max-width: 768px) {
+        .login-image-section {
+            display: none;
+        }
+        
+        .login-form-section {
+            padding: 2rem;
+        }
+    }
+</style>
+{% endblock head %}
 
-                                    <form action="" class="row g-4" method="post">
-                                        {% csrf_token %}
-
-                                        {% if messages %}
-                                            {% for message in messages %}
-                                                <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                                                    {{ message }}
-                                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                                </div>
-                                            {% endfor %}
-                                        {% endif %}
-
-                                        <div class="col-12">
-                                            <label>Username<span class="text-danger">*</span></label>
-                                            <div class="input-group">
-                                                <div class="input-group-text"><i class="bi bi-person-fill"></i></div>
-                                                <input type="text" class="form-control" placeholder="Enter Username" name="username">
-                                            </div>
+{% block content %}
+<div class="login-page">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="login-card">
+                    <div class="row g-0">
+                        <div class="col-md-7">
+                            <div class="login-form-section">
+                                <h1 class="login-title">Welcome Back!</h1>
+                                <p class="login-subtitle">Sign in to continue to your dashboard</p>
+                                
+                                {% if messages %}
+                                    {% for message in messages %}
+                                        <div class="alert alert-modern alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                            {% if message.tags == 'error' %}
+                                                <i class="fas fa-exclamation-circle me-2"></i>
+                                            {% else %}
+                                                <i class="fas fa-info-circle me-2"></i>
+                                            {% endif %}
+                                            {{ message }}
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                                         </div>
-
-                                        <div class="col-12">
-                                            <label>Password<span class="text-danger">*</span></label>
-                                            <div class="input-group">
-                                                <div class="input-group-text"><i class="bi bi-lock-fill"></i></div>
-                                                <input type="password" class="form-control" placeholder="Enter Password" name="password">
-                                            </div>
-                                        </div>
-
-                                        <div class="col-12">
-                                            <button type="submit" class="btn btn-primary px-4 float-end mt-4">Login</button>
-                                        </div>
-                                    </form>
-
-                                </div>
+                                    {% endfor %}
+                                {% endif %}
+                                
+                                <form method="post" action="{% url 'login' %}">
+                                    {% csrf_token %}
+                                    
+                                    <div class="form-input-group">
+                                        <i class="fas fa-user"></i>
+                                        <input type="text" class="form-control" name="username" 
+                                               placeholder="Enter your username" required autofocus>
+                                    </div>
+                                    
+                                    <div class="form-input-group">
+                                        <i class="fas fa-lock"></i>
+                                        <input type="password" class="form-control" name="password" 
+                                               placeholder="Enter your password" required>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-login">
+                                        <i class="fas fa-sign-in-alt me-2"></i> Sign In
+                                    </button>
+                                </form>
                             </div>
-
-                            <div class="col-md-5 ps-0 d-none d-md-block">
-                                <div class="form-right h-100 bg-primary text-white text-center pt-5">
-                                    <h2 class="fs-1">Welcome Back!!!</h2>
-                                    <img src="{% static 'icons/mms Icon.png' %}" alt="Membership Management System" height="200px" width="200px">
-                                </div>
-                            </div>
-
+                        </div>
+                        
+                        <div class="col-md-5 login-image-section">
+                            <h2 class="mb-4" style="font-family: 'Poppins', sans-serif; font-weight: 700;">
+                                <i class="fas fa-users-cog me-2"></i>MMS
+                            </h2>
+                            <p class="text-center mb-4" style="font-size: 1.1rem; opacity: 0.9;">
+                                Membership Management System
+                            </p>
+                            <img src="{% static 'icons/mms Icon.png' %}" alt="MMS Logo" 
+                                 style="max-width: 200px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));">
+                            <p class="mt-4 text-center" style="opacity: 0.8;">
+                                <i class="fas fa-shield-alt me-2"></i>Secure & Reliable
+                            </p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-{% endblock content%}
+</div>
+{% endblock content %}
