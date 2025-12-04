@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.forms import CharField
 from django.contrib.auth.models import User
+from django.core.validators import RegexValidator
 from .models import *
 
 
@@ -44,9 +45,17 @@ class MemberRegisterForm(forms.ModelForm):
                   'member_dob', 'member_tp_number', 'member_acc_number', 'member_guardian_name',
                   'member_profile_picture')
 
-    member_id = forms.CharField(max_length=10, widget=forms.TextInput(attrs={
-        "placeholder": "4 Digit Member ID",
-        "class": "form-control"}))
+    member_id = forms.CharField(
+        max_length=10,
+        widget=forms.TextInput(attrs={
+            "placeholder": "4 Digit Member ID",
+            "class": "form-control"
+        }),
+        validators=[RegexValidator(
+            regex=r'^\d{4,10}$',
+            message='Member ID must be 4-10 digits.'
+        )]
+    )
 
     member_initials = forms.CharField(max_length=10, widget=forms.TextInput(attrs={
         "placeholder": "Initials",
@@ -68,15 +77,23 @@ class MemberRegisterForm(forms.ModelForm):
         'type': 'date',
         "class": "form-control"}))
 
-    member_tp_number = forms.CharField(max_length=10, widget=forms.TextInput(attrs={
-        "placeholder": "WhatsApp Number",
-        "class": "form-control"}))
+    member_tp_number = forms.CharField(
+        max_length=10,
+        widget=forms.TextInput(attrs={
+            "placeholder": "WhatsApp Number (10 digits)",
+            "class": "form-control"
+        }),
+        validators=[RegexValidator(
+            regex=r'^\d{10}$',
+            message='Phone number must be exactly 10 digits.'
+        )]
+    )
 
     member_acc_number = forms.CharField(max_length=10, widget=forms.TextInput(attrs={
         "placeholder": "Account Number",
         "class": "form-control"}))
 
-    member_guardian_name: CharField = forms.CharField(max_length=100, widget=forms.TextInput(attrs={
+    member_guardian_name = forms.CharField(max_length=100, widget=forms.TextInput(attrs={
         "placeholder": "Guardian Name",
         "class": "form-control"}))
 
@@ -92,9 +109,17 @@ class MemberEditForm(forms.ModelForm):
                   'member_dob', 'member_tp_number', 'member_acc_number', 'member_guardian_name',
                   'member_profile_picture')
 
-    member_id = forms.CharField(max_length=10, widget=forms.TextInput(attrs={
-        "placeholder": "4 Digit Member ID",
-        "class": "form-control", }))
+    member_id = forms.CharField(
+        max_length=10,
+        widget=forms.TextInput(attrs={
+            "placeholder": "4 Digit Member ID",
+            "class": "form-control",
+        }),
+        validators=[RegexValidator(
+            regex=r'^\d{4,10}$',
+            message='Member ID must be 4-10 digits.'
+        )]
+    )
 
     member_initials = forms.CharField(max_length=10, widget=forms.TextInput(attrs={
         "placeholder": "Initials",
@@ -116,15 +141,23 @@ class MemberEditForm(forms.ModelForm):
         'type': 'date',
         "class": "form-control"}))
 
-    member_tp_number = forms.CharField(max_length=10, widget=forms.TextInput(attrs={
-        "placeholder": "WhatsApp Number",
-        "class": "form-control"}))
+    member_tp_number = forms.CharField(
+        max_length=10,
+        widget=forms.TextInput(attrs={
+            "placeholder": "WhatsApp Number (10 digits)",
+            "class": "form-control"
+        }),
+        validators=[RegexValidator(
+            regex=r'^\d{10}$',
+            message='Phone number must be exactly 10 digits.'
+        )]
+    )
 
     member_acc_number = forms.CharField(max_length=10, widget=forms.TextInput(attrs={
         "placeholder": "Account Number",
         "class": "form-control"}))
 
-    member_guardian_name = CharField = forms.CharField(max_length=100, widget=forms.TextInput(attrs={
+    member_guardian_name = forms.CharField(max_length=100, widget=forms.TextInput(attrs={
         "placeholder": "Guardian Name",
         "class": "form-control"}))
 
@@ -138,9 +171,21 @@ class MeetingAddForm(forms.ModelForm):
         model = MeetingInfo
         fields = ('meeting_date', 'meeting_fee')
 
-    meeting_date = forms.DateField(widget=forms.DateInput(attrs={
-        'type': 'date',
-        "class": "form-control"}))
+    meeting_date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            "class": "form-control"
+        })
+    )
+    
+    def clean_meeting_date(self):
+        meeting_date = self.cleaned_data.get('meeting_date')
+        if meeting_date:
+            from datetime import date
+            # Prevent creating meetings in the future (optional - can be removed if needed)
+            # if meeting_date > date.today():
+            #     raise forms.ValidationError("Meeting date cannot be in the future.")
+        return meeting_date
 
     meeting_fee = forms.IntegerField(widget=forms.TextInput(attrs={
         'type': 'number',
@@ -185,20 +230,23 @@ class AttendanceMarkForm(forms.ModelForm):
 
 
 class AttendanceEditForm(forms.ModelForm):
+    attendance_status = forms.ChoiceField(
+        choices=[(True, "Present"), (False, "Absent")],
+        widget=forms.RadioSelect(attrs={'class': "form-check-label"}),
+        initial=False,
+        label="Attendance"
+    )
+
+    attendance_fee_status = forms.ChoiceField(
+        choices=[(True, "Payed"), (False, "Not Payed")],
+        widget=forms.RadioSelect(attrs={'class': "form-check-label"}),
+        initial=False,
+        label="Member Fee"
+    )
 
     class Meta:
         model = MemberAttendance
         fields = ('attendance_status', 'attendance_fee_status')
-
-        attendance_status = forms.ChoiceField(choices=[(True, "Present"), (False, "Absent")],
-                                              widget=forms.RadioSelect(attrs={'class': "form-check-label"}),
-                                              initial=False,
-                                              label="Attendance")
-
-        attendance_fee_status = forms.ChoiceField(choices=[(True, "Payed"), (False, "Not Payed")],
-                                                  widget=forms.RadioSelect(attrs={'class': "form-check-label"}),
-                                                  initial=False,
-                                                  label="Member Fee")
 
 
 class QRScann(forms.Form):
