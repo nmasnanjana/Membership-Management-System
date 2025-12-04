@@ -32,7 +32,7 @@ class MeetingInfo(models.Model):
 class MemberAttendance(models.Model):
     attendance_id = models.AutoField(primary_key=True)
     meeting_date = models.ForeignKey(MeetingInfo, on_delete=models.CASCADE)
-    member_id = models.ForeignKey(Member, on_delete=models.DO_NOTHING)
+    member_id = models.ForeignKey(Member, on_delete=models.CASCADE)
     attendance_status = models.BooleanField(default=False)
     attendance_fee_status = models.BooleanField(default=False)
     attendance_created_at = models.DateField(auto_now_add=True)
