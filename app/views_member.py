@@ -6,6 +6,7 @@ from .models import *
 from .forms import *
 from .views import context_data
 from .utils import generate_qr_code
+from .constants import *
 
 
 @login_required
@@ -18,8 +19,8 @@ def member_list(request):
     # Optimize query - only fetch what we need
     members_list = Member.objects.all().order_by('-member_join_at')
     
-    # Pagination - 25 items per page
-    paginator = Paginator(members_list, 25)
+    # Pagination
+    paginator = Paginator(members_list, PAGINATION_MEMBER_LIST)
     page = request.GET.get('page', 1)
     
     try:
@@ -35,14 +36,11 @@ def member_list(request):
 
 
 def is_image(file):
-    # Define a list of allowed image file extensions
-    allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif']
-
+    """Check if uploaded file is a valid image"""
     # Get the file extension
     _, file_extension = os.path.splitext(file.name.lower())
-
     # Check if the file extension is in the allowed extensions list
-    return file_extension in allowed_extensions
+    return file_extension in ALLOWED_IMAGE_EXTENSIONS
 
 
 @login_required
@@ -59,7 +57,9 @@ def member_register(request):
             if Member.objects.filter(member_id=member_id).exists():
                 form.add_error('member_id', 'Member with this ID already exists.')
             elif not is_image(profile_picture):
-                form.add_error('member_profile_picture', 'Please upload a valid image file (jpg, jpeg, png, gif).')
+                form.add_error('member_profile_picture', f'Please upload a valid image file ({", ".join(ALLOWED_IMAGE_EXTENSIONS)}).')
+            elif profile_picture.size > MAX_IMAGE_SIZE:
+                form.add_error('member_profile_picture', f'Image size must be less than {MAX_IMAGE_SIZE // (1024*1024)}MB.')
             else:
                 # Create the Member object
                 member = form.save(commit=False)

@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from .forms import *
 from .models import *
 from .views import context_data
+from .constants import PAGINATION_MEETING_LIST
 
 
 @user_passes_test(lambda u: u.is_superuser)
@@ -15,9 +16,9 @@ def meeting_list(request):
     context = context_data(request)
     context['page_name'] = 'Meeting List'
     
-    # Pagination - 25 items per page, ordered by date (newest first)
-    meetings_list = MeetingInfo.objects.all().order_by('-meeting_date')
-    paginator = Paginator(meetings_list, 25)
+    # Pagination - ordered by date (newest first)
+    meetings_list = MeetingInfo.objects.all()
+    paginator = Paginator(meetings_list, PAGINATION_MEETING_LIST)
     page = request.GET.get('page', 1)
     
     try:

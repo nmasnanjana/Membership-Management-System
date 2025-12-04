@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.shortcuts import redirect, render, get_object_or_404
 from .views import context_data
 from .forms import *
+from .constants import PAGINATION_STAFF_LIST
 
 
 def staff_log_in(request):
@@ -64,9 +65,9 @@ def staff_list(request):
     context = context_data(request)
     context['page_name'] = 'Staff List'
     
-    # Pagination - 25 items per page
+    # Pagination
     users_list = User.objects.all().order_by('-date_joined')
-    paginator = Paginator(users_list, 25)
+    paginator = Paginator(users_list, PAGINATION_STAFF_LIST)
     page = request.GET.get('page', 1)
     
     try:

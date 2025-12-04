@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from .forms import *
 from .models import MemberAttendance, MeetingInfo
 from .views import context_data
+from .constants import PAGINATION_ATTENDANCE_LIST, PAGINATION_ATTENDANCE_FULL
 
 
 @login_required
@@ -28,10 +29,24 @@ def attendance_mark(request):
                 # Duplicate record found, show an error message
                 messages.error(request, 'Member attendance is already added for this date.')
             else:
-                # No duplicate record found, save the attendance record
-                form.save()
-                messages.success(request, 'Member attendance has been recorded successfully.')
-                return redirect('attendance_mark')  # Redirect to a success page or a list view
+                # Validate business rule: Fee can only be paid if present
+                attendance_status = form.cleaned_data['attendance_status']
+                fee_status = form.cleaned_data['attendance_fee_status']
+                
+                if fee_status and not attendance_status:
+                    messages.error(request, 'Fee can only be paid if member is present.')
+                else:
+                    # No duplicate record found, save the attendance record
+                    try:
+                        form.save()
+                        messages.success(request, 'Member attendance has been recorded successfully.')
+                        return redirect('attendance_mark')
+                    except Exception as e:
+                        # Handle unique constraint violation
+                        if 'unique' in str(e).lower() or 'duplicate' in str(e).lower():
+                            messages.error(request, 'Member attendance is already added for this date.')
+                        else:
+                            messages.error(request, f'Error saving attendance: {str(e)}')
         else:
             messages.error(request, form.errors)
 
@@ -48,9 +63,9 @@ def attendance_full_view(request):
     context = context_data(request)
     context['page_name'] = 'Attendance Dates-All'
     
-    # Pagination - 25 items per page, ordered by date (newest first)
-    attendance_all_dates_list = MeetingInfo.objects.all().order_by('-meeting_date')
-    paginator = Paginator(attendance_all_dates_list, 25)
+    # Pagination - ordered by date (newest first)
+    attendance_all_dates_list = MeetingInfo.objects.all()
+    paginator = Paginator(attendance_all_dates_list, PAGINATION_ATTENDANCE_FULL)
     page = request.GET.get('page', 1)
     
     try:
@@ -79,8 +94,8 @@ def attendance_date_view(request, meeting_id):
             meeting_date=meeting_id
         ).select_related('member_id', 'meeting_date').order_by('member_id__member_id')
         
-        # Pagination - 50 items per page
-        paginator = Paginator(attendances_list, 50)
+        # Pagination
+        paginator = Paginator(attendances_list, PAGINATION_ATTENDANCE_LIST)
         page = request.GET.get('page', 1)
         
         try:
@@ -120,9 +135,19 @@ def attendance_edit(request, attendance_id, meeting_id):
         if request.method == 'POST':
             form = AttendanceEditForm(request.POST, instance=attendance_to_edit)
             if form.is_valid():
-                form.save()
-                messages.success(request, "Attendance Details Edited Successfully.")
-                return redirect('attendance_date', meeting_id)
+                # Validate business rule: Fee can only be paid if present
+                attendance_status = form.cleaned_data['attendance_status']
+                fee_status = form.cleaned_data['attendance_fee_status']
+                
+                if fee_status and not attendance_status:
+                    messages.error(request, 'Fee can only be paid if member is present.')
+                else:
+                    try:
+                        form.save()
+                        messages.success(request, "Attendance Details Edited Successfully.")
+                        return redirect('attendance_date', meeting_id)
+                    except Exception as e:
+                        messages.error(request, f"Error saving attendance: {str(e)}")
 
         form = AttendanceEditForm(instance=attendance_to_edit)
         context['member_info'] = attendance_to_edit

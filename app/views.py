@@ -8,6 +8,7 @@ from django.db.models import Count
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponse
 from openpyxl import Workbook
+from .constants import PAGINATION_MEMBER_ATTENDANCE_REPORT
 
 
 def context_data(request):
@@ -209,8 +210,8 @@ def member_attendance_report(request, member_id):
             member_id=member_id
         ).select_related('meeting_date').order_by('-meeting_date__meeting_date')
         
-        # Pagination - 30 items per page
-        paginator = Paginator(attendances_list, 30)
+        # Pagination
+        paginator = Paginator(attendances_list, PAGINATION_MEMBER_ATTENDANCE_REPORT)
         page = request.GET.get('page', 1)
         
         try:
