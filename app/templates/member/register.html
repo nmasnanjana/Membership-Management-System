@@ -4,73 +4,121 @@
 
 {% block content %}
     <div class="container">
-        <br>
+        <div class="mb-4">
+            <h1 class="page-title">
+                <i class="fas fa-user-plus text-primary me-2"></i>Register New Member
+            </h1>
+        </div>
+        
         {% if messages %}
-            {% for message in messages%}
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            {% for message in messages %}
+                <div class="alert alert-modern alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'error' %}
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                    {% else %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% endif %}
                     {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             {% endfor %}
         {% endif %}
-        <div class="card shadow">
-            <div class="card-header">
-                <h3 class="text-center">Member Register Form</h3>
+        
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-id-card me-2"></i>Member Information
+                </h5>
             </div>
-
-            <div class="card-body">
+            <div class="modern-card-body">
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
-
-                    <div class="mb-3 form-group">
-                        <label class="form-label">Member ID</label>
-                        {{ form.member_id }}
-                    </div>
-
-                    <div class="mb-3 form-group">
-                        <div class="row">
-                            <label class="form-label"> Full Name </label>
-                            <div class="col-sm">{{ form.member_initials }}</div>
-                            <div class="col-sm">{{ form.member_first_name }}</div>
-                            <div class="col-sm">{{ form.member_last_name }}</div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-hashtag me-1 text-primary"></i>Member ID
+                            </label>
+                            {{ form.member_id }}
+                            {% if form.member_id.errors %}
+                                <div class="text-danger small mt-1">{{ form.member_id.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-user me-1 text-primary"></i>Full Name
+                            </label>
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    {{ form.member_initials }}
+                                    <small class="text-muted">Initials</small>
+                                </div>
+                                <div class="col-md-4">
+                                    {{ form.member_first_name }}
+                                    <small class="text-muted">First Name</small>
+                                </div>
+                                <div class="col-md-5">
+                                    {{ form.member_last_name }}
+                                    <small class="text-muted">Last Name</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-map-marker-alt me-1 text-primary"></i>Address
+                            </label>
+                            {{ form.member_address }}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-birthday-cake me-1 text-primary"></i>Date of Birth
+                            </label>
+                            {{ form.member_dob }}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-phone me-1 text-primary"></i>Phone Number
+                            </label>
+                            {{ form.member_tp_number }}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-university me-1 text-primary"></i>Account Number
+                            </label>
+                            {{ form.member_acc_number }}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-user-shield me-1 text-primary"></i>Guardian/Parent Name
+                            </label>
+                            {{ form.member_guardian_name }}
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-image me-1 text-primary"></i>Profile Picture
+                            </label>
+                            {{ form.member_profile_picture }}
+                            <small class="text-muted">Upload a clear photo (JPG, PNG, GIF)</small>
                         </div>
                     </div>
-
-                    <div class="mb-3 form-group">
-                        <label class="form-label">Address</label>
-                        {{ form.member_address }}
+                    
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary-modern btn-modern">
+                            <i class="fas fa-save me-2"></i>Register Member
+                        </button>
+                        <a href="{% url 'member_list' %}" class="btn btn-secondary btn-modern">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
                     </div>
-
-                    <div class="mb-3 form-group">
-                        <label class="form-label">Date of Birth</label>
-                        {{ form.member_dob }}
-                    </div>
-
-                    <div class="mb-3 form-group">
-                        <label class="form-label">Telephone Number</label>
-                        {{ form.member_tp_number }}
-                    </div>
-
-                    <div class="mb-3 form-group">
-                        <label class="form-label">Account Number</label>
-                        {{ form.member_acc_number }}
-                    </div>
-
-                    <div class="mb-3 form-group">
-                        <label class="form-label">Guardian/Parent Name</label>
-                        {{ form.member_guardian_name }}
-                    </div>
-
-                    <div class="mb-3 form-group">
-                        <label class="form-label">Profile Picture</label>
-                        {{ form.member_profile_picture }}
-                    </div>
-
-                    <button class="btn btn-primary" type="submit">Register</button>
                 </form>
             </div>
-
         </div>
-        <br>
     </div>
 {% endblock content %}
