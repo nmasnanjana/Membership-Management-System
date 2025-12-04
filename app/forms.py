@@ -227,6 +227,19 @@ class AttendanceMarkForm(forms.ModelForm):
 
     def date_label_from_instance(self, obj):
         return f"{obj.meeting_date}"
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        attendance_status = cleaned_data.get('attendance_status')
+        fee_status = cleaned_data.get('attendance_fee_status')
+        
+        # Business rule: Fee can only be paid if member is present
+        if fee_status and not attendance_status:
+            raise forms.ValidationError({
+                'attendance_fee_status': 'Fee can only be paid if member is present.'
+            })
+        
+        return cleaned_data
 
 
 class AttendanceEditForm(forms.ModelForm):
@@ -247,6 +260,19 @@ class AttendanceEditForm(forms.ModelForm):
     class Meta:
         model = MemberAttendance
         fields = ('attendance_status', 'attendance_fee_status')
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        attendance_status = cleaned_data.get('attendance_status')
+        fee_status = cleaned_data.get('attendance_fee_status')
+        
+        # Business rule: Fee can only be paid if member is present
+        if fee_status and not attendance_status:
+            raise forms.ValidationError({
+                'attendance_fee_status': 'Fee can only be paid if member is present.'
+            })
+        
+        return cleaned_data
 
 
 class QRScann(forms.Form):
