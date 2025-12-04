@@ -4,45 +4,68 @@
 
 {% block content %}
     <div class="container">
-        <br>
+        <div class="mb-4">
+            <h1 class="page-title">
+                <i class="fas fa-edit text-primary me-2"></i>Edit Meeting Details
+            </h1>
+        </div>
 
         {% if messages %}
-            {% for message in messages%}
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            {% for message in messages %}
+                <div class="alert alert-modern alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'error' %}
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                    {% else %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% endif %}
                     {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             {% endfor %}
         {% endif %}
 
-        <div class="card shadow">
-            <div class="card-header">
-                <h3 class="text-center">Edit Meeting Details</h3>
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-alt me-2"></i>Meeting: {{ meeting.meeting_date|date:"d M Y" }}
+                </h5>
             </div>
-
-            <div class="card-body">
+            <div class="modern-card-body">
                 <form method="post">
                     {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-calendar me-1 text-primary"></i>Meeting Date
+                            </label>
+                            {{ form.meeting_date }}
+                            {% if form.meeting_date.errors %}
+                                <div class="text-danger small mt-1">{{ form.meeting_date.errors }}</div>
+                            {% endif %}
+                        </div>
 
-                    <div class="mb-3 form-group">
-                        <label class="form-label">Meeting Date</label>
-                        {{ form.meeting_date }}
-                    </div>
-
-                    <div class="mb-3 form-group">
-                        <label class="form-label">Member Fee</label>
-                        {{ form.meeting_fee }}
-                    </div>
-
-                    <div class="container">
-                        <div class="row">
-                            <button class="btn btn-warning" type="submit">Update</button>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-money-bill-wave me-1 text-primary"></i>Member Fee
+                            </label>
+                            {{ form.meeting_fee }}
+                            {% if form.meeting_fee.errors %}
+                                <div class="text-danger small mt-1">{{ form.meeting_fee.errors }}</div>
+                            {% endif %}
                         </div>
                     </div>
 
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-warning-modern btn-modern">
+                            <i class="fas fa-save me-2"></i>Update Meeting
+                        </button>
+                        <a href="{% url 'meeting_list' %}" class="btn btn-secondary btn-modern">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
                 </form>
             </div>
-
         </div>
     </div>
 {% endblock content %}
