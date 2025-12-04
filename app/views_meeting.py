@@ -1,6 +1,7 @@
 from django.contrib import messages
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import user_passes_test
+from django.core.exceptions import ValidationError
 
 from .forms import *
 from .models import *
@@ -18,9 +19,12 @@ def meeting_list(request):
 
 @user_passes_test(lambda u: u.is_superuser)
 def meeting_delete(request, meeting_date):
-    meeting_to_delete = MeetingInfo.objects.get(meeting_date=meeting_date)
-    messages.success(request, "Meeting Information have been deleted successfully")
-    meeting_to_delete.delete()
+    try:
+        meeting_to_delete = get_object_or_404(MeetingInfo, meeting_date=meeting_date)
+        meeting_to_delete.delete()
+        messages.success(request, "Meeting Information has been deleted successfully")
+    except Exception as e:
+        messages.error(request, f"Error deleting meeting: {str(e)}")
     return redirect('meeting_list')
 
 
@@ -31,11 +35,17 @@ def meeting_add(request):
     if request.method == 'POST':
         form = MeetingAddForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, "New Meeting added Successfully")
-            return redirect('meeting_list')
+            meeting_date = form.cleaned_data['meeting_date']
+            # Check for duplicate meeting date
+            if MeetingInfo.objects.filter(meeting_date=meeting_date).exists():
+                form.add_error('meeting_date', 'A meeting with this date already exists.')
+                messages.error(request, "A meeting with this date already exists.")
+            else:
+                form.save()
+                messages.success(request, "New Meeting added Successfully")
+                return redirect('meeting_list')
         else:
-            messages.success(request, "There was an error while Adding a the Meeting Info. Please try again!")
+            messages.error(request, "There was an error while adding the Meeting Info. Please try again!")
     form = MeetingAddForm()
     context['form'] = form
     return render(request, 'meeting/add.html', context)
@@ -45,13 +55,23 @@ def meeting_add(request):
 def meeting_edit(request, meeting_date):
     context = context_data(request)
     context['page_name'] = "Meeting Edit"
-    meeting_to_edit = MeetingInfo.objects.get(meeting_date=meeting_date)
-    form = MeetingAddForm(request.POST or None, instance=meeting_to_edit)
-    if form.is_valid():
-        form.save()
-        messages.success(request, "User Profile has been updated successfully")
-        return redirect('meeting_list')
+    try:
+        meeting_to_edit = get_object_or_404(MeetingInfo, meeting_date=meeting_date)
+        form = MeetingAddForm(request.POST or None, instance=meeting_to_edit)
+        if form.is_valid():
+            new_meeting_date = form.cleaned_data['meeting_date']
+            # Check for duplicate meeting date (excluding current meeting)
+            if MeetingInfo.objects.filter(meeting_date=new_meeting_date).exclude(meeting_id=meeting_to_edit.meeting_id).exists():
+                form.add_error('meeting_date', 'A meeting with this date already exists.')
+                messages.error(request, "A meeting with this date already exists.")
+            else:
+                form.save()
+                messages.success(request, "Meeting Information has been updated successfully")
+                return redirect('meeting_list')
 
-    context['form'] = form
-    context['meeting'] = meeting_to_edit
-    return render(request, 'meeting/edit.html', context)
+        context['form'] = form
+        context['meeting'] = meeting_to_edit
+        return render(request, 'meeting/edit.html', context)
+    except Exception as e:
+        messages.error(request, f"Error editing meeting: {str(e)}")
+        return redirect('meeting_list')
