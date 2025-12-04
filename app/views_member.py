@@ -1,11 +1,11 @@
 import os
-import qrcode
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect
 from .models import *
 from .forms import *
 from .views import context_data
+from .utils import generate_qr_code
 
 
 @login_required
@@ -62,19 +62,8 @@ def member_register(request):
 
                 member.member_profile_picture = profile_picture_path
 
-                # Generate and save the QR code
-                qr_code = qrcode.make(member_id)
-                qr_code_name = f"{member_id}_qr.png"
-                qr_code_path = os.path.join(profile_picture_directory, qr_code_name)
-
-                # Ensure the directory for QR code exists
-                os.makedirs(os.path.dirname(qr_code_path), exist_ok=True)
-
-                # Save the QR code
-                qr_code.save(qr_code_path)
-
-                # Save the Member object with the updated profile picture and QR code path
-                member.member_qr_code = os.path.relpath(qr_code_path, settings.MEDIA_ROOT)
+                # Generate and save the QR code using utility function
+                member.member_qr_code = generate_qr_code(member_id)
                 member.save()
 
                 return redirect('member_list')  # Redirect to a member list view
@@ -89,39 +78,59 @@ def member_register(request):
 def member_view(request, member_id):
     context = context_data(request)
     context['page_name'] = 'List Members'
-    member = Member.objects.get(member_id=member_id)
-    context['member'] = member
-    return render(request, 'member/view.html', context)
+    try:
+        member = Member.objects.get(member_id=member_id)
+        context['member'] = member
+        return render(request, 'member/view.html', context)
+    except Member.DoesNotExist:
+        from django.contrib import messages
+        messages.error(request, 'Member not found.')
+        return redirect('member_list')
 
 
 @user_passes_test(lambda u: u.is_superuser)
 def member_delete(request, member_id):
+    from django.contrib import messages
+    import shutil
+    
     try:
         member = Member.objects.get(member_id=member_id)
 
-        # Get the paths to the profile picture and QR code
-        profile_picture_path = member.member_profile_picture.path
-        qr_code_path = member.member_qr_code.path
+        # Delete the profile picture if it exists
+        if member.member_profile_picture:
+            try:
+                profile_picture_path = member.member_profile_picture.path
+                if os.path.exists(profile_picture_path):
+                    os.remove(profile_picture_path)
+            except (ValueError, OSError):
+                pass  # File doesn't exist or path is invalid
 
-        # Delete the profile picture and QR code files
-        if os.path.exists(profile_picture_path):
-            os.remove(profile_picture_path)
-        if os.path.exists(qr_code_path):
-            os.remove(qr_code_path)
+        # Delete the QR code if it exists
+        if member.member_qr_code:
+            try:
+                qr_code_path = member.member_qr_code.path
+                if os.path.exists(qr_code_path):
+                    os.remove(qr_code_path)
+            except (ValueError, OSError):
+                pass  # File doesn't exist or path is invalid
 
-        # Delete the member's directory
+        # Delete the member's directory if it exists
         member_directory = os.path.join(settings.MEDIA_ROOT, 'profiles', member_id)
         if os.path.exists(member_directory):
-            os.rmdir(member_directory)
+            try:
+                shutil.rmtree(member_directory)
+            except OSError:
+                pass  # Directory doesn't exist or can't be deleted
 
         # Delete the Member object
         member.delete()
+        messages.success(request, 'Member deleted successfully.')
 
-        return redirect('member_list')  # Redirect to a member list view
+        return redirect('member_list')
 
     except Member.DoesNotExist:
-        # Handle the case where the member with the specified ID does not exist
-        return redirect('member_list')  # Redirect to a member list view
+        messages.error(request, 'Member not found.')
+        return redirect('member_list')
 
 
 @login_required
@@ -145,24 +154,23 @@ def member_edit(request, member_id):
                     context['member'] = member
                     return render(request, 'member/edit.html', context)
 
-                # Do not update the profile picture if a new one is not provided
-                if form.cleaned_data['member_profile_picture'] != Member.objects.get(member_id=member_id).member_profile_picture:
-                    if os.path.exists(Member.objects.get(member_id=member_id).member_profile_picture.path):
-                        os.remove(Member.objects.get(member_id=member_id).member_profile_picture.path)
-
-                    form.cleaned_data['member_profile_picture'] = member.member_profile_picture
-
-                    #member = form.save(commit=False)
+                # Check if a new profile picture was uploaded
+                if profile_picture and hasattr(profile_picture, 'name'):
+                    # Delete old profile picture if it exists
+                    if member.member_profile_picture:
+                        old_picture_path = member.member_profile_picture.path
+                        if os.path.exists(old_picture_path):
+                            os.remove(old_picture_path)
 
                     # Set the profile picture upload path
                     profile_picture_name = f"{member_id}_profile.png"
                     profile_picture_path = os.path.join('profiles', member_id, profile_picture_name)
 
-                    # Create the directory for the profile picture and QR code
+                    # Create the directory for the profile picture
                     profile_picture_directory = os.path.join(settings.MEDIA_ROOT, 'profiles', member_id)
                     os.makedirs(profile_picture_directory, exist_ok=True)
 
-                    # Save the profile picture
+                    # Save the new profile picture
                     with open(os.path.join(profile_picture_directory, profile_picture_name), 'wb') as profile_file:
                         for chunk in profile_picture.chunks():
                             profile_file.write(chunk)
@@ -170,7 +178,10 @@ def member_edit(request, member_id):
                     member.member_profile_picture = profile_picture_path
 
                 # Update the member details
-                form.save()
+                member = form.save(commit=False)
+                if profile_picture and hasattr(profile_picture, 'name'):
+                    member.member_profile_picture = os.path.join('profiles', member_id, f"{member_id}_profile.png")
+                member.save()
 
                 return redirect('member_list')  # Redirect to a member list view
 
