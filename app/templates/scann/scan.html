@@ -3,28 +3,61 @@
 {% block head %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
-
     <style>
         #preview {
             width: 100%;
             height: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .scanner-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
         }
     </style>
-
 {% endblock head %}
 
 {% block content %}
-
     <div class="container">
-        <br>
-        <div class="row h-100 justify-content-center align-items-center">
-            <div class="col-12 col-md-6">
-                <div class="card shadow">
-                    <div class="card-header text-center">
-                        <h3>QR Code Scanner</h3>
+        <div class="mb-4">
+            <h1 class="page-title">
+                <i class="fas fa-qrcode text-primary me-2"></i>QR Code Scanner
+            </h1>
+        </div>
+        
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6">
+                <div class="modern-card">
+                    <div class="modern-card-header text-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-camera me-2"></i>Scan Member QR Code
+                        </h5>
                     </div>
-                    <div class="card-body text-center">
-                        <video id="preview"></video>
+                    <div class="modern-card-body text-center">
+                        <div class="scanner-container mb-3">
+                            <video id="preview" autoplay playsinline></video>
+                        </div>
+                        <p class="text-muted mb-0">
+                            <i class="fas fa-info-circle me-1"></i>Point your camera at a member's QR code
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="modern-card mt-3">
+                    <div class="modern-card-body">
+                        <form method="post" id="myForm">
+                            {% csrf_token %}
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-hashtag me-1 text-primary"></i>Or Enter Member ID Manually
+                            </label>
+                            <div class="input-group">
+                                {{ form.member_id }}
+                                <button type="submit" class="btn btn-primary-modern">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -32,11 +65,14 @@
     </div>
 
     <script type="text/javascript">
-        let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+        let scanner = new Instascan.Scanner({ 
+            video: document.getElementById('preview'),
+            mirror: false
+        });
 
         scanner.addListener('scan', function (content) {
             document.getElementById('id_member_id').value = content;
-            submitForm();
+            document.getElementById('myForm').submit();
         });
 
         Instascan.Camera.getCameras().then(function (cameras) {
@@ -44,39 +80,11 @@
                 scanner.start(cameras[0]);
             } else {
                 console.error('No cameras found.');
+                document.getElementById('preview').style.display = 'none';
             }
         }).catch(function (e) {
             console.error(e);
+            document.getElementById('preview').style.display = 'none';
         });
     </script>
-
-    <form method="post" id="myForm" style="display:none;">
-        {% csrf_token %}
-        <div class="card mt-3">
-            <div class="card-body">
-                <label class="form-label">Member ID:</label>
-                {{ form.member_id }}
-            </div>
-            <div class="card-footer">
-                <input type="submit" style="display:none;" id="submitBtn">
-            </div>
-        </div>
-    </form>
-
-    <script>
-        const form = document.getElementById('myForm');
-        const field1 = document.getElementById('id_member_id');
-        const submitButton = document.getElementById('submitBtn');
-
-        field1.addEventListener('input', function () {
-            form.submit();
-        });
-
-        function submitForm() {
-            form.submit();
-        }
-    </script>
-
-    </div>
-
 {% endblock content %}
