@@ -1,0 +1,33 @@
+"""
+Constants for Membership Management System
+"""
+
+# Pagination
+PAGINATION_MEMBER_LIST = 25
+PAGINATION_STAFF_LIST = 25
+PAGINATION_MEETING_LIST = 25
+PAGINATION_ATTENDANCE_LIST = 50
+PAGINATION_ATTENDANCE_FULL = 25
+PAGINATION_MEMBER_ATTENDANCE_REPORT = 25
+
+# File Upload
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB in bytes
+ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif']
+
+# Validation
+MEMBER_ID_MIN_LENGTH = 4
+MEMBER_ID_MAX_LENGTH = 10
+PHONE_NUMBER_LENGTH = 10
+
+# Member Status
+MEMBER_ACTIVE = True
+MEMBER_INACTIVE = False
+
+# Attendance Status
+ATTENDANCE_PRESENT = True
+ATTENDANCE_ABSENT = False
+
+# Fee Payment Status
+FEE_PAID = True
+FEE_NOT_PAID = False
+
