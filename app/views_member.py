@@ -64,33 +64,39 @@ def member_register(request):
         form = MemberRegisterForm(request.POST, request.FILES)
         if form.is_valid():
             member_id = form.cleaned_data['member_id']
-            profile_picture = form.cleaned_data['member_profile_picture']
+            profile_picture = form.cleaned_data.get('member_profile_picture')
 
             # Check if a member with the same ID already exists
             if Member.objects.filter(member_id=member_id).exists():
                 form.add_error('member_id', 'Member with this ID already exists.')
-            # Enhanced security validation
-            file_validation = validate_file_security(profile_picture)
-            if file_validation is not True:
-                form.add_error('member_profile_picture', file_validation)
-            else:
+            
+            # Validate profile picture if provided
+            if profile_picture:
+                file_validation = validate_file_security(profile_picture)
+                if file_validation is not True:
+                    form.add_error('member_profile_picture', file_validation)
+            
+            # Only proceed if no errors were added
+            if not form.errors:
                 # Create the Member object
                 member = form.save(commit=False)
-
-                # Set the profile picture upload path
-                profile_picture_name = f"{member_id}_profile.png"
-                profile_picture_path = os.path.join('profiles', member_id, profile_picture_name)
 
                 # Create the directory for the profile picture and QR code
                 profile_picture_directory = os.path.join(settings.MEDIA_ROOT, 'profiles', member_id)
                 os.makedirs(profile_picture_directory, exist_ok=True)
 
-                # Save the profile picture
-                with open(os.path.join(profile_picture_directory, profile_picture_name), 'wb') as profile_file:
-                    for chunk in profile_picture.chunks():
-                        profile_file.write(chunk)
+                # Handle profile picture if provided
+                if profile_picture:
+                    # Set the profile picture upload path
+                    profile_picture_name = f"{member_id}_profile.png"
+                    profile_picture_path = os.path.join('profiles', member_id, profile_picture_name)
 
-                member.member_profile_picture = profile_picture_path
+                    # Save the profile picture
+                    with open(os.path.join(profile_picture_directory, profile_picture_name), 'wb') as profile_file:
+                        for chunk in profile_picture.chunks():
+                            profile_file.write(chunk)
+
+                    member.member_profile_picture = profile_picture_path
 
                 # Generate and save the QR code using utility function
                 member.member_qr_code = generate_qr_code(member_id)
@@ -171,10 +177,31 @@ def member_edit(request, member_id):
         member = Member.objects.get(member_id=member_id)
 
         if request.method == 'POST':
-            form = MemberEditForm(request.POST, request.FILES, instance=member)
+            form = MemberEditForm(request.POST, request.FILES, instance=member, user=request.user)
             if form.is_valid():
                 new_member_id = form.cleaned_data['member_id']
-                profile_picture = form.cleaned_data['member_profile_picture']
+                profile_picture = form.cleaned_data.get('member_profile_picture')
+                
+                # Role validation (only for superusers)
+                if request.user.is_superuser:
+                    new_role = form.cleaned_data.get('member_role', '')
+                    from .constants import UNIQUE_ROLES
+                    
+                    # Check if assigning a unique role that's already taken
+                    if new_role in UNIQUE_ROLES:
+                        existing_member = Member.objects.filter(
+                            member_role=new_role,
+                            member_is_active=True
+                        ).exclude(member_id=member_id).first()
+                        
+                        if existing_member:
+                            form.add_error(
+                                'member_role',
+                                f'This role is already assigned to {existing_member.member_initials} {existing_member.member_first_name} {existing_member.member_last_name}. Only one member can have this role.'
+                            )
+                            context['form'] = form
+                            context['member'] = member
+                            return render(request, 'member/edit.html', context)
 
                 # Check if the new member ID is the same as the current one
                 if new_member_id != member_id:
@@ -219,13 +246,21 @@ def member_edit(request, member_id):
                 member = form.save(commit=False)
                 if profile_picture and hasattr(profile_picture, 'name'):
                     member.member_profile_picture = os.path.join('profiles', member_id, f"{member_id}_profile.png")
+                
+                # For superusers, ensure member_is_active and member_role are saved
+                if request.user.is_superuser:
+                    member_is_active = form.cleaned_data.get('member_is_active', True)
+                    member_role = form.cleaned_data.get('member_role', '')
+                    member.member_is_active = member_is_active
+                    member.member_role = member_role
+                
                 member.save()
 
                 return redirect('member_list')  # Redirect to a member list view
 
         else:
             # Prepopulate the form with existing member data
-            form = MemberEditForm(instance=member)
+            form = MemberEditForm(instance=member, user=request.user)
 
         context['form'] = form
         context['member'] = member
