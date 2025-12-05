@@ -15,12 +15,19 @@ A comprehensive Django-based web application for managing members, meetings, and
 - **Member Profiles**: Store member details including:
   - Personal information (name, address, date of birth)
   - Contact details (phone number, account number)
-  - Profile pictures
+  - Profile pictures (optional)
   - Guardian information
   - Active/Inactive status
+  - Club roles (President, Secretary, Treasury, Vice roles, Committee Member)
+- **Member Roles**: 
+  - Assign roles to members (superuser only)
+  - Unique role enforcement (only one person per main/sub role)
+  - Role display with special symbols (crown, star, users icon)
+  - Dashboard widgets showing members by role
 - **QR Code Generation**: Automatic QR code generation for each member
 - **Member Viewing & Editing**: View and update member information
 - **Member Reports**: Generate detailed attendance reports per member
+- **Automatic Deactivation**: Members missing 3 consecutive meetings are automatically deactivated
 
 ### 📅 Meeting Management
 - **Meeting Creation**: Create and manage meetings with dates and fees
@@ -28,11 +35,16 @@ A comprehensive Django-based web application for managing members, meetings, and
 - **Duplicate Prevention**: Validation to prevent duplicate meeting dates
 
 ### ✅ Attendance Tracking
-- **Mark Attendance**: Record member attendance for meetings
+- **Mark Attendance**: Record member attendance for meetings (single or bulk)
+- **Bulk Attendance Marking**: Mark attendance for multiple members at once
 - **Attendance Status**: Track both attendance and fee payment status
+- **Fee Payment**: Members can pay fees even if absent (flexible payment system)
 - **View by Date**: View attendance records for specific meeting dates
-- **Edit Attendance**: Update attendance records after marking
+- **Edit Attendance**: Update attendance records after marking (superuser only)
+- **Permission System**: Normal staff can only mark new attendance; only superusers can edit/delete
+- **Auto-save**: Bulk marking auto-saves data in browser for recovery
 - **Duplicate Prevention**: Prevent duplicate attendance entries
+- **Quick Actions**: "Mark All Present" button for faster marking
 
 ### 📊 Dashboard & Analytics
 - **Statistics Overview**: 
@@ -40,23 +52,51 @@ A comprehensive Django-based web application for managing members, meetings, and
   - Total meetings
   - Latest meeting attendance count
   - Annual attendance trends
+- **Finance Widget**: 
+  - Total collected fees (all paid fees)
+  - Amount to receive (attended but unpaid fees)
+- **Member Roles Display**: 
+  - Main roles (President, Secretary, Treasury)
+  - Vice roles (Vice President, Vice Secretary, Vice Treasury)
+  - Committee members
 - **Visual Charts**: Interactive attendance charts using Chart.js
 - **Progress Indicators**: Visual representation of active vs passive members
+- **Automatic Member Deactivation**: Members missing 3 consecutive meetings are automatically deactivated
 
 ### 📤 Data Export
 - **Excel Export**: Export member details to Excel
 - **Attendance Reports**: Export attendance reports by meeting or member
 - **Formatted Data**: Well-structured Excel files with proper headers
 
-### 🔐 User Management
+### 🔐 User Management & Security
 - **Staff Registration**: Register staff members (superuser only)
 - **Authentication**: Secure login/logout system
+- **Session Management**: 6-hour session timeout with activity extension
 - **Password Management**: Change password and reset functionality
 - **Profile Management**: Edit user profiles
-- **Role-Based Access**: Different permissions for staff and superusers
+- **Role-Based Access Control (RBAC)**: 
+  - Different permissions for staff and superusers
+  - Normal staff: Can mark new attendance, cannot edit existing
+  - Superusers: Full access including edit/delete operations
+- **Site Security**: All pages require authentication; login screen is first thing users see
+- **OWASP Top 10 Security**: 
+  - Security headers middleware
+  - Rate limiting for login attempts
+  - Account lockout after failed attempts
+  - Enhanced password validators
+  - Secure session and CSRF cookies
+  - File upload validation
+  - Input sanitization and XSS/SQL injection detection
+  - Security logging
 
 ### 🔍 QR Code Scanner
 - **QR Code Scanning**: Scan member QR codes to quickly view member profiles
+- **Optimized Performance**: 
+  - Duplicate scan prevention (2-second cooldown)
+  - Smart camera selection (prefers back camera on mobile)
+  - Optimized scan period for faster detection
+- **Error Handling**: Clear messages for camera permission issues
+- **Manual Entry**: Option to enter member ID manually if scanning fails
 - **Quick Access**: Fast member lookup using QR codes
 
 ---
@@ -206,17 +246,31 @@ The application will be available at `http://127.0.0.1:8000/`
 
 ### Marking Attendance
 
-1. **Mark Attendance**:
+1. **Single Attendance Marking**:
    - Go to "Attendance Marking"
    - Select meeting date and member
    - Mark attendance status (Present/Absent)
-   - Mark fee payment status (Paid/Not Paid)
+   - Mark fee payment status (Paid/Not Paid) - can pay even if absent
    - Save
 
-2. **View Attendance**:
+2. **Bulk Attendance Marking**:
+   - Go to "Bulk Mark Attendance"
+   - Select meeting from dropdown
+   - See all active members in a searchable table
+   - Mark present/absent and fee status for multiple members
+   - Use "Mark All Present" for quick action
+   - Auto-save feature prevents data loss
+   - Submit all at once
+
+3. **View Attendance**:
    - Go to "Attendance" → Select a date
    - View all attendance records for that meeting
    - Edit or delete records (Superuser only)
+   - Normal staff can only view, cannot edit existing records
+
+4. **Permissions**:
+   - **Normal Staff**: Can mark new attendance only
+   - **Superusers**: Can mark, edit, and delete attendance
 
 ### Generating Reports
 
@@ -234,9 +288,12 @@ The application will be available at `http://127.0.0.1:8000/`
 ### QR Code Scanning
 
 1. **Scan QR Code**:
-   - Navigate to "QR Scan"
-   - Enter member ID or scan QR code
-   - View member profile instantly
+   - Navigate to "QR Scan" (requires login)
+   - Point camera at member's QR code
+   - Scanner automatically detects and redirects to member profile
+   - Or enter member ID manually
+   - Optimized for mobile devices with back camera preference
+   - Duplicate scan prevention (2-second cooldown)
 
 ---
 
@@ -287,9 +344,11 @@ Membership-Management-System/
 - `member_id` (Primary Key)
 - Personal information (name, address, DOB)
 - Contact details (phone, account number)
-- Profile picture and QR code
-- Active status
+- Profile picture (optional) and QR code
+- Active status (automatically deactivated after 3 missed meetings)
+- Member role (President, Secretary, Treasury, Vice roles, Committee Member, or None)
 - Join date
+- Updated timestamp
 
 ### MeetingInfo
 - `meeting_id` (Primary Key)
@@ -301,36 +360,60 @@ Membership-Management-System/
 - `meeting_date` (ForeignKey to MeetingInfo)
 - `member_id` (ForeignKey to Member)
 - `attendance_status` (Present/Absent)
-- `attendance_fee_status` (Paid/Not Paid)
+- `attendance_fee_status` (Paid/Not Paid) - Can be paid even if absent
 - `attendance_created_at`
+- `attendance_updated_at`
+- Unique constraint on (meeting_date, member_id) to prevent duplicates
 
 ---
 
 ## 🔗 Key URLs
 
-- `/` - Dashboard
+- `/` - Dashboard (requires login)
 - `/login/` - Staff login
 - `/logout/` - Logout
-- `/member/list/` - List all members
-- `/member/register/` - Register new member
-- `/member/view/<member_id>/` - View member details
-- `/member/edit/<member_id>/` - Edit member
-- `/meeting/list/` - List all meetings
-- `/meeting/add/` - Add new meeting
-- `/attendance/mark/` - Mark attendance
-- `/attendance/date/all` - View all attendance dates
-- `/qr_scan/` - QR code scanner
+- `/member/list/` - List all members (requires login)
+- `/member/register/` - Register new member (requires login)
+- `/member/view/<member_id>/` - View member details (requires login)
+- `/member/edit/<member_id>/` - Edit member (requires login)
+- `/meeting/list/` - List all meetings (superuser only)
+- `/meeting/add/` - Add new meeting (superuser only)
+- `/attendance/mark/` - Mark attendance (single) (requires login)
+- `/attendance/bulk/` - Bulk attendance marking (requires login)
+- `/attendance/date/all` - View all attendance dates (requires login)
+- `/attendance/date/<meeting_id>` - View attendance for specific meeting (requires login)
+- `/qr_scan/` - QR code scanner (requires login)
 
 ---
 
 ## 🔒 Security Features
 
-- **Authentication**: Django's built-in authentication system
+- **Authentication**: Django's built-in authentication system with 6-hour session timeout
 - **Authorization**: Role-based access control (Staff/Superuser)
-- **CSRF Protection**: Enabled by default
+- **Site-Wide Protection**: All pages require authentication; login screen is first thing users see
+- **CSRF Protection**: Enabled by default with secure cookie settings
 - **Secure Settings**: Environment-based configuration
 - **Input Validation**: Form validation and data sanitization
 - **SQL Injection Protection**: Django ORM protection
+- **XSS Protection**: Input sanitization and validation
+- **File Upload Security**: 
+  - File type validation (MIME type checking)
+  - File size limits
+  - Content scanning
+  - Filename sanitization
+- **Rate Limiting**: Login attempt rate limiting
+- **Account Lockout**: Temporary lockout after multiple failed login attempts
+- **Security Headers**: 
+  - Content Security Policy (CSP)
+  - X-Frame-Options
+  - X-Content-Type-Options
+  - HSTS (HTTP Strict Transport Security)
+- **Security Logging**: All security events are logged
+- **Session Security**: 
+  - Secure cookies (HTTPS in production)
+  - HttpOnly cookies
+  - SameSite protection
+  - Session expires on browser close
 
 ---
 
@@ -366,6 +449,11 @@ For development, ensure `DEBUG=True` in your `.env` file. For production, always
 - Media files are stored in the `media/` directory
 - QR codes are automatically generated in PNG format
 - Excel exports use the `.xlsx` format
+- Session timeout is set to 6 hours (can be adjusted in settings)
+- Automatic member deactivation runs via Django signals (no cron jobs needed)
+- Bulk attendance marking includes auto-save feature (data saved in browser)
+- All pages require authentication - site is fully secured
+- Normal staff can only mark new attendance; superusers have full access
 
 ---
 
