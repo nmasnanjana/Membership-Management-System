@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Django Web Application
+  web:
+    build: .
+    container_name: mms_web
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:${PORT:-8000}"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - PORT=${PORT:-8000}
+    volumes:
+      - ./media:/app/media
+      - ./staticfiles:/app/staticfiles
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - mms_network
+    command: sh -c "python manage.py collectstatic --noinput && python manage.py migrate && gunicorn mms.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3"
+
+  # MySQL Database Server
+  db:
+    image: mysql:8.0
+    container_name: mms_db
+    restart: unless-stopped
+    environment:
+      - MYSQL_DATABASE=${DB_NAME:-membership_db}
+      - MYSQL_USER=${DB_USER:-mms_user}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root_password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root_password}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mms_network
+    # Not exposing MySQL port to host - only accessible within Docker network
+
+networks:
+  mms_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+
