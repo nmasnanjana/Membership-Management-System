@@ -47,6 +47,13 @@ def staff_log_in(request):
                 login(request, user)
                 clear_login_attempts(username)  # Clear failed attempts on success
                 logger.info(f'Successful login: {username}')
+                audit_log_security_event(
+                    request=request,
+                    event_type='login_success',
+                    severity='INFO',
+                    target=f'user:{username}',
+                    extra_details={'username': username}
+                )
                 messages.success(request, "You have been logged in successfully!")
                 
                 # Redirect to the 'next' parameter if provided, otherwise to dashboard
@@ -57,17 +64,39 @@ def staff_log_in(request):
             else:
                 messages.error(request, "Your account has been deactivated. Please contact administrator.")
                 logger.warning(f'Login attempt on inactive account: {username}')
+            audit_log_security_event(
+                request=request,
+                event_type='login_attempt_inactive_account',
+                severity='WARNING',
+                target=f'user:{username}',
+                extra_details={'username': username}
+            )
         else:
             record_failed_login(username)
             messages.error(request, "Username or Password is incorrect. Please try again.")
             logger.warning(f'Failed login attempt: {username}')
+            audit_log_security_event(
+                request=request,
+                event_type='login_failed',
+                severity='WARNING',
+                target=f'user:{username}',
+                extra_details={'username': username}
+            )
 
     return render(request, 'staff/login.html', context)
 
 
 @login_required
 def staff_log_out(request):
+    username = request.user.username if request.user.is_authenticated else 'unknown'
     logout(request)
+    audit_log_security_event(
+        request=request,
+        event_type='logout',
+        severity='INFO',
+        target=f'user:{username}',
+        extra_details={'username': username}
+    )
     messages.success(request, "You have been logged out successfully")
     return redirect('login')
 
@@ -79,7 +108,17 @@ def staff_register(request):
     if request.method == 'POST':
         form = StaffRegisterForm(request.POST)
         if form.is_valid():
-            form.save()
+            user = form.save()
+            # Audit log: staff created
+            audit_log_user_action(
+                request=request,
+                action='staff_created',
+                target=f'user:{user.username}',
+                extra_details={
+                    'username': user.username,
+                    'is_superuser': user.is_superuser,
+                }
+            )
             messages.success(request, "Staff added Successfully")
             return redirect('staff_list')
         else:
@@ -121,7 +160,22 @@ def staff_delete(request, staff_id):
         if staff_to_delete == request.user:
             messages.error(request, "You cannot delete your own account.")
             return redirect('staff_list')
+        
+        # Audit log: staff deletion
+        username = staff_to_delete.username
+        is_superuser = staff_to_delete.is_superuser
         staff_to_delete.delete()
+        
+        audit_log_user_action(
+            request=request,
+            action='staff_deleted',
+            target=f'user:{username}',
+            extra_details={
+                'username': username,
+                'was_superuser': is_superuser,
+            }
+        )
+        
         messages.success(request, "User has been deleted successfully")
     except Exception as e:
         messages.error(request, f"Error deleting user: {str(e)}")
