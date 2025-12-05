@@ -104,7 +104,7 @@ A comprehensive Django-based web application for managing members, meetings, and
 ## 🛠️ Technology Stack
 
 - **Backend Framework**: Django 4.2.5
-- **Database**: SQLite (development) / PostgreSQL (production-ready)
+- **Database**: MySQL (configured via environment variables)
 - **Frontend**: 
   - Bootstrap 5
   - Chart.js (for analytics)
@@ -117,6 +117,8 @@ A comprehensive Django-based web application for managing members, meetings, and
   - `Pillow` - Image processing
   - `openpyxl` - Excel file generation
   - `python-decouple` - Environment variable management
+  - `PyMySQL` - MySQL database connector for Python
+  - `PyMySQL` - MySQL database connector for Python
 
 ---
 
@@ -180,7 +182,17 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 python manage.py migrate
 ```
 
-This will create the database tables automatically (SQLite database will be created as `db.sqlite3`).
+**Important**: Before running migrations, make sure:
+1. MySQL server is running
+2. Database is created: `CREATE DATABASE membership_db;` (or your configured DB_NAME)
+3. Database user has proper permissions
+
+Then run migrations:
+```bash
+python manage.py migrate
+```
+
+This will create all database tables in your MySQL database.
 
 ### 7. Create Superuser
 
@@ -329,7 +341,6 @@ Membership-Management-System/
 │
 ├── static/                       # Static files directory
 ├── media/                         # Media files (uploaded images)
-├── db.sqlite3                     # SQLite database (auto-generated)
 ├── manage.py                     # Django management script
 ├── requirements.txt              # Python dependencies
 ├── .env                          # Environment variables (create this)
@@ -444,8 +455,9 @@ For development, ensure `DEBUG=True` in your `.env` file. For production, always
 
 ## 📝 Notes
 
-- The system uses SQLite by default for development
-- For production, consider using PostgreSQL or MySQL
+- The system uses MySQL database (configured via .env file)
+- Database credentials are stored in `.env` file (DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)
+- Make sure MySQL server is running and database is created before running migrations
 - Media files are stored in the `media/` directory
 - QR codes are automatically generated in PNG format
 - Excel exports use the `.xlsx` format
