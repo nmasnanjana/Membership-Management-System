@@ -82,10 +82,10 @@
                                         </div>
                                     {% endif %}
                                 </div>
-                            </div>
                         </div>
                     </div>
-                    
+                </div>
+
                     <!-- Member Details -->
                     <div class="col-md-12">
                         <hr class="my-4">
@@ -96,7 +96,7 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-muted">Member ID</label>
                                 <div class="form-control-modern bg-light">{{ member.member_id }}</div>
-                            </div>
+                </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-muted">Full Name</label>
                                 <div class="form-control-modern bg-light">
@@ -122,11 +122,11 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-muted">Guardian/Parent Name</label>
                                 <div class="form-control-modern bg-light">{{ member.member_guardian_name }}</div>
-                            </div>
+                                    </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-muted">Join Date</label>
                                 <div class="form-control-modern bg-light">{{ member.member_join_at|date:"d M Y" }}</div>
-                            </div>
+                                </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold text-muted">Status</label>
                                 <div class="form-control-modern bg-light">
@@ -134,7 +134,7 @@
                                         <span class="badge bg-success">Active</span>
                                     {% else %}
                                         <span class="badge bg-warning">Inactive</span>
-                                    {% endif %}
+                            {% endif %}
                                 </div>
                             </div>
                             {% if member.member_role %}
@@ -153,7 +153,7 @@
                                         <span class="badge bg-success">
                                             <i class="fas fa-users me-1"></i>{{ member.get_member_role_display }}
                                         </span>
-                                    {% endif %}
+                            {% endif %}
                                 </div>
                             </div>
                             {% endif %}

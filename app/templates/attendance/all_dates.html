@@ -56,11 +56,11 @@
                                         <a class="btn btn-sm btn-primary-modern" href="{% url 'attendance_date' attendance.meeting_id %}">
                                             <i class="fas fa-eye me-1"></i>View
                                         </a>
-                                        {% if user.is_superuser %}
+                                    {% if user.is_superuser %}
                                             <a class="btn btn-sm btn-success-modern" href="{% url 'export_attendance_report' attendance.meeting_id %}">
                                                 <i class="fas fa-download me-1"></i>Export
                                             </a>
-                                        {% endif %}
+                                    {% endif %}
                                     </div>
                                 </td>
                             </tr>

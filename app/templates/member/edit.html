@@ -33,15 +33,15 @@
             <div class="modern-card-body">
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
-                    
+
                     <div class="row g-3">
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-hashtag me-1 text-primary"></i>Member ID
                             </label>
-                            {{ form.member_id }}
-                        </div>
-                        
+                        {{ form.member_id }}
+                    </div>
+
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-user me-1 text-primary"></i>Full Name
@@ -59,49 +59,49 @@
                                     {{ form.member_last_name }}
                                     <small class="text-muted">Last Name</small>
                                 </div>
-                            </div>
                         </div>
-                        
+                    </div>
+
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-map-marker-alt me-1 text-primary"></i>Address
                             </label>
-                            {{ form.member_address }}
-                        </div>
-                        
+                        {{ form.member_address }}
+                    </div>
+
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-birthday-cake me-1 text-primary"></i>Date of Birth
                             </label>
-                            {{ form.member_dob }}
-                        </div>
-                        
+                        {{ form.member_dob }}
+                    </div>
+
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-phone me-1 text-primary"></i>Phone Number
                             </label>
-                            {{ form.member_tp_number }}
-                        </div>
-                        
+                        {{ form.member_tp_number }}
+                    </div>
+
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-university me-1 text-primary"></i>Account Number
                             </label>
-                            {{ form.member_acc_number }}
-                        </div>
-                        
+                        {{ form.member_acc_number }}
+                    </div>
+
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-user-shield me-1 text-primary"></i>Guardian/Parent Name
                             </label>
-                            {{ form.member_guardian_name }}
-                        </div>
-                        
+                        {{ form.member_guardian_name }}
+                    </div>
+
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-image me-1 text-primary"></i>Profile Picture
                             </label>
-                            {{ form.member_profile_picture }}
+                        {{ form.member_profile_picture }}
                             <small class="text-muted">Leave empty to keep current picture</small>
                         </div>
                         
@@ -119,8 +119,8 @@
                                 {% if form.member_is_active.help_text %}
                                     <small class="text-muted d-block mt-1">{{ form.member_is_active.help_text }}</small>
                                 {% endif %}
-                            </div>
-                            
+                    </div>
+
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">
                                     <i class="fas fa-user-tag me-1 text-primary"></i>Club Role
@@ -131,7 +131,7 @@
                                 {% endif %}
                             </div>
                         {% endif %}
-                    </div>
+                        </div>
                     
                     <div class="mt-4 d-flex gap-2">
                         <button type="submit" class="btn btn-warning-modern btn-modern">

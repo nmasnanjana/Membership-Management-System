@@ -33,18 +33,18 @@
             <div class="modern-card-body">
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
-                    
+
                     <div class="row g-3">
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-hashtag me-1 text-primary"></i>Member ID
                             </label>
-                            {{ form.member_id }}
+                        {{ form.member_id }}
                             {% if form.member_id.errors %}
                                 <div class="text-danger small mt-1">{{ form.member_id.errors }}</div>
                             {% endif %}
-                        </div>
-                        
+                    </div>
+
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-user me-1 text-primary"></i>Full Name
@@ -62,53 +62,53 @@
                                     {{ form.member_last_name }}
                                     <small class="text-muted">Last Name</small>
                                 </div>
-                            </div>
                         </div>
-                        
+                    </div>
+
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-map-marker-alt me-1 text-primary"></i>Address
                             </label>
-                            {{ form.member_address }}
-                        </div>
-                        
+                        {{ form.member_address }}
+                    </div>
+
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-birthday-cake me-1 text-primary"></i>Date of Birth
                             </label>
-                            {{ form.member_dob }}
-                        </div>
-                        
+                        {{ form.member_dob }}
+                    </div>
+
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-phone me-1 text-primary"></i>Phone Number
                             </label>
-                            {{ form.member_tp_number }}
-                        </div>
-                        
+                        {{ form.member_tp_number }}
+                    </div>
+
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-university me-1 text-primary"></i>Account Number
                             </label>
-                            {{ form.member_acc_number }}
-                        </div>
-                        
+                        {{ form.member_acc_number }}
+                    </div>
+
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-user-shield me-1 text-primary"></i>Guardian/Parent Name
                             </label>
-                            {{ form.member_guardian_name }}
-                        </div>
-                        
+                        {{ form.member_guardian_name }}
+                    </div>
+
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">
                                 <i class="fas fa-image me-1 text-primary"></i>Profile Picture
                             </label>
-                            {{ form.member_profile_picture }}
+                        {{ form.member_profile_picture }}
                             <small class="text-muted">Upload a clear photo (JPG, PNG, GIF)</small>
                         </div>
                     </div>
-                    
+
                     <div class="mt-4 d-flex gap-2">
                         <button type="submit" class="btn btn-primary-modern btn-modern">
                             <i class="fas fa-save me-2"></i>Register Member
