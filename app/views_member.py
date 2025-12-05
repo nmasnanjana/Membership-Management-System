@@ -111,6 +111,7 @@ def member_register(request):
     return render(request, 'member/register.html', context)
 
 
+@login_required
 def member_view(request, member_id):
     context = context_data(request)
     context['page_name'] = 'List Members'
