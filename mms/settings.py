@@ -91,13 +91,15 @@ WSGI_APPLICATION = 'mms.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 # MySQL Database Configuration
+# Database credentials are read from .env file
+# In Docker, DB_HOST should be 'db' (the MySQL service name)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': config('DB_NAME', default='membership_db'),
-        'USER': config('DB_USER', default='root'),
+        'USER': config('DB_USER', default='mms_user'),
         'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST': config('DB_HOST', default='localhost'),
+        'HOST': config('DB_HOST', default='localhost'),  # Use 'db' in Docker Compose
         'PORT': config('DB_PORT', default='3306'),
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
