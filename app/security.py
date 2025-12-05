@@ -122,7 +122,11 @@ class SecurityLoggingMiddleware(MiddlewareMixin):
         if any(request.path.startswith(path) for path in sensitive_paths):
             ip_address = self.get_client_ip(request)
             user = getattr(request, 'user', None)
-            username = user.username if user.is_authenticated else 'anonymous'
+            # Safely get username, handling None user
+            if user and hasattr(user, 'is_authenticated') and user.is_authenticated:
+                username = getattr(user, 'username', 'unknown')
+            else:
+                username = 'anonymous'
             
             logger.info(
                 f'Security Event: {request.method} {request.path} | '

@@ -260,6 +260,60 @@
             background-color: var(--primary-color);
             border-color: var(--primary-color);
         }
+        
+        /* Form Switch Styling */
+        .form-check.form-switch {
+            padding-left: 3.5rem;
+        }
+        
+        .form-check.form-switch .form-check-input {
+            width: 3rem;
+            height: 1.75rem;
+            margin-left: -3.5rem;
+            background-color: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            border-radius: 1.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-image: none;
+            position: relative;
+        }
+        
+        .form-check.form-switch .form-check-input::before {
+            content: '';
+            position: absolute;
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 50%;
+            background-color: #ffffff;
+            top: 0.125rem;
+            left: 0.125rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .form-check.form-switch .form-check-input:checked {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            background-image: none;
+        }
+        
+        .form-check.form-switch .form-check-input:checked::before {
+            left: 1.625rem;
+            background-color: #ffffff;
+        }
+        
+        .form-check.form-switch .form-check-input:focus {
+            box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.25);
+            outline: none;
+        }
+        
+        .form-check.form-switch .form-check-label {
+            cursor: pointer;
+            user-select: none;
+            margin-left: 0.75rem;
+            color: var(--text-primary);
+        }
 
         .form-check-label {
             color: var(--text-primary);
@@ -510,11 +564,19 @@
             justify-content: center;
             border-radius: 4px;
             transition: all 0.2s ease;
+            z-index: 10;
+            position: relative;
+            pointer-events: auto;
         }
         
         .toast-close-btn:hover {
             background: var(--bg-tertiary);
             color: var(--text-primary);
+        }
+        
+        .toast-close-btn:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
         }
         
         /* Toast Type Colors */
@@ -688,7 +750,7 @@
                     <div class="toast-icon">
                         <i class="fas ${icons[toastType]}"></i>
                     </div>
-                    <button type="button" class="toast-close-btn" onclick="closeToast(this)">
+                    <button type="button" class="toast-close-btn" aria-label="Close">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -701,6 +763,27 @@
             `;
             
             container.appendChild(toast);
+            
+            // Add click event listener to close button - ensure it's clickable
+            const closeBtn = toast.querySelector('.toast-close-btn');
+            if (closeBtn) {
+                // Ensure button is clickable
+                closeBtn.style.pointerEvents = 'auto';
+                closeBtn.style.zIndex = '1000';
+                
+                // Add click event with multiple handlers to ensure it works
+                const closeHandler = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    closeToastElement(toast);
+                    return false;
+                };
+                
+                closeBtn.addEventListener('click', closeHandler, true);
+                closeBtn.addEventListener('mousedown', closeHandler, true);
+                closeBtn.addEventListener('touchstart', closeHandler, true);
+            }
             
             // Trigger animation
             setTimeout(() => {
@@ -716,12 +799,17 @@
             toast.dataset.timeoutId = autoCloseTimeout;
         }
         
+        // Keep function for backward compatibility (if used elsewhere)
         function closeToast(button) {
             const toast = button.closest('.toast-modern');
             if (toast) {
                 closeToastElement(toast);
             }
         }
+        
+        // Make functions globally available
+        window.closeToast = closeToast;
+        window.showToast = showToast; // Make showToast available globally for use in other scripts
         
         function closeToastElement(toast) {
             // Clear auto-close timeout if exists
