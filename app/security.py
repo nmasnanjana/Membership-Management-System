@@ -7,6 +7,7 @@ from django.http import HttpResponseForbidden, JsonResponse
 from django.utils.deprecation import MiddlewareMixin
 from django.conf import settings
 import logging
+from .audit_logger import audit_log_security_event
 
 logger = logging.getLogger('security')
 
@@ -83,6 +84,18 @@ class RateLimitMiddleware(MiddlewareMixin):
                 current_count = cache.get(cache_key, 0)
                 
                 if current_count >= max_requests:
+                    # Log using audit logger
+                    audit_log_security_event(
+                        request=request,
+                        event_type='rate_limit_exceeded',
+                        severity='WARNING',
+                        target=path,
+                        extra_details={
+                            'ip_address': ip_address,
+                            'max_requests': max_requests,
+                            'window_seconds': window,
+                        }
+                    )
                     logger.warning(f'Rate limit exceeded for {ip_address} on {path}')
                     return HttpResponseForbidden(
                         'Too many requests. Please try again later.',
@@ -109,29 +122,34 @@ class SecurityLoggingMiddleware(MiddlewareMixin):
     """
     Security event logging
     OWASP: Security Logging and Monitoring Failures
+    Now uses JSON audit logging
     """
     def process_request(self, request):
         # Log sensitive operations
-        sensitive_paths = [
-            '/login/', '/logout/', '/staff/register/',
-            '/member/delete/', '/staff/delete/',
-            '/meeting/delete/', '/attendance/delete/',
-            '/staff/password/reset/', '/staff/password/change/'
-        ]
+        sensitive_paths = {
+            '/login/': 'login_attempt',
+            '/logout/': 'logout',
+            '/staff/register/': 'staff_registration',
+            '/member/delete/': 'member_deletion',
+            '/staff/delete/': 'staff_deletion',
+            '/meeting/delete/': 'meeting_deletion',
+            '/attendance/delete/': 'attendance_deletion',
+            '/staff/password/reset/': 'password_reset',
+            '/staff/password/change/': 'password_change'
+        }
         
-        if any(request.path.startswith(path) for path in sensitive_paths):
-            ip_address = self.get_client_ip(request)
-            user = getattr(request, 'user', None)
-            # Safely get username, handling None user
-            if user and hasattr(user, 'is_authenticated') and user.is_authenticated:
-                username = getattr(user, 'username', 'unknown')
-            else:
-                username = 'anonymous'
-            
-            logger.info(
-                f'Security Event: {request.method} {request.path} | '
-                f'User: {username} | IP: {ip_address}'
-            )
+        for path, action in sensitive_paths.items():
+            if request.path.startswith(path):
+                audit_log_security_event(
+                    request=request,
+                    event_type=action,
+                    severity='INFO',
+                    target=path,
+                    extra_details={
+                        'http_method': request.method,
+                    }
+                )
+                break
         
         return None
     
@@ -160,6 +178,8 @@ def check_account_lockout(username, max_attempts=5, lockout_duration=900):
         else:
             # Lock the account
             cache.set(lockout_key, True, lockout_duration)
+            # Note: audit_log_security_event requires request object, so we'll log via logger
+            # The audit middleware will capture this as part of the request flow
             logger.warning(f'Account locked: {username} after {attempts} failed attempts')
             return True, lockout_duration
     
