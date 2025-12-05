@@ -12,11 +12,15 @@ from .constants import PAGINATION_MEMBER_ATTENDANCE_REPORT
 
 
 def context_data(request):
+    from datetime import datetime
+    current_year = datetime.now().year
+    
     context = {
         'page_name': '',
         'system_name': 'Membership Management System',
         'auther_name': 'Anjana Narasinghe',
         'project_start_date': '2023',
+        'current_year': current_year,
         'navbar_top': True,
         'footer': True
     }
