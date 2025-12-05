@@ -12,6 +12,14 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+from decouple import config
+
+# Configure PyMySQL to work with Django (must be before any Django imports)
+try:
+    import pymysql
+    pymysql.install_as_MySQLdb()
+except ImportError:
+    pass  # PyMySQL not installed yet, will use mysqlclient if available
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,12 +29,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ocvzr#!6!skc68-2s2gg+^^@4#x48^y8y33o)!f8qyk=ef7)^%'
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-ocvzr#!6!skc68-2s2gg+^^@4#x48^y8y33o)!f8qyk=ef7)^%')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ['localhost', '*']
+# Strip whitespace and filter out empty strings
+ALLOWED_HOSTS = [host.strip() for host in config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',') if host.strip()]
 
 
 # Application definition
@@ -45,6 +54,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'app.security.SecurityHeadersMiddleware',  # Security headers
+    'app.security.RateLimitMiddleware',  # Rate limiting
+    'app.security.SecurityLoggingMiddleware',  # Security logging
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -78,16 +90,28 @@ WSGI_APPLICATION = 'mms.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# MySQL Database Configuration
+# Database credentials are read from .env file
+# In Docker, DB_HOST should be 'db' (the MySQL service name)
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': config('DB_NAME', default='membership_db'),
+        'USER': config('DB_USER', default='mms_user'),
+        'PASSWORD': config('DB_PASSWORD', default=''),
+        'HOST': config('DB_HOST', default='localhost'),  # Use 'db' in Docker Compose
+        'PORT': config('DB_PORT', default='3306'),
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset': 'utf8mb4',
+        },
     }
 }
 
 
-# Password validation
+# Password validation - Enhanced for security
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
+# OWASP: Identification and Authentication Failures
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -95,6 +119,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 8,  # Minimum 8 characters
+        }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
@@ -138,3 +165,92 @@ else:
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Cache configuration (for automatic member deactivation throttling)
+# Using local memory cache - works without external dependencies
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
+# Session Security Settings
+# OWASP: Identification and Authentication Failures, Broken Access Control
+SESSION_COOKIE_SECURE = not DEBUG  # Only send over HTTPS in production
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access
+SESSION_COOKIE_SAMESITE = 'Strict'  # CSRF protection
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Session expires on browser close
+SESSION_COOKIE_AGE = 21600  # 6 hours session timeout (6 * 60 * 60 seconds)
+SESSION_SAVE_EVERY_REQUEST = True  # Extend session on activity
+
+# CSRF Security Settings
+# OWASP: Broken Access Control
+CSRF_COOKIE_SECURE = not DEBUG  # Only send over HTTPS in production
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Strict'
+CSRF_USE_SESSIONS = True  # Use sessions for CSRF token storage
+
+# Security Settings
+# OWASP: Security Misconfiguration
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
+# Logging Configuration
+# OWASP: Security Logging and Monitoring Failures
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'security': {
+            'format': '{levelname} {asctime} {module} {message} | IP: {extra[ip]} | User: {extra[user]}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'security.log'),
+            'formatter': 'verbose',
+        },
+        'security_file': {
+            'level': 'WARNING',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'security_events.log'),
+            'formatter': 'security',
+        },
+        'console': {
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'security': {
+            'handlers': ['security_file', 'console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    },
+}
+
+# Create logs directory if it doesn't exist
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(LOGS_DIR):
+    os.makedirs(LOGS_DIR)
+
+# Authentication settings
+LOGIN_URL = '/login/'  # URL where users are redirected to login
+LOGIN_REDIRECT_URL = '/'  # Default redirect after login (dashboard)
+LOGOUT_REDIRECT_URL = '/login/'  # Redirect after logout

@@ -10,42 +10,45 @@
 
 {% block content %}
     <div class="container">
-        <br>
+        <div class="mb-4">
+            <h1 class="page-title">
+                <i class="fas fa-users text-primary me-2"></i>Members Directory
+            </h1>
+        </div>
 
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <div class="alert alert-modern alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'error' %}
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                    {% else %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% endif %}
                     {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             {% endfor %}
         {% endif %}
 
-        <div class="card shadow">
-            <div class="card-header">
-                <div class="container">
-                    <div class="row">
-                        <div class="col-md">
-                            <h3>Member List</h3>
-                        </div>
-                        <div class="col-md">
-                            <!-- Add margin to the buttons to separate them on mobile -->
-                            <div class="d-flex justify-content-end">
-                                <a class="btn btn-primary me-2" href="{% url 'member_register' %}">Add Members</a>
-                                {% if user.is_superuser %}
-                                    <a href="{% url 'member_info_export' %}" class="btn btn-info">
-                                        <i class="fas fa-download fa-sm text-white-50"></i> Generate Report
-                                    </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
+        <div class="modern-card mb-4">
+            <div class="modern-card-header d-flex justify-content-between align-items-center flex-wrap">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>All Members
+                </h5>
+                <div class="d-flex gap-2 mt-2 mt-md-0">
+                    <a class="btn btn-light btn-sm" href="{% url 'member_register' %}">
+                        <i class="fas fa-user-plus me-1"></i> Add Member
+                    </a>
+                    {% if user.is_superuser %}
+                        <a href="{% url 'member_info_export' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-download me-1"></i> Export
+                        </a>
+                    {% endif %}
                 </div>
             </div>
-            <div class="card-body">
+            <div class="modern-card-body">
                 <div class="table-responsive">
-                    <!-- Add the 'table' class to make the table responsive -->
-                    <table id="memberTable" class="table display">
+                    <table id="memberTable" class="table modern-table">
                         <thead>
                         <tr>
                             <th>Profile Picture</th>
@@ -61,9 +64,34 @@
                         {% for member in members %}
                             <tr>
                                 <td class="align-middle">
-                                    <!-- Use media queries to adjust image size -->
-                                    <img class="rounded img-fluid desktop-image" src="{{ member.member_profile_picture.url }}" alt="member_profile picture">
-                                    <img class="rounded img-fluid mobile-image" src="{{ member.member_profile_picture.url }}" alt="member_profile picture">
+                                    <div class="position-relative d-inline-block">
+                                        {% if member.member_profile_picture %}
+                                            <img class="rounded-circle" src="{{ member.member_profile_picture.url }}" 
+                                                 alt="Profile" style="width: 50px; height: 50px; object-fit: cover; border: 2px solid #e5e7eb;">
+                                        {% else %}
+                                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center" 
+                                                 style="width: 50px; height: 50px;">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                        {% if member.member_role %}
+                                            <span class="position-absolute bottom-0 end-0" style="transform: translate(25%, 25%);">
+                                                {% if member.member_role == 'PRESIDENT' or member.member_role == 'SECRETARY' or member.member_role == 'TREASURY' %}
+                                                    <span class="badge bg-warning text-dark" style="font-size: 0.7rem; padding: 0.25rem 0.4rem;" title="Main Role">
+                                                        <i class="fas fa-crown"></i>
+                                                    </span>
+                                                {% elif member.member_role == 'VICE_PRESIDENT' or member.member_role == 'VICE_SECRETARY' or member.member_role == 'VICE_TREASURY' %}
+                                                    <span class="badge bg-info" style="font-size: 0.7rem; padding: 0.25rem 0.4rem;" title="Vice Role">
+                                                        <i class="fas fa-star"></i>
+                                                    </span>
+                                                {% elif member.member_role == 'COMMITTEE_MEMBER' %}
+                                                    <span class="badge bg-success" style="font-size: 0.7rem; padding: 0.25rem 0.4rem;" title="Committee Member">
+                                                        <i class="fas fa-users"></i>
+                                                    </span>
+                                                {% endif %}
+                                            </span>
+                                        {% endif %}
+                                    </div>
                                 </td>
                                 <td class="align-middle">{{ member.member_id }}</td>
                                 <td class="align-middle">{{ member.member_first_name }}</td>
@@ -71,58 +99,47 @@
                                 <td class="align-middle">{{ member.member_tp_number }}</td>
                                 <td class="align-middle">{{ member.member_join_at|date:"d M Y" }}</td>
                                 <td class="align-middle">
-                                    <a class="btn btn-primary me-2" href="{% url 'member_view' member.member_id %}">View</a>
-                                    <a class="btn btn-warning me-2" href="{% url 'member_edit' member.member_id %}">Edit</a>
-                                    {% if user.is_superuser %}
-                                        <a class="btn btn-danger" href="{% url 'member_delete' member.member_id %}">Delete</a>
-                                    {% endif %}
+                                    <div class="btn-group" role="group">
+                                        <a class="btn btn-sm btn-primary-modern" href="{% url 'member_view' member.member_id %}">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a class="btn btn-sm btn-warning-modern" href="{% url 'member_edit' member.member_id %}">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if user.is_superuser %}
+                                            <a class="btn btn-sm btn-danger-modern" href="{% url 'member_delete' member.member_id %}" 
+                                               onclick="return confirm('Are you sure you want to delete this member?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                         {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                {% include 'pagination.html' %}
             </div>
         </div>
     </div>
 
-    <style>
-        /* Adjust the image size based on screen size */
-        @media (min-width: 768px) {
-            .desktop-image {
-                max-width: 75px; /* Adjust the desired size */
-                height: auto;
-            }
-
-            .mobile-image {
-                display: none;
-            }
-        }
-
-        @media (max-width: 767px) {
-            .desktop-image {
-                display: none;
-            }
-
-            .mobile-image {
-                max-width: 75px; /* Adjust the desired size */
-                height: auto;
-                display: inline;
-            }
-        }
-    </style>
 
     <script>
         $(document).ready(function (){
             $('#memberTable').DataTable({
-                paging: true,
+                paging: false,
                 searching: true,
-                order: [[1, 'asc']],
+                order: [[5, 'desc']],
                 columnDefs: [
                     {targets: -1, orderable: false},
-                    {targets: -2, orderable: false},
-                    {targets: -3, orderable: false},
-                ]
+                    {targets: 0, orderable: false},
+                ],
+                info: false,
+                language: {
+                    search: "<i class='fas fa-search'></i>",
+                    searchPlaceholder: "Search members..."
+                }
             });
         });
     </script>

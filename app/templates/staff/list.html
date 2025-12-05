@@ -10,33 +10,38 @@
 
 {% block content %}
     <div class="container">
-        <br>
+        <div class="mb-4">
+            <h1 class="page-title">
+                <i class="fas fa-user-tie text-primary me-2"></i>Staff Management
+            </h1>
+        </div>
 
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <div class="alert alert-modern alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {% if message.tags == 'error' %}
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                    {% else %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% endif %}
                     {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             {% endfor %}
         {% endif %}
 
-        <div class="card shadow">
-            <div class="card-header">
-                <div class="container">
-                    <div class="row justify-content-between">
-                        <div class="col-auto mr-auto">
-                            <h3>Staff List</h3>
-                        </div>
-                        <div class="col-auto">
-                            <a class="btn btn-primary" href="{% url 'staff_register' %}">Add Staff</a>
-                        </div>
-                    </div>
-                </div>
+        <div class="modern-card">
+            <div class="modern-card-header d-flex justify-content-between align-items-center flex-wrap">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>All Staff Members
+                </h5>
+                <a class="btn btn-light btn-sm mt-2 mt-md-0" href="{% url 'staff_register' %}">
+                    <i class="fas fa-user-plus me-1"></i> Add Staff
+                </a>
             </div>
-            <div class="card-body">
+            <div class="modern-card-body">
                 <div class="table-responsive">
-                    <table id="staffTable" class="table display">
+                    <table id="staffTable" class="table modern-table">
                         <thead>
                         <tr>
                             <th>First Name</th>
@@ -55,16 +60,23 @@
                                 <td>{{ user.username }}</td>
                                 <td>
                                     {% if user.is_superuser %}
-                                        Admin
+                                        <span class="badge bg-danger">Admin</span>
                                     {% else %}
-                                        Staff
+                                        <span class="badge bg-primary">Staff</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="row d-flex flex-wrap">
-                                        <a class="col-sm btn btn-primary mb-2 me-2" href="{% url 'staff_profile_edit' user.id %}">Edit</a>
-                                        <a class="col-sm btn btn-warning mb-2 me-2" href="{% url 'staff_password_reset' user.id %}">Reset</a>
-                                        <a class="col-sm btn btn-danger mb-2 me-2" href="{% url 'staff_delete' user.id %}">Delete</a>
+                                    <div class="btn-group" role="group">
+                                        <a class="btn btn-sm btn-primary-modern" href="{% url 'staff_profile_edit' user.id %}" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a class="btn btn-sm btn-warning-modern" href="{% url 'staff_password_reset' user.id %}" title="Reset Password">
+                                            <i class="fas fa-key"></i>
+                                        </a>
+                                        <a class="btn btn-sm btn-danger-modern" href="{% url 'staff_delete' user.id %}" 
+                                           onclick="return confirm('Are you sure you want to delete this staff member?')" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -73,6 +85,7 @@
                         </tbody>
                     </table>
                 </div>
+                {% include 'pagination.html' %}
             </div>
         </div>
     </div>
@@ -80,13 +93,13 @@
     <script>
         $(document).ready(function (){
             $('#staffTable').DataTable({
-                paging: true,
+                paging: false,  // Disabled - using Django pagination
                 searching: true,
                 order: [[0, 'asc']],
                 columnDefs: [
                     {targets: -1, orderable: false},
-                    {targets: -2, orderable: false},
                 ],
+                info: false,  // Hide DataTables info since we show it in pagination
                 responsive: {
                     details: {
                         display: $.fn.dataTable.Responsive.display.childRowImmediate,

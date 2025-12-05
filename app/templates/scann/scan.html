@@ -3,28 +3,71 @@
 {% block head %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
-
     <style>
         #preview {
             width: 100%;
             height: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .scanner-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
         }
     </style>
-
 {% endblock head %}
 
 {% block content %}
-
     <div class="container">
-        <br>
-        <div class="row h-100 justify-content-center align-items-center">
-            <div class="col-12 col-md-6">
-                <div class="card shadow">
-                    <div class="card-header text-center">
-                        <h3>QR Code Scanner</h3>
+        <div class="mb-4">
+            <h1 class="page-title">
+                <i class="fas fa-qrcode text-primary me-2"></i>QR Code Scanner
+            </h1>
+        </div>
+        
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6">
+                <div class="modern-card">
+                    <div class="modern-card-header text-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-camera me-2"></i>Scan Member QR Code
+                        </h5>
                     </div>
-                    <div class="card-body text-center">
-                        <video id="preview"></video>
+                    <div class="modern-card-body text-center">
+                        <div class="scanner-container mb-3">
+                            <video id="preview" autoplay playsinline></video>
+                        </div>
+                        <p class="text-muted mb-0">
+                            <i class="fas fa-info-circle me-1"></i>Point your camera at a member's QR code
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="modern-card mt-3">
+                    <div class="modern-card-body">
+                        <form method="post" id="myForm">
+                            {% csrf_token %}
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-hashtag me-1 text-primary"></i>Or Enter Member ID Manually
+                            </label>
+                            <div class="input-group">
+                                {{ form.member_id }}
+                                <button type="submit" class="btn btn-primary-modern">
+                                    <i class="fas fa-search"></i> View Member
+                                </button>
+                            </div>
+                            {% if form.member_id.help_text %}
+                                <small class="form-text text-muted">{{ form.member_id.help_text }}</small>
+                            {% endif %}
+                            {% if form.member_id.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.member_id.errors %}
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </form>
                     </div>
                 </div>
             </div>
@@ -32,51 +75,107 @@
     </div>
 
     <script type="text/javascript">
-        let scanner = new Instascan.Scanner({ video: document.getElementById('preview') });
+        let scanner = null;
+        let isScanning = false;
+        let lastScannedContent = '';
+        let lastScanTime = 0;
+        let scanCooldown = 2000; // 2 seconds cooldown to prevent duplicate scans
+        
+        // Initialize scanner
+        function initScanner() {
+            scanner = new Instascan.Scanner({ 
+                video: document.getElementById('preview'),
+                mirror: false,
+                scanPeriod: 5, // Scan every 5ms for better performance
+                backgroundScan: false // Only scan when visible
+            });
 
-        scanner.addListener('scan', function (content) {
-            document.getElementById('id_member_id').value = content;
-            submitForm();
-        });
+            scanner.addListener('scan', function (content) {
+                // Prevent duplicate scans
+                const now = Date.now();
+                if (content === lastScannedContent && (now - lastScanTime) < scanCooldown) {
+                    return;
+                }
+                
+                lastScannedContent = content;
+                lastScanTime = now;
+                
+                // Trim whitespace from scanned content
+                content = content.trim();
+                
+                if (content && !isScanning) {
+                    isScanning = true;
+                    
+                    // Show feedback
+                    const input = document.getElementById('id_member_id');
+                    input.value = content;
+                    input.classList.add('border-success');
+                    
+                    // Disable scanner temporarily to prevent multiple submissions
+                    setTimeout(function() {
+                        document.getElementById('myForm').submit();
+                    }, 300); // Small delay to show feedback
+                }
+            });
 
-        Instascan.Camera.getCameras().then(function (cameras) {
-            if (cameras.length > 0) {
-                scanner.start(cameras[0]);
-            } else {
-                console.error('No cameras found.');
-            }
-        }).catch(function (e) {
-            console.error(e);
-        });
-    </script>
-
-    <form method="post" id="myForm" style="display:none;">
-        {% csrf_token %}
-        <div class="card mt-3">
-            <div class="card-body">
-                <label class="form-label">Member ID:</label>
-                {{ form.member_id }}
-            </div>
-            <div class="card-footer">
-                <input type="submit" style="display:none;" id="submitBtn">
-            </div>
-        </div>
-    </form>
-
-    <script>
-        const form = document.getElementById('myForm');
-        const field1 = document.getElementById('id_member_id');
-        const submitButton = document.getElementById('submitBtn');
-
-        field1.addEventListener('input', function () {
-            form.submit();
-        });
-
-        function submitForm() {
-            form.submit();
+            // Get cameras and start scanner
+            Instascan.Camera.getCameras().then(function (cameras) {
+                if (cameras.length > 0) {
+                    // Prefer back camera (usually last in array on mobile)
+                    let selectedCamera = cameras[0];
+                    if (cameras.length > 1) {
+                        // Try to find back camera
+                        for (let i = cameras.length - 1; i >= 0; i--) {
+                            if (cameras[i].name && cameras[i].name.toLowerCase().includes('back')) {
+                                selectedCamera = cameras[i];
+                                break;
+                            }
+                        }
+                        // If no back camera found, use the last one (usually back on mobile)
+                        if (selectedCamera === cameras[0] && cameras.length > 1) {
+                            selectedCamera = cameras[cameras.length - 1];
+                        }
+                    }
+                    
+                    scanner.start(selectedCamera).then(function() {
+                        console.log('Scanner started successfully');
+                    }).catch(function(err) {
+                        console.error('Error starting scanner:', err);
+                        showCameraError('Failed to start camera. Please check permissions.');
+                    });
+                } else {
+                    showCameraError('No cameras found. Please connect a camera device.');
+                }
+            }).catch(function (e) {
+                console.error('Camera error:', e);
+                showCameraError('Camera access denied or not available. Please check permissions.');
+            });
         }
+        
+        function showCameraError(message) {
+            const preview = document.getElementById('preview');
+            preview.style.display = 'none';
+            const container = preview.parentElement;
+            container.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i>' + message + '</div>';
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initScanner();
+        });
+        
+        // Cleanup when leaving page
+        window.addEventListener('beforeunload', function() {
+            if (scanner) {
+                scanner.stop();
+            }
+        });
+        
+        // Stop scanner when form is submitted to prevent duplicate scans
+        document.getElementById('myForm').addEventListener('submit', function() {
+            if (scanner) {
+                scanner.stop();
+            }
+        });
     </script>
-
-    </div>
-
 {% endblock content %}

@@ -1,69 +1,126 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="{% url 'dashboard' %}">Membership Management System</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarTogglerDemo02" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top border-bottom" style="background: #374151; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3); border-color: #4b5563 !important;">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard' %}" style="font-weight: 600; font-size: 1.1rem; color: #f9fafb;">
+            <i class="fas fa-users-cog me-2" style="color: #3b82f6;"></i>
+            <span>MMS</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse" id="navbarTogglerDemo02">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0 mx-auto">
-
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
+                    <a class="nav-link" href="{% url 'dashboard' %}" style="font-weight: 400; color: #d1d5db;">
+                        <i class="fas fa-chart-line me-1"></i> Dashboard
+                    </a>
                 </li>
 
                 {% if user.is_authenticated %}
-
                     {% if user.is_superuser %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'staff_list' %}">Staff</a>
+                            <a class="nav-link" href="{% url 'staff_list' %}" style="font-weight: 400; color: #d1d5db;">
+                                <i class="fas fa-user-tie me-1"></i> Staff
+                            </a>
                         </li>
                     {% endif %}
 
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'member_list' %}">Members</a>
+                        <a class="nav-link" href="{% url 'member_list' %}" style="font-weight: 400; color: #d1d5db;">
+                            <i class="fas fa-users me-1"></i> Members
+                        </a>
                     </li>
 
                     {% if user.is_superuser %}
-
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'meeting_list' %}">Meetings</a>
+                            <a class="nav-link" href="{% url 'meeting_list' %}" style="font-weight: 400; color: #d1d5db;">
+                                <i class="fas fa-calendar-alt me-1"></i> Meetings
+                            </a>
                         </li>
-
                     {% endif %}
 
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'attendance_mark' %}">Attendance Marking</a>
+                        <a class="nav-link" href="{% url 'attendance_mark' %}" style="font-weight: 400; color: #d1d5db;">
+                            <i class="fas fa-check-circle me-1"></i> Mark Attendance
+                        </a>
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'attendance_date_all' %}">Attendance</a>
+                        <a class="nav-link" href="{% url 'attendance_date_all' %}" style="font-weight: 400; color: #d1d5db;">
+                            <i class="fas fa-clipboard-list me-1"></i> Attendance
+                        </a>
                     </li>
                 {% endif %}
 
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'qr_scann' %}">QR Scan</a>
+                    <a class="nav-link" href="{% url 'qr_scann' %}" style="font-weight: 400; color: #d1d5db;">
+                        <i class="fas fa-qrcode me-1"></i> QR Scanner
+                    </a>
                 </li>
-
             </ul>
-            <ul class="navbar-nav ms-auto">
+            
+            <ul class="navbar-nav">
                 {% if user.is_authenticated %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Howdy {{ user.first_name }}
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" 
+                           role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                           style="font-weight: 400; color: #d1d5db;">
+                            <i class="fas fa-user-circle me-2"></i>
+                            <span>{{ user.first_name|default:user.username }}</span>
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{% url 'staff_profile_edit' user.id %}">Change Profile</a></li>
-                            <li><a class="dropdown-item" href="{% url 'staff_password_change' %}">Change Password</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'logout' %}">LogOut</a></li>
+                        <ul class="dropdown-menu dropdown-menu-end" 
+                            style="background: #374151; border-radius: 6px; border: 1px solid #4b5563; padding: 0.5rem; min-width: 200px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'staff_profile_edit' user.id %}" 
+                                   style="padding: 0.5rem 1rem; color: #d1d5db;">
+                                    <i class="fas fa-user-edit me-2"></i> Edit Profile
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'staff_password_change' %}" 
+                                   style="padding: 0.5rem 1rem; color: #d1d5db;">
+                                    <i class="fas fa-key me-2"></i> Change Password
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider" style="border-color: #4b5563;"></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'logout' %}" 
+                                   style="padding: 0.5rem 1rem; color: #ef4444;">
+                                    <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                </a>
+                            </li>
                         </ul>
                     </li>
                 {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'login' %}">Login</a>
+                        <a class="nav-link" href="{% url 'login' %}" 
+                           style="font-weight: 400; color: #d1d5db;">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        </a>
                     </li>
                 {% endif %}
             </ul>
         </div>
     </div>
 </nav>
+
+<style>
+    .nav-link:hover {
+        color: #3b82f6 !important;
+    }
+    
+    .dropdown-item:hover {
+        background: #4b5563;
+        color: #f9fafb;
+    }
+    
+    @media (max-width: 991px) {
+        .navbar-nav {
+            margin-top: 1rem;
+        }
+        
+        .nav-link {
+            margin: 0.25rem 0;
+        }
+    }
+</style>

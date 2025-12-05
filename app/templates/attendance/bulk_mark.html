@@ -1,0 +1,547 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="{% static 'DataTables/datatables.min.css' %}">
+    <script src="{% static 'DataTables/datatables.min.js' %}"></script>
+{% endblock head %}
+
+{% block content %}
+    <div class="container">
+        <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-clipboard-list text-primary me-2"></i>Bulk Attendance Marking
+                </h1>
+                <div class="mt-2 mt-md-0">
+                    <a href="{% url 'attendance_mark' %}" class="btn btn-secondary btn-modern">
+                        <i class="fas fa-arrow-left me-2"></i>Single Marking
+                    </a>
+                </div>
+            </div>
+            <p class="text-muted mt-2">Mark attendance for multiple members at once</p>
+        </div>
+
+        <!-- Meeting Selection Form -->
+        <div class="modern-card mb-4">
+            <div class="modern-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-alt me-2"></i>Select Meeting
+                </h5>
+            </div>
+            <div class="modern-card-body">
+                <form method="get" action="{% url 'attendance_bulk_mark' %}">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Meeting Date</label>
+                            <select name="meeting_id" class="form-select" required onchange="this.form.submit()">
+                                <option value="">-- Select a Meeting --</option>
+                                {% for meeting in meetings %}
+                                    <option value="{{ meeting.meeting_id }}" {% if selected_meeting and selected_meeting.meeting_id == meeting.meeting_id %}selected{% endif %}>
+                                        {{ meeting.meeting_date|date:"d M Y" }} - Fee: {{ meeting.meeting_fee }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary-modern btn-modern w-100">
+                                <i class="fas fa-search me-2"></i>Load Members
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if selected_meeting and members_data %}
+            <!-- Bulk Attendance Form -->
+            {% if not is_superuser %}
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Note:</strong> You can only mark new attendance. Existing attendance records are locked and can only be edited by superusers.
+            </div>
+            {% endif %}
+            
+            <form method="post" id="bulkAttendanceForm">
+                {% csrf_token %}
+                <input type="hidden" name="meeting_id" value="{{ selected_meeting.meeting_id }}">
+                
+                <div class="modern-card mb-4">
+                    <div class="modern-card-header d-flex justify-content-between align-items-center flex-wrap">
+                        <h5 class="mb-0">
+                            <i class="fas fa-users me-2"></i>Mark Attendance for: {{ selected_meeting.meeting_date|date:"d M Y" }}
+                        </h5>
+                        <div class="mt-2 mt-md-0">
+                            <button type="button" class="btn btn-sm btn-success-modern me-2" onclick="markAllPresent()">
+                                <i class="fas fa-check-double me-1"></i>Mark All Present
+                            </button>
+                            <button type="button" class="btn btn-sm btn-warning-modern" onclick="markAllAbsent()">
+                                <i class="fas fa-times me-1"></i>Mark All Absent
+                            </button>
+                        </div>
+                    </div>
+                    <div class="modern-card-body">
+                        <div class="table-responsive">
+                            <table class="table modern-table" id="bulkAttendanceTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">
+                                            <input type="checkbox" id="selectAll" onchange="toggleAll(this)">
+                                        </th>
+                                        <th>Member ID</th>
+                                        <th>Name</th>
+                                        <th style="width: 150px;">Attendance</th>
+                                        <th style="width: 150px;">Fee Paid</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for data in members_data %}
+                                        <tr {% if data.has_existing and not is_superuser %}class="table-secondary"{% endif %}>
+                                            <td>
+                                                <input type="checkbox" class="member-checkbox" 
+                                                       onchange="toggleMemberRow(this, '{{ data.member.member_id }}')"
+                                                       {% if data.has_existing and not is_superuser %}disabled title="Cannot edit - attendance already marked"{% endif %}>
+                                            </td>
+                                            <td>{{ data.member.member_id }}</td>
+                                            <td>
+                                                {{ data.member.member_first_name }} {{ data.member.member_last_name }}
+                                                {% if data.has_existing and not is_superuser %}
+                                                    <span class="badge bg-warning text-dark ms-2" title="Attendance already marked - only superusers can edit">
+                                                        <i class="fas fa-lock"></i> Locked
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <input type="hidden" value="{{ data.member.member_id }}" class="member-id-input">
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input attendance-radio" 
+                                                           type="radio" 
+                                                           name="attendance_status_{{ data.member.member_id }}" 
+                                                           id="present_{{ data.member.member_id }}" 
+                                                           value="True" 
+                                                           {% if data.is_present %}checked{% endif %}
+                                                           {% if data.has_existing and not is_superuser %}disabled{% endif %}>
+                                                    <label class="form-check-label" for="present_{{ data.member.member_id }}">Present</label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input attendance-radio" 
+                                                           type="radio" 
+                                                           name="attendance_status_{{ data.member.member_id }}" 
+                                                           id="absent_{{ data.member.member_id }}" 
+                                                           value="False" 
+                                                           {% if not data.is_present %}checked{% endif %}
+                                                           {% if data.has_existing and not is_superuser %}disabled{% endif %}>
+                                                    <label class="form-check-label" for="absent_{{ data.member.member_id }}">Absent</label>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input fee-checkbox" 
+                                                           type="checkbox" 
+                                                           name="fee_status_{{ data.member.member_id }}" 
+                                                           id="fee_{{ data.member.member_id }}" 
+                                                           value="True" 
+                                                           {% if data.is_fee_paid %}checked{% endif %}
+                                                           {% if data.has_existing and not is_superuser %}disabled{% endif %}>
+                                                    <label class="form-check-label" for="fee_{{ data.member.member_id }}">Paid</label>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="mt-4 d-flex justify-content-between align-items-center flex-wrap">
+                            <div>
+                                <span class="text-muted">Selected: <strong id="selectedCount">0</strong> members</span>
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-primary-modern btn-modern">
+                                    <i class="fas fa-save me-2"></i>Save All Attendance
+                                </button>
+                                <a href="{% url 'attendance_date' selected_meeting.meeting_id %}" class="btn btn-secondary btn-modern">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <script>
+                const STORAGE_KEY = 'bulk_attendance_data_{{ selected_meeting.meeting_id }}';
+                
+                $(document).ready(function() {
+                    $('#bulkAttendanceTable').DataTable({
+                        paging: true,
+                        pageLength: 25,
+                        searching: true,
+                        order: [[1, 'asc']],
+                        info: true,
+                        responsive: true
+                    });
+                    
+                    // Restore saved data from localStorage
+                    restoreSavedData();
+                    
+                    // Save data to localStorage on any change
+                    setupAutoSave();
+                    
+                    // Warn before leaving page with unsaved changes
+                    setupBeforeUnload();
+                    
+                    updateSelectedCount();
+                    
+                    // Check if there's saved data and show indicator
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (saved) {
+                        try {
+                            const data = JSON.parse(saved);
+                            if (data.meeting_id === {{ selected_meeting.meeting_id }}) {
+                                updateSaveIndicator(true);
+                            }
+                        } catch (e) {
+                            // Invalid data, ignore
+                        }
+                    }
+                });
+                
+                function setupAutoSave() {
+                    // Save on radio button change (only enabled ones)
+                    document.querySelectorAll('.attendance-radio:not(:disabled)').forEach(radio => {
+                        radio.addEventListener('change', function() {
+                            saveToLocalStorage();
+                        });
+                    });
+                    
+                    // Save on checkbox change (only enabled ones)
+                    document.querySelectorAll('.fee-checkbox:not(:disabled)').forEach(checkbox => {
+                        checkbox.addEventListener('change', function() {
+                            saveToLocalStorage();
+                        });
+                    });
+                    
+                    // Save on checkbox toggle (only enabled ones)
+                    document.querySelectorAll('.member-checkbox:not(:disabled)').forEach(checkbox => {
+                        checkbox.addEventListener('change', function() {
+                            saveToLocalStorage();
+                        });
+                    });
+                }
+                
+                function saveToLocalStorage() {
+                    const data = {
+                        meeting_id: {{ selected_meeting.meeting_id }},
+                        timestamp: new Date().toISOString(),
+                        attendance: {}
+                    };
+                    
+                    document.querySelectorAll('tbody tr').forEach(row => {
+                        const memberIdInput = row.querySelector('.member-id-input');
+                        const memberCheckbox = row.querySelector('.member-checkbox');
+                        
+                        // Skip disabled rows
+                        if (memberCheckbox && memberCheckbox.disabled) {
+                            return;
+                        }
+                        
+                        if (memberIdInput) {
+                            const memberId = memberIdInput.value;
+                            
+                            // Find the checked radio button in this member's group
+                            const checkedRadio = row.querySelector(`input[name="attendance_status_${memberId}"]:checked`);
+                            const isPresent = checkedRadio && checkedRadio.value === 'True';
+                            
+                            // Find the fee checkbox
+                            const feeCheckbox = row.querySelector(`input[id="fee_${memberId}"]`);
+                            const isFeePaid = feeCheckbox && feeCheckbox.checked;
+                            
+                            data.attendance[memberId] = {
+                                is_present: isPresent,
+                                is_fee_paid: isFeePaid
+                            };
+                        }
+                    });
+                    
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    updateSaveIndicator(true);
+                }
+                
+                function restoreSavedData() {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (saved) {
+                        try {
+                            const data = JSON.parse(saved);
+                            
+                            // Only restore if it's for the same meeting
+                            if (data.meeting_id === {{ selected_meeting.meeting_id }}) {
+                                // Automatically restore data without prompting user
+                                Object.keys(data.attendance).forEach(memberId => {
+                                    const row = document.querySelector(`input.member-id-input[value="${memberId}"]`)?.closest('tr');
+                                    if (row) {
+                                        const attendance = data.attendance[memberId];
+                                        const presentRadio = row.querySelector(`input[name="attendance_status_${memberId}"][value="True"]`);
+                                        const absentRadio = row.querySelector(`input[name="attendance_status_${memberId}"][value="False"]`);
+                                        const feeCheckbox = row.querySelector(`input[id="fee_${memberId}"]`);
+                                        
+                                        if (attendance.is_present && presentRadio) {
+                                            presentRadio.checked = true;
+                                        } else if (!attendance.is_present && absentRadio) {
+                                            absentRadio.checked = true;
+                                        }
+                                        
+                                        if (feeCheckbox) {
+                                            feeCheckbox.checked = attendance.is_fee_paid;
+                                        }
+                                    }
+                                });
+                                
+                                updateSelectedCount();
+                                updateSaveIndicator(true);
+                            }
+                        } catch (e) {
+                            console.error('Error restoring saved data:', e);
+                            localStorage.removeItem(STORAGE_KEY);
+                        }
+                    }
+                }
+                
+                function updateSaveIndicator(hasUnsavedChanges) {
+                    // Silent auto-save - no visual indicators
+                    // Data is saved automatically but we don't show any messages
+                }
+                
+                function setupBeforeUnload() {
+                    // No browser pop-ups - data is auto-saved silently
+                    // Users can navigate freely without interruption
+                }
+                
+                // Clear storage when form is successfully submitted
+                document.getElementById('bulkAttendanceForm').addEventListener('submit', function() {
+                    // This will be called before the redirect
+                    localStorage.removeItem(STORAGE_KEY);
+                });
+
+                function toggleAll(checkbox) {
+                    const checkboxes = document.querySelectorAll('.member-checkbox:not(:disabled)');
+                    checkboxes.forEach(cb => {
+                        cb.checked = checkbox.checked;
+                        toggleMemberRow(cb, cb.closest('tr').querySelector('input[name^="member_ids"]').value);
+                    });
+                    saveToLocalStorage();
+                }
+
+                function toggleMemberRow(checkbox, memberId) {
+                    const row = checkbox.closest('tr');
+                    
+                    if (checkbox.checked) {
+                        row.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                    } else {
+                        row.style.backgroundColor = '';
+                    }
+                    
+                    updateSelectedCount();
+                }
+
+                function updateSelectedCount() {
+                    const selected = document.querySelectorAll('.member-checkbox:checked').length;
+                    document.getElementById('selectedCount').textContent = selected;
+                }
+
+                function markAllPresent() {
+                    document.querySelectorAll('.attendance-radio[value="True"]:not(:disabled)').forEach(radio => {
+                        radio.checked = true;
+                    });
+                    document.querySelectorAll('.member-checkbox:not(:disabled)').forEach(cb => {
+                        cb.checked = true;
+                        toggleMemberRow(cb, cb.closest('tr').querySelector('input[name^="member_ids"]').value);
+                    });
+                    saveToLocalStorage();
+                }
+
+                function markAllAbsent() {
+                    document.querySelectorAll('.attendance-radio[value="False"]:not(:disabled)').forEach(radio => {
+                        radio.checked = true;
+                    });
+                    document.querySelectorAll('.fee-checkbox:not(:disabled)').forEach(cb => {
+                        cb.checked = false;
+                    });
+                    document.querySelectorAll('.member-checkbox:not(:disabled)').forEach(cb => {
+                        cb.checked = true;
+                        toggleMemberRow(cb, cb.closest('tr').querySelector('input[name^="member_ids"]').value);
+                    });
+                    saveToLocalStorage();
+                }
+
+                function validateFeeCheckbox(checkbox, memberId) {
+                    // Members can pay fees even if absent - no validation needed
+                    // This function is kept for potential future use but does nothing now
+                }
+
+                // Process form submission - collect all member data
+                document.getElementById('bulkAttendanceForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const memberIds = [];
+                    const attendanceStatuses = [];
+                    const feeStatuses = [];
+                    
+                    // Collect data from all rows (skip disabled rows)
+                    // Note: DataTables might paginate, so we need to get ALL rows, not just visible ones
+                    const table = $('#bulkAttendanceTable').DataTable();
+                    
+                    // Get all rows from DataTables (including those on other pages)
+                    table.rows().every(function() {
+                        const row = this.node();
+                        const $row = $(row);
+                        
+                        const memberIdInput = $row.find('.member-id-input')[0];
+                        const memberCheckbox = $row.find('.member-checkbox')[0];
+                        
+                        // Skip if row is disabled (non-superuser trying to edit existing attendance)
+                        // Normal staff can only mark new attendance, not edit existing ones
+                        if (memberCheckbox && memberCheckbox.disabled) {
+                            return; // Skip this row - it's locked for non-superusers
+                        }
+                        
+                        if (memberIdInput) {
+                            const memberId = memberIdInput.value;
+                            
+                            // Find the checked radio button in this member's group
+                            let checkedRadio = $row.find(`input[name="attendance_status_${memberId}"]:checked`)[0];
+                            
+                            // Fallback: if no checked radio found, check both radio buttons
+                            if (!checkedRadio) {
+                                const presentRadio = $row.find(`input[name="attendance_status_${memberId}"][value="True"]`)[0];
+                                const absentRadio = $row.find(`input[name="attendance_status_${memberId}"][value="False"]`)[0];
+                                checkedRadio = presentRadio && presentRadio.checked ? presentRadio : (absentRadio && absentRadio.checked ? absentRadio : null);
+                            }
+                            
+                            const isPresent = checkedRadio && checkedRadio.value === 'True';
+                            
+                            // Find the fee checkbox
+                            const feeCheckbox = $row.find(`input[id="fee_${memberId}"]`)[0];
+                            const isFeePaid = feeCheckbox && feeCheckbox.checked;
+                            
+                            // Always collect data for all members (not just checked ones)
+                            // The checkbox is just for visual selection, but we need to save all attendance
+                            // Debug logging
+                            console.log(`Member ${memberId}: Present=${isPresent}, FeePaid=${isFeePaid}, CheckedRadio=${checkedRadio ? checkedRadio.value : 'none'}, FeeCheckbox=${feeCheckbox ? feeCheckbox.checked : 'none'}`);
+                            
+                            // Add member data - we save all members' attendance status
+                            memberIds.push(memberId);
+                            attendanceStatuses.push(isPresent ? 'True' : 'False');
+                            feeStatuses.push(isFeePaid ? 'True' : 'False');
+                        }
+                    });
+                    
+                    console.log('Submitting:', {
+                        memberIds: memberIds,
+                        attendanceStatuses: attendanceStatuses,
+                        feeStatuses: feeStatuses,
+                        counts: {
+                            members: memberIds.length,
+                            attendance: attendanceStatuses.length,
+                            fees: feeStatuses.length
+                        }
+                    });
+                    
+                    // Validate data alignment
+                    if (memberIds.length !== attendanceStatuses.length || memberIds.length !== feeStatuses.length) {
+                        console.error('Data misalignment detected!', {
+                            members: memberIds.length,
+                            attendance: attendanceStatuses.length,
+                            fees: feeStatuses.length
+                        });
+                        if (typeof showToast === 'function') {
+                            showToast('Error: Data mismatch. Please refresh and try again.', 'error');
+                        } else {
+                            alert('Error: Data mismatch. Please refresh and try again.');
+                        }
+                        return;
+                    }
+                    
+                    if (memberIds.length === 0) {
+                        if (typeof showToast === 'function') {
+                            showToast('Please mark attendance for at least one member.', 'warning');
+                        } else {
+                            alert('Please mark attendance for at least one member.');
+                        }
+                        return;
+                    }
+                    
+                    // Remove ALL existing dynamically created hidden inputs
+                    // The original .member-id-input doesn't have name="member_ids" so it's safe
+                    document.querySelectorAll('input[name="member_ids"][type="hidden"]').forEach(input => input.remove());
+                    document.querySelectorAll('input[name="attendance_status"][type="hidden"]').forEach(input => input.remove());
+                    document.querySelectorAll('input[name="fee_status"][type="hidden"]').forEach(input => input.remove());
+                    
+                    // Create hidden inputs for form submission - ensure one-to-one mapping
+                    for (let i = 0; i < memberIds.length; i++) {
+                        const memberId = memberIds[i];
+                        const attendanceStatus = attendanceStatuses[i];
+                        const feeStatus = feeStatuses[i];
+                        
+                        // Create member_id input
+                        const memberHidden = document.createElement('input');
+                        memberHidden.type = 'hidden';
+                        memberHidden.name = 'member_ids';
+                        memberHidden.value = memberId;
+                        this.appendChild(memberHidden);
+                        
+                        // Create attendance_status input
+                        const attendanceHidden = document.createElement('input');
+                        attendanceHidden.type = 'hidden';
+                        attendanceHidden.name = 'attendance_status';
+                        attendanceHidden.value = attendanceStatus;
+                        this.appendChild(attendanceHidden);
+                        
+                        // Create fee_status input
+                        const feeHidden = document.createElement('input');
+                        feeHidden.type = 'hidden';
+                        feeHidden.name = 'fee_status';
+                        feeHidden.value = feeStatus;
+                        this.appendChild(feeHidden);
+                        
+                        console.log(`Added: Member=${memberId}, Attendance=${attendanceStatus}, Fee=${feeStatus}`);
+                    }
+                    
+                    // Clear saved data before submitting
+                    localStorage.removeItem(STORAGE_KEY);
+                    
+                    // Submit the form
+                    this.submit();
+                });
+                
+                // Clear saved data on successful page load (after redirect)
+                window.addEventListener('pageshow', function(event) {
+                    // If we're coming from a form submission, clear the storage
+                    if (event.persisted || performance.navigation.type === 1) {
+                        // Page was loaded from cache or refreshed
+                        // Check if we have a success message (indicating successful save)
+                        const successMessage = document.querySelector('.alert-success');
+                        if (successMessage) {
+                            localStorage.removeItem(STORAGE_KEY);
+                        }
+                    }
+                });
+            </script>
+        {% elif selected_meeting %}
+            <div class="modern-card">
+                <div class="modern-card-body text-center py-5">
+                    <p class="text-muted mb-0">No active members found for this meeting.</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="modern-card">
+                <div class="modern-card-body text-center py-5">
+                    <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                    <p class="text-muted mb-0">Please select a meeting to mark attendance.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock content %}
+
