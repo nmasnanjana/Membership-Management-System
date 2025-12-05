@@ -20,12 +20,13 @@ def attendance_mark(request):
             member = form.cleaned_data['member_id']
 
             # Check if attendance record with the same date and member already exists
+            # Use .first() instead of .exists() for better performance
             existing_attendance = MemberAttendance.objects.filter(
                 meeting_date=meeting_date,
                 member_id=member,
-            )
+            ).first()
 
-            if existing_attendance.exists():
+            if existing_attendance:
                 # Duplicate record found, show an error message
                 messages.error(request, 'Member attendance is already added for this date.')
             else:

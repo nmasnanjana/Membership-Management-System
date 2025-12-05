@@ -199,6 +199,32 @@ def dashboard(request):
     context['present_count_this_year'] = present_count_this_year
     context['paid_count_this_year'] = paid_count_this_year
 
+    # Member Roles Data for Dashboard Widgets
+    from .models import MemberRole
+    from .constants import MAIN_ROLES, SUB_ROLES
+    
+    # Main 3 roles (President, Secretary, Treasury)
+    main_role_members = Member.objects.filter(
+        member_role__in=MAIN_ROLES,
+        member_is_active=True
+    ).order_by('member_role')
+    
+    # Sub 3 roles (Vice President, Vice Secretary, Vice Treasury)
+    sub_role_members = Member.objects.filter(
+        member_role__in=SUB_ROLES,
+        member_is_active=True
+    ).order_by('member_role')
+    
+    # Committee Members
+    committee_members = Member.objects.filter(
+        member_role=MemberRole.COMMITTEE_MEMBER,
+        member_is_active=True
+    ).order_by('member_first_name', 'member_last_name')
+    
+    context['main_role_members'] = main_role_members
+    context['sub_role_members'] = sub_role_members
+    context['committee_members'] = committee_members
+
     return render(request, 'dashboard.html', context)
 
 
