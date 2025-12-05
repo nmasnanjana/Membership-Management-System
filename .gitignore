@@ -31,6 +31,10 @@ db.sqlite3-journal
 /media
 /staticfiles
 
+# Security logs (keep directory structure, ignore log files)
+logs/*.log
+!logs/.gitkeep
+
 # Environment variables
 .env
 .env.local
