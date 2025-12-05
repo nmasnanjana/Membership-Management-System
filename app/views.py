@@ -27,6 +27,33 @@ def context_data(request):
 def dashboard(request):
     from django.db.models import Q, Sum, Avg
     from collections import defaultdict
+    from django.core.cache import cache
+    from .utils import check_and_deactivate_inactive_members
+    from .constants import CONSECUTIVE_MEETINGS_FOR_DEACTIVATION
+
+    # Automatically check and deactivate inactive members (runs once per hour via cache)
+    # This is a backup check - signals handle it after attendance is saved
+    # Works in shared hosting/cPanel - no cron jobs needed!
+    CACHE_KEY_DASHBOARD_CHECK = 'dashboard_deactivation_check'
+    try:
+        cache_value = cache.get(CACHE_KEY_DASHBOARD_CHECK)
+        if not cache_value:
+            try:
+                check_and_deactivate_inactive_members(
+                    consecutive_meetings=CONSECUTIVE_MEETINGS_FOR_DEACTIVATION,
+                    dry_run=False
+                )
+                # Cache for 1 hour to prevent running too frequently
+                try:
+                    cache.set(CACHE_KEY_DASHBOARD_CHECK, True, 3600)
+                except Exception:
+                    pass  # Cache might not be available
+            except Exception:
+                # Silently fail to not interrupt dashboard loading
+                pass
+    except Exception:
+        # If cache is completely unavailable, skip the check
+        pass
 
     current_year = datetime.now().year
     current_month = datetime.now().month
