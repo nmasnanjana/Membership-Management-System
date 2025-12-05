@@ -48,6 +48,11 @@ def staff_log_in(request):
                 clear_login_attempts(username)  # Clear failed attempts on success
                 logger.info(f'Successful login: {username}')
                 messages.success(request, "You have been logged in successfully!")
+                
+                # Redirect to the 'next' parameter if provided, otherwise to dashboard
+                next_url = request.GET.get('next') or request.POST.get('next')
+                if next_url:
+                    return redirect(next_url)
                 return redirect('dashboard')
             else:
                 messages.error(request, "Your account has been deactivated. Please contact administrator.")

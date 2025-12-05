@@ -231,3 +231,8 @@ LOGGING = {
 LOGS_DIR = os.path.join(BASE_DIR, 'logs')
 if not os.path.exists(LOGS_DIR):
     os.makedirs(LOGS_DIR)
+
+# Authentication settings
+LOGIN_URL = '/login/'  # URL where users are redirected to login
+LOGIN_REDIRECT_URL = '/'  # Default redirect after login (dashboard)
+LOGOUT_REDIRECT_URL = '/login/'  # Redirect after logout
