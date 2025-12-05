@@ -125,13 +125,97 @@ A comprehensive Django-based web application for managing members, meetings, and
 ## 📋 Prerequisites
 
 Before you begin, ensure you have the following installed:
-- Python 3.8 or higher
-- pip (Python package manager)
-- Virtual environment (recommended)
+- **For Docker deployment**: Docker and Docker Compose
+- **For local development**: Python 3.8 or higher, pip, MySQL server, virtual environment (recommended)
 
 ---
 
 ## 🚀 Installation & Setup
+
+### Option 1: Docker Deployment (Recommended)
+
+#### 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd Membership-Management-System
+```
+
+#### 2. Configure Environment Variables
+
+Create a `.env` file in the project root (or update the existing one):
+
+```env
+# Django Settings
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Server Port Configuration (exposed to host)
+PORT=8000
+
+# MySQL Database Configuration (for Docker container)
+DB_NAME=membership_db
+DB_USER=mms_user
+DB_PASSWORD=your_secure_password_here
+DB_HOST=db
+DB_PORT=3306
+
+# MySQL Root Password (for container initialization)
+DB_ROOT_PASSWORD=your_root_password_here
+```
+
+**Important**: 
+- Update `SECRET_KEY`, `DB_PASSWORD`, and `DB_ROOT_PASSWORD` with secure values
+- `DB_HOST=db` is required for Docker Compose (uses service name)
+- `PORT` can be changed if you want to use a different port
+
+#### 3. Build and Start Containers
+
+```bash
+docker-compose up -d --build
+```
+
+This will:
+- Build the Django application container
+- Create and start MySQL container
+- Run database migrations
+- Start the web server on port 8000 (or your configured PORT)
+
+#### 4. Create Superuser
+
+```bash
+docker-compose exec web python manage.py createsuperuser
+```
+
+#### 5. Access the Application
+
+- Web application: `http://localhost:8000` (or your configured PORT)
+- MySQL is **not exposed** to the host - only accessible within Docker network
+
+#### 6. Useful Docker Commands
+
+```bash
+# View logs
+docker-compose logs -f
+
+# Stop containers
+docker-compose down
+
+# Stop and remove volumes (⚠️ deletes database data)
+docker-compose down -v
+
+# Restart containers
+docker-compose restart
+
+# Run migrations
+docker-compose exec web python manage.py migrate
+
+# Access Django shell
+docker-compose exec web python manage.py shell
+```
+
+### Option 2: Local Development Setup
 
 ### 1. Clone the Repository
 
@@ -172,9 +256,24 @@ Create a `.env` file in the project root:
 SECRET_KEY=your-secret-key-here
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Server Port Configuration
+PORT=8000
+
+# MySQL Database Configuration
+DB_NAME=membership_db
+DB_USER=root
+DB_PASSWORD=your_mysql_password_here
+DB_HOST=localhost
+DB_PORT=3306
 ```
 
-**Note**: For production, set `DEBUG=False` and use a secure `SECRET_KEY`.
+**Note**: 
+- For production, set `DEBUG=False` and use a secure `SECRET_KEY`
+- Update MySQL credentials (DB_NAME, DB_USER, DB_PASSWORD) with your actual MySQL server details
+- Make sure the database exists before running migrations
+- For local development, use `DB_HOST=localhost`
+- For Docker, use `DB_HOST=db` (Docker service name)
 
 ### 6. Run Migrations
 
@@ -211,10 +310,16 @@ python manage.py collectstatic
 ### 9. Run Development Server
 
 ```bash
+# Use PORT from .env file (default: 8000)
+python manage.py runserver 0.0.0.0:${PORT:-8000}
+```
+
+Or simply:
+```bash
 python manage.py runserver
 ```
 
-The application will be available at `http://127.0.0.1:8000/`
+The application will be available at `http://127.0.0.1:8000/` (or your configured PORT)
 
 ---
 
@@ -455,17 +560,26 @@ For development, ensure `DEBUG=True` in your `.env` file. For production, always
 
 ## 📝 Notes
 
-- The system uses MySQL database (configured via .env file)
-- Database credentials are stored in `.env` file (DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)
-- Make sure MySQL server is running and database is created before running migrations
-- Media files are stored in the `media/` directory
-- QR codes are automatically generated in PNG format
-- Excel exports use the `.xlsx` format
-- Session timeout is set to 6 hours (can be adjusted in settings)
-- Automatic member deactivation runs via Django signals (no cron jobs needed)
-- Bulk attendance marking includes auto-save feature (data saved in browser)
-- All pages require authentication - site is fully secured
-- Normal staff can only mark new attendance; superusers have full access
+- **Database**: The system uses MySQL database (configured via .env file)
+  - For Docker: Database runs in a separate container, not exposed to host
+  - For local: Requires MySQL server installation
+- **Docker Network**: All containers communicate via internal Docker network (`mms_network`)
+  - Only port 8000 (or configured PORT) is exposed to host
+  - MySQL is only accessible within Docker network for security
+- **Port Configuration**: Server port is configurable via `PORT` environment variable
+  - Default: 8000
+  - Update `.env` file to change port
+- **Database Credentials**: Stored in `.env` file (DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)
+  - For Docker: Use `DB_HOST=db` (Docker service name)
+  - For local: Use `DB_HOST=localhost`
+- **Media Files**: Stored in the `media/` directory
+- **QR Codes**: Automatically generated in PNG format
+- **Excel Exports**: Use the `.xlsx` format
+- **Session Timeout**: Set to 6 hours (can be adjusted in settings)
+- **Automatic Member Deactivation**: Runs via Django signals (no cron jobs needed)
+- **Bulk Attendance Marking**: Includes auto-save feature (data saved in browser)
+- **Security**: All pages require authentication - site is fully secured
+- **Permissions**: Normal staff can only mark new attendance; superusers have full access
 
 ---
 
