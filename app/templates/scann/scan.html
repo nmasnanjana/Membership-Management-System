@@ -54,9 +54,19 @@
                             <div class="input-group">
                                 {{ form.member_id }}
                                 <button type="submit" class="btn btn-primary-modern">
-                                    <i class="fas fa-search"></i>
+                                    <i class="fas fa-search"></i> View Member
                                 </button>
                             </div>
+                            {% if form.member_id.help_text %}
+                                <small class="form-text text-muted">{{ form.member_id.help_text }}</small>
+                            {% endif %}
+                            {% if form.member_id.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.member_id.errors %}
+                                        <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </form>
                     </div>
                 </div>
@@ -65,26 +75,107 @@
     </div>
 
     <script type="text/javascript">
-        let scanner = new Instascan.Scanner({ 
-            video: document.getElementById('preview'),
-            mirror: false
-        });
+        let scanner = null;
+        let isScanning = false;
+        let lastScannedContent = '';
+        let lastScanTime = 0;
+        let scanCooldown = 2000; // 2 seconds cooldown to prevent duplicate scans
+        
+        // Initialize scanner
+        function initScanner() {
+            scanner = new Instascan.Scanner({ 
+                video: document.getElementById('preview'),
+                mirror: false,
+                scanPeriod: 5, // Scan every 5ms for better performance
+                backgroundScan: false // Only scan when visible
+            });
 
-        scanner.addListener('scan', function (content) {
-            document.getElementById('id_member_id').value = content;
-            document.getElementById('myForm').submit();
-        });
+            scanner.addListener('scan', function (content) {
+                // Prevent duplicate scans
+                const now = Date.now();
+                if (content === lastScannedContent && (now - lastScanTime) < scanCooldown) {
+                    return;
+                }
+                
+                lastScannedContent = content;
+                lastScanTime = now;
+                
+                // Trim whitespace from scanned content
+                content = content.trim();
+                
+                if (content && !isScanning) {
+                    isScanning = true;
+                    
+                    // Show feedback
+                    const input = document.getElementById('id_member_id');
+                    input.value = content;
+                    input.classList.add('border-success');
+                    
+                    // Disable scanner temporarily to prevent multiple submissions
+                    setTimeout(function() {
+                        document.getElementById('myForm').submit();
+                    }, 300); // Small delay to show feedback
+                }
+            });
 
-        Instascan.Camera.getCameras().then(function (cameras) {
-            if (cameras.length > 0) {
-                scanner.start(cameras[0]);
-            } else {
-                console.error('No cameras found.');
-                document.getElementById('preview').style.display = 'none';
+            // Get cameras and start scanner
+            Instascan.Camera.getCameras().then(function (cameras) {
+                if (cameras.length > 0) {
+                    // Prefer back camera (usually last in array on mobile)
+                    let selectedCamera = cameras[0];
+                    if (cameras.length > 1) {
+                        // Try to find back camera
+                        for (let i = cameras.length - 1; i >= 0; i--) {
+                            if (cameras[i].name && cameras[i].name.toLowerCase().includes('back')) {
+                                selectedCamera = cameras[i];
+                                break;
+                            }
+                        }
+                        // If no back camera found, use the last one (usually back on mobile)
+                        if (selectedCamera === cameras[0] && cameras.length > 1) {
+                            selectedCamera = cameras[cameras.length - 1];
+                        }
+                    }
+                    
+                    scanner.start(selectedCamera).then(function() {
+                        console.log('Scanner started successfully');
+                    }).catch(function(err) {
+                        console.error('Error starting scanner:', err);
+                        showCameraError('Failed to start camera. Please check permissions.');
+                    });
+                } else {
+                    showCameraError('No cameras found. Please connect a camera device.');
+                }
+            }).catch(function (e) {
+                console.error('Camera error:', e);
+                showCameraError('Camera access denied or not available. Please check permissions.');
+            });
+        }
+        
+        function showCameraError(message) {
+            const preview = document.getElementById('preview');
+            preview.style.display = 'none';
+            const container = preview.parentElement;
+            container.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i>' + message + '</div>';
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initScanner();
+        });
+        
+        // Cleanup when leaving page
+        window.addEventListener('beforeunload', function() {
+            if (scanner) {
+                scanner.stop();
             }
-        }).catch(function (e) {
-            console.error(e);
-            document.getElementById('preview').style.display = 'none';
+        });
+        
+        // Stop scanner when form is submitted to prevent duplicate scans
+        document.getElementById('myForm').addEventListener('submit', function() {
+            if (scanner) {
+                scanner.stop();
+            }
         });
     </script>
 {% endblock content %}
