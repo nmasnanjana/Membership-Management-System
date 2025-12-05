@@ -104,6 +104,33 @@
                             {{ form.member_profile_picture }}
                             <small class="text-muted">Leave empty to keep current picture</small>
                         </div>
+                        
+                        {% if user.is_superuser %}
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-toggle-on me-1 text-primary"></i>Member Status
+                                </label>
+                                <div class="form-check form-switch mt-2">
+                                    {{ form.member_is_active }}
+                                    <label class="form-check-label" for="{{ form.member_is_active.id_for_label }}">
+                                        <span id="status-text">{% if member.member_is_active %}Active{% else %}Inactive{% endif %}</span> Member
+                                    </label>
+                                </div>
+                                {% if form.member_is_active.help_text %}
+                                    <small class="text-muted d-block mt-1">{{ form.member_is_active.help_text }}</small>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-user-tag me-1 text-primary"></i>Club Role
+                                </label>
+                                {{ form.member_role }}
+                                {% if form.member_role.help_text %}
+                                    <small class="text-muted">{{ form.member_role.help_text }}</small>
+                                {% endif %}
+                            </div>
+                        {% endif %}
                     </div>
                     
                     <div class="mt-4 d-flex gap-2">
@@ -118,4 +145,20 @@
             </div>
         </div>
     </div>
+    
+    {% if user.is_superuser %}
+    <script>
+        // Update status text when toggle changes
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusToggle = document.getElementById('{{ form.member_is_active.id_for_label }}');
+            const statusText = document.getElementById('status-text');
+            
+            if (statusToggle && statusText) {
+                statusToggle.addEventListener('change', function() {
+                    statusText.textContent = this.checked ? 'Active' : 'Inactive';
+                });
+            }
+        });
+    </script>
+    {% endif %}
 {% endblock content %}

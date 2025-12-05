@@ -12,6 +12,21 @@
             <div class="modern-card-header">
                 <h5 class="mb-0">
                     <i class="fas fa-id-badge me-2"></i>{{ member.member_initials }} {{ member.member_first_name }} {{ member.member_last_name }}
+                    {% if member.member_role %}
+                        {% if member.member_role == 'PRESIDENT' or member.member_role == 'SECRETARY' or member.member_role == 'TREASURY' %}
+                            <span class="badge bg-warning text-dark ms-2">
+                                <i class="fas fa-crown me-1"></i>{{ member.get_member_role_display }}
+                            </span>
+                        {% elif member.member_role == 'VICE_PRESIDENT' or member.member_role == 'VICE_SECRETARY' or member.member_role == 'VICE_TREASURY' %}
+                            <span class="badge bg-info ms-2">
+                                <i class="fas fa-star me-1"></i>{{ member.get_member_role_display }}
+                            </span>
+                        {% elif member.member_role == 'COMMITTEE_MEMBER' %}
+                            <span class="badge bg-success ms-2">
+                                <i class="fas fa-users me-1"></i>{{ member.get_member_role_display }}
+                            </span>
+                        {% endif %}
+                    {% endif %}
                 </h5>
             </div>
             <div class="modern-card-body">
@@ -20,8 +35,25 @@
                     <div class="col-md-12">
                         <div class="row g-4">
                             <div class="col-md-6 text-center">
-                                <div class="p-4 bg-light rounded-3">
+                                <div class="p-4 bg-light rounded-3 position-relative">
                                     <h6 class="mb-3 text-muted">Profile Picture</h6>
+                                    {% if member.member_role %}
+                                        <div class="position-absolute top-0 end-0 m-3" style="z-index: 10;">
+                                            {% if member.member_role == 'PRESIDENT' or member.member_role == 'SECRETARY' or member.member_role == 'TREASURY' %}
+                                                <span class="badge bg-warning text-dark p-2" style="font-size: 1.2rem;" title="Main Role">
+                                                    <i class="fas fa-crown"></i>
+                                                </span>
+                                            {% elif member.member_role == 'VICE_PRESIDENT' or member.member_role == 'VICE_SECRETARY' or member.member_role == 'VICE_TREASURY' %}
+                                                <span class="badge bg-info p-2" style="font-size: 1.2rem;" title="Vice Role">
+                                                    <i class="fas fa-star"></i>
+                                                </span>
+                                            {% elif member.member_role == 'COMMITTEE_MEMBER' %}
+                                                <span class="badge bg-success p-2" style="font-size: 1.2rem;" title="Committee Member">
+                                                    <i class="fas fa-users"></i>
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
                                     {% if member.member_profile_picture %}
                                         <img src="{{ member.member_profile_picture.url }}" 
                                              class="img-fluid rounded shadow" 
@@ -105,6 +137,26 @@
                                     {% endif %}
                                 </div>
                             </div>
+                            {% if member.member_role %}
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted">Club Role</label>
+                                <div class="form-control-modern bg-light">
+                                    {% if member.member_role == 'PRESIDENT' or member.member_role == 'SECRETARY' or member.member_role == 'TREASURY' %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-crown me-1"></i>{{ member.get_member_role_display }}
+                                        </span>
+                                    {% elif member.member_role == 'VICE_PRESIDENT' or member.member_role == 'VICE_SECRETARY' or member.member_role == 'VICE_TREASURY' %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-star me-1"></i>{{ member.get_member_role_display }}
+                                        </span>
+                                    {% elif member.member_role == 'COMMITTEE_MEMBER' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-users me-1"></i>{{ member.get_member_role_display }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

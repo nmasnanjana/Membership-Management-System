@@ -64,15 +64,34 @@
                         {% for member in members %}
                             <tr>
                                 <td class="align-middle">
-                                    {% if member.member_profile_picture %}
-                                        <img class="rounded-circle" src="{{ member.member_profile_picture.url }}" 
-                                             alt="Profile" style="width: 50px; height: 50px; object-fit: cover; border: 2px solid #e5e7eb;">
-                                    {% else %}
-                                        <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center" 
-                                             style="width: 50px; height: 50px;">
-                                            <i class="fas fa-user text-white"></i>
-                                        </div>
-                                    {% endif %}
+                                    <div class="position-relative d-inline-block">
+                                        {% if member.member_profile_picture %}
+                                            <img class="rounded-circle" src="{{ member.member_profile_picture.url }}" 
+                                                 alt="Profile" style="width: 50px; height: 50px; object-fit: cover; border: 2px solid #e5e7eb;">
+                                        {% else %}
+                                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center" 
+                                                 style="width: 50px; height: 50px;">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                        {% if member.member_role %}
+                                            <span class="position-absolute bottom-0 end-0" style="transform: translate(25%, 25%);">
+                                                {% if member.member_role == 'PRESIDENT' or member.member_role == 'SECRETARY' or member.member_role == 'TREASURY' %}
+                                                    <span class="badge bg-warning text-dark" style="font-size: 0.7rem; padding: 0.25rem 0.4rem;" title="Main Role">
+                                                        <i class="fas fa-crown"></i>
+                                                    </span>
+                                                {% elif member.member_role == 'VICE_PRESIDENT' or member.member_role == 'VICE_SECRETARY' or member.member_role == 'VICE_TREASURY' %}
+                                                    <span class="badge bg-info" style="font-size: 0.7rem; padding: 0.25rem 0.4rem;" title="Vice Role">
+                                                        <i class="fas fa-star"></i>
+                                                    </span>
+                                                {% elif member.member_role == 'COMMITTEE_MEMBER' %}
+                                                    <span class="badge bg-success" style="font-size: 0.7rem; padding: 0.25rem 0.4rem;" title="Committee Member">
+                                                        <i class="fas fa-users"></i>
+                                                    </span>
+                                                {% endif %}
+                                            </span>
+                                        {% endif %}
+                                    </div>
                                 </td>
                                 <td class="align-middle">{{ member.member_id }}</td>
                                 <td class="align-middle">{{ member.member_first_name }}</td>

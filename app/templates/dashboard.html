@@ -11,7 +11,7 @@
 {% endblock head %}
 
 {% block content %}
-    <div class="container-fluid px-3 px-md-4">
+    <div class="container-fluid px-3 px-md-4" style="overflow-x: hidden;">
         <div class="mb-4">
             <h1 class="page-title text-center">
                 <i class="fas fa-chart-line text-primary me-2"></i>Dashboard Overview
@@ -289,7 +289,124 @@
                 </div>
             </div>
         </div>
+
+        <!-- Member Roles Section - Row 1: Main and Vice Roles -->
+        <div class="row mb-3 g-3">
+        <!-- Main 3 Roles Widget -->
+        <div class="col-12 col-lg-6">
+            <div class="modern-card h-100">
+                <div class="modern-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-crown text-warning me-2"></i>Main Roles
+                    </h5>
+                </div>
+                <div class="modern-card-body">
+                    {% if main_role_members %}
+                        <div class="list-group list-group-flush">
+                            {% for member in main_role_members %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 py-2" style="background: transparent;">
+                                    <div class="d-flex align-items-center">
+                                        {% if member.member_profile_picture %}
+                                            <img src="{{ member.member_profile_picture.url }}" alt="{{ member.member_initials }}" 
+                                                 class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="rounded-circle me-3 d-flex align-items-center justify-content-center" 
+                                                 style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.2);">
+                                                <i class="fas fa-user" style="color: #3b82f6;"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="fw-bold" style="font-size: 0.9rem;">{{ member.member_id }} - {{ member.member_first_name }} {{ member.member_last_name }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0 text-center py-3">No main roles assigned yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sub 3 Roles Widget -->
+        <div class="col-12 col-lg-6">
+            <div class="modern-card h-100">
+                <div class="modern-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-tie text-info me-2"></i>Vice Roles
+                    </h5>
+                </div>
+                <div class="modern-card-body">
+                    {% if sub_role_members %}
+                        <div class="list-group list-group-flush">
+                            {% for member in sub_role_members %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 py-2" style="background: transparent;">
+                                    <div class="d-flex align-items-center">
+                                        {% if member.member_profile_picture %}
+                                            <img src="{{ member.member_profile_picture.url }}" alt="{{ member.member_initials }}" 
+                                                 class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="rounded-circle me-3 d-flex align-items-center justify-content-center" 
+                                                 style="width: 40px; height: 40px; background: rgba(6, 182, 212, 0.2);">
+                                                <i class="fas fa-user" style="color: #06b6d4;"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="fw-bold" style="font-size: 0.9rem;">{{ member.member_id }} - {{ member.member_first_name }} {{ member.member_last_name }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0 text-center py-3">No vice roles assigned yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Member Roles Section - Row 2: Committee Members -->
+        <div class="row mb-3 g-3">
+        <!-- Committee Members Widget -->
+        <div class="col-12">
+            <div class="modern-card h-100">
+                <div class="modern-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users text-success me-2"></i>Committee Members
+                    </h5>
+                </div>
+                <div class="modern-card-body" style="max-height: 400px; overflow-y: auto;">
+                    {% if committee_members %}
+                        <div class="list-group list-group-flush">
+                            {% for member in committee_members %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 py-2" style="background: transparent;">
+                                    <div class="d-flex align-items-center">
+                                        {% if member.member_profile_picture %}
+                                            <img src="{{ member.member_profile_picture.url }}" alt="{{ member.member_initials }}" 
+                                                 class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="rounded-circle me-3 d-flex align-items-center justify-content-center" 
+                                                 style="width: 40px; height: 40px; background: rgba(16, 185, 129, 0.2);">
+                                                <i class="fas fa-user" style="color: #10b981;"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="fw-bold" style="font-size: 0.9rem;">{{ member.member_id }} - {{ member.member_first_name }} {{ member.member_last_name }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0 text-center py-3">No committee members assigned yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        </div>
     </div>
+</div>
 
     <script>
         // Member Status Pie Chart
@@ -533,6 +650,12 @@
             .fa-2x {
                 font-size: 1.5rem !important;
             }
+        }
+        
+        /* Prevent horizontal scroll */
+        .container-fluid {
+            max-width: 100%;
+            overflow-x: hidden;
         }
     </style>
 
