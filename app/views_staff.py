@@ -10,28 +10,54 @@ from .constants import PAGINATION_STAFF_LIST
 
 
 def staff_log_in(request):
+    from app.security import check_account_lockout, record_failed_login, clear_login_attempts
+    import logging
+    
+    logger = logging.getLogger('security')
     context = context_data(request)
     context['page_name'] = 'Staff Login'
     context['navbar_top'] = False
     context['footer'] = False
 
     if request.method == "POST":
-
-        username = request.POST['username']
-        password = request.POST['password']
-
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+        
+        # Check for account lockout
+        is_locked, remaining_time = check_account_lockout(username)
+        if is_locked:
+            minutes = remaining_time // 60
+            messages.error(
+                request, 
+                f'Account is temporarily locked due to multiple failed login attempts. '
+                f'Please try again in {minutes} minute(s).'
+            )
+            logger.warning(f'Login attempt on locked account: {username}')
+            return render(request, 'staff/login.html', context)
+        
+        # Validate input
+        if not username or not password:
+            messages.error(request, "Please provide both username and password.")
+            return render(request, 'staff/login.html', context)
+        
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
-            login(request, user)
-            messages.success(request, "You have been logged in successfully!")
-            return redirect('dashboard')
+            if user.is_active:
+                login(request, user)
+                clear_login_attempts(username)  # Clear failed attempts on success
+                logger.info(f'Successful login: {username}')
+                messages.success(request, "You have been logged in successfully!")
+                return redirect('dashboard')
+            else:
+                messages.error(request, "Your account has been deactivated. Please contact administrator.")
+                logger.warning(f'Login attempt on inactive account: {username}')
         else:
-            messages.error(request, "Username or Password is Wrong please Try Again!")
-            return redirect('login')
+            record_failed_login(username)
+            messages.error(request, "Username or Password is incorrect. Please try again.")
+            logger.warning(f'Failed login attempt: {username}')
 
-    else:
-        return render(request, 'staff/login.html', context)
+    return render(request, 'staff/login.html', context)
 
 
 @login_required
