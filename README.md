@@ -525,6 +525,11 @@ Membership-Management-System/
   - X-Content-Type-Options
   - HSTS (HTTP Strict Transport Security)
 - **Security Logging**: All security events are logged
+- **JSON Audit Logging**: Comprehensive JSON-formatted audit logs with:
+  - Severity level, timestamp, user, action, target
+  - Source information (IP address, user agent)
+  - Request details (endpoint, method, path)
+  - All logs output to stdout for Docker container logs
 - **Session Security**: 
   - Secure cookies (HTTPS in production)
   - HttpOnly cookies
