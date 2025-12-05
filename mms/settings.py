@@ -54,15 +54,16 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'app.security.SecurityHeadersMiddleware',  # Security headers
-    'app.security.RateLimitMiddleware',  # Rate limiting
-    'app.security.SecurityLoggingMiddleware',  # Security logging
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'app.middleware_audit.AuditLoggingMiddleware',  # Audit logging (after auth to capture user info)
+    'app.security.SecurityHeadersMiddleware',  # Security headers
+    'app.security.RateLimitMiddleware',  # Rate limiting
+    'app.security.SecurityLoggingMiddleware',  # Security logging
 ]
 
 ROOT_URLCONF = 'mms.urls'
@@ -199,6 +200,8 @@ X_FRAME_OPTIONS = 'DENY'
 
 # Logging Configuration
 # OWASP: Security Logging and Monitoring Failures
+# JSON Audit Logging for comprehensive audit trail
+# All logs output to stdout/stderr for Docker container logs
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -207,12 +210,24 @@ LOGGING = {
             'format': '{levelname} {asctime} {module} {message}',
             'style': '{',
         },
-        'security': {
-            'format': '{levelname} {asctime} {module} {message} | IP: {extra[ip]} | User: {extra[user]}',
-            'style': '{',
+        'json_audit': {
+            '()': 'app.audit_logger.JSONAuditFormatter',
         },
     },
     'handlers': {
+        'console': {
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'json_audit',
+            'stream': 'ext://sys.stdout',  # Output to stdout for Docker logs
+        },
+        'audit_console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'json_audit',
+            'stream': 'ext://sys.stdout',  # Output to stdout for Docker logs
+        },
+        # Keep file handlers for backward compatibility (optional)
         'file': {
             'level': 'INFO',
             'class': 'logging.FileHandler',
@@ -223,22 +238,22 @@ LOGGING = {
             'level': 'WARNING',
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'logs', 'security_events.log'),
-            'formatter': 'security',
-        },
-        'console': {
-            'level': 'DEBUG' if DEBUG else 'INFO',
-            'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['file', 'console'],
+            'handlers': ['console'],
             'level': 'INFO',
-            'propagate': True,
+            'propagate': False,
+        },
+        'audit': {
+            'handlers': ['audit_console'],
+            'level': 'INFO',
+            'propagate': False,
         },
         'security': {
-            'handlers': ['security_file', 'console'],
+            'handlers': ['audit_console', 'security_file'],
             'level': 'WARNING',
             'propagate': False,
         },
