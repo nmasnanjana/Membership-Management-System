@@ -3,6 +3,7 @@ from .views_staff import *
 from .views_member import *
 from .views_meeting import *
 from .views_attendance import *
+from .views_attendance_bulk import *
 from .views import *
 
 urlpatterns = [
@@ -26,6 +27,8 @@ urlpatterns = [
     path('meeting/edit/<meeting_date>', meeting_edit, name="meeting_edit"),
 
     path('attendance/mark/', attendance_mark, name='attendance_mark'),
+    path('attendance/bulk/', attendance_bulk_mark, name='attendance_bulk_mark'),
+    path('attendance/mark-all-present/<meeting_id>', attendance_mark_all_present, name='attendance_mark_all_present'),
     path('attendance/date/all', attendance_full_view, name='attendance_date_all'),
     path('attendance/date/<meeting_id>', attendance_date_view, name='attendance_date'),
     path('attendance/delete/<meeting_id>/<attendance_id>', attendance_delete, name='attendance_delete'),
