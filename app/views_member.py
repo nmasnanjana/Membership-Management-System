@@ -43,6 +43,19 @@ def is_image(file):
     return file_extension in ALLOWED_IMAGE_EXTENSIONS
 
 
+def validate_file_security(file):
+    """Enhanced file validation with security checks"""
+    from app.security_validators import validate_file_upload, sanitize_filename
+    try:
+        validate_file_upload(file)
+        # Sanitize filename
+        if hasattr(file, 'name'):
+            file.name = sanitize_filename(file.name)
+        return True
+    except Exception as e:
+        return str(e)
+
+
 @login_required
 def member_register(request):
     context = context_data(request)
@@ -56,10 +69,10 @@ def member_register(request):
             # Check if a member with the same ID already exists
             if Member.objects.filter(member_id=member_id).exists():
                 form.add_error('member_id', 'Member with this ID already exists.')
-            elif not is_image(profile_picture):
-                form.add_error('member_profile_picture', f'Please upload a valid image file ({", ".join(ALLOWED_IMAGE_EXTENSIONS)}).')
-            elif profile_picture.size > MAX_IMAGE_SIZE:
-                form.add_error('member_profile_picture', f'Image size must be less than {MAX_IMAGE_SIZE // (1024*1024)}MB.')
+            # Enhanced security validation
+            file_validation = validate_file_security(profile_picture)
+            if file_validation is not True:
+                form.add_error('member_profile_picture', file_validation)
             else:
                 # Create the Member object
                 member = form.save(commit=False)
@@ -173,6 +186,14 @@ def member_edit(request, member_id):
 
                 # Check if a new profile picture was uploaded
                 if profile_picture and hasattr(profile_picture, 'name'):
+                    # Enhanced security validation
+                    file_validation = validate_file_security(profile_picture)
+                    if file_validation is not True:
+                        form.add_error('member_profile_picture', file_validation)
+                        context['form'] = form
+                        context['member'] = member
+                        return render(request, 'member/edit.html', context)
+                    
                     # Delete old profile picture if it exists
                     if member.member_profile_picture:
                         old_picture_path = member.member_profile_picture.path
