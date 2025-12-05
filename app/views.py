@@ -28,8 +28,9 @@ def context_data(request):
     return context
 
 
+@login_required
 def dashboard(request):
-    from django.db.models import Q, Sum, Avg
+    from django.db.models import Q, Sum, Avg, F
     from collections import defaultdict
     from django.core.cache import cache
     from .utils import check_and_deactivate_inactive_members
@@ -224,6 +225,28 @@ def dashboard(request):
     context['main_role_members'] = main_role_members
     context['sub_role_members'] = sub_role_members
     context['committee_members'] = committee_members
+    
+    # Finance Calculations
+    # Total collected: Sum of meeting_fee for all attendance records where fee is paid
+    total_collected_result = MemberAttendance.objects.filter(
+        attendance_fee_status=True
+    ).select_related('meeting_date').aggregate(
+        total=Sum('meeting_date__meeting_fee')
+    )
+    total_collected = total_collected_result['total'] if total_collected_result['total'] else 0
+    
+    # Total to receive: Sum of meeting_fee for members who attended but didn't pay
+    total_to_receive_result = MemberAttendance.objects.filter(
+        attendance_status=True,
+        attendance_fee_status=False
+    ).select_related('meeting_date').aggregate(
+        total=Sum('meeting_date__meeting_fee')
+    )
+    total_to_receive = total_to_receive_result['total'] if total_to_receive_result['total'] else 0
+    
+    # Format numbers with commas for better readability (meeting_fee is IntegerField, so no decimals)
+    context['total_collected'] = f'{int(total_collected):,}'
+    context['total_to_receive'] = f'{int(total_to_receive):,}'
 
     return render(request, 'dashboard.html', context)
 
@@ -248,14 +271,20 @@ def member_attendance_report(request, member_id):
 
     if meetings_in_current_year != 0:
         annual_member_present = (member_attendance_current_year / meetings_in_current_year) * 100
-        member_fee_percentage = (member_fee_present_days / member_attendance_current_year) * 100
-
         format_annual_member_present = f"{annual_member_present:.1f}"
-        format_member_fee_percentage = f"{member_fee_percentage:.1f}"
-
-        context['current_year'] = current_year
         context['member_attendance_percentage'] = format_annual_member_present
+    else:
+        context['member_attendance_percentage'] = "0.0"
+    
+    # Calculate fee percentage only if member has attended at least one meeting
+    if member_attendance_current_year != 0:
+        member_fee_percentage = (member_fee_present_days / member_attendance_current_year) * 100
+        format_member_fee_percentage = f"{member_fee_percentage:.1f}"
         context['member_fee_percentage'] = format_member_fee_percentage
+    else:
+        context['member_fee_percentage'] = "0.0"
+    
+    context['current_year'] = current_year
 
     try:
         from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -287,6 +316,7 @@ def member_attendance_report(request, member_id):
         return redirect('member_list')
 
 
+@login_required
 def member_qr_generator(request, member_id):
     try:
         member = get_object_or_404(Member, member_id=member_id)
@@ -380,16 +410,33 @@ def export_attendance_report(request, meeting_id):
         return redirect('attendance_date_all')
 
 
+@login_required
 def qr_scanner(request):
     context = context_data(request)
     context['page_name'] = 'QR Scanner'
+    
     if request.method == "POST":
         form = QRScann(request.POST)
         if form.is_valid():
             member_id = form.cleaned_data['member_id']
-            return redirect('member_view', member_id)
-
-    form = QRScann()
+            # Additional check to ensure member exists and is active (optional)
+            from .models import Member
+            try:
+                member = Member.objects.get(member_id=member_id)
+                if not member.member_is_active:
+                    messages.warning(request, f'Member "{member_id}" is inactive.')
+                return redirect('member_view', member_id)
+            except Member.DoesNotExist:
+                messages.error(request, f'Member with ID "{member_id}" not found.')
+                form = QRScann()
+        else:
+            # Form validation errors will be displayed
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, error)
+    else:
+        form = QRScann()
+    
     context['form'] = form
     return render(request, 'scann/scan.html', context)
 
