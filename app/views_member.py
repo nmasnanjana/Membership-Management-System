@@ -7,6 +7,7 @@ from .forms import *
 from .views import context_data
 from .utils import generate_qr_code
 from .constants import *
+from .audit_logger import audit_log_user_action
 
 
 @login_required
@@ -102,6 +103,17 @@ def member_register(request):
                 member.member_qr_code = generate_qr_code(member_id)
                 member.save()
 
+                # Audit log: member created
+                audit_log_user_action(
+                    request=request,
+                    action='member_created',
+                    target=f'member:{member_id}',
+                    extra_details={
+                        'member_id': member_id,
+                        'member_name': f'{member.member_initials} {member.member_first_name} {member.member_last_name}',
+                    }
+                )
+
                 return redirect('member_list')  # Redirect to a member list view
 
     else:
@@ -159,8 +171,23 @@ def member_delete(request, member_id):
             except OSError:
                 pass  # Directory doesn't exist or can't be deleted
 
+        # Audit log: member deletion
+        member_name = f'{member.member_initials} {member.member_first_name} {member.member_last_name}'
+        
         # Delete the Member object
         member.delete()
+        
+        # Audit log: member deleted
+        audit_log_user_action(
+            request=request,
+            action='member_deleted',
+            target=f'member:{member_id}',
+            extra_details={
+                'member_id': member_id,
+                'member_name': member_name,
+            }
+        )
+        
         messages.success(request, 'Member deleted successfully.')
 
         return redirect('member_list')
@@ -256,6 +283,19 @@ def member_edit(request, member_id):
                     member.member_role = member_role
                 
                 member.save()
+
+                # Audit log: member updated
+                audit_log_user_action(
+                    request=request,
+                    action='member_updated',
+                    target=f'member:{member_id}',
+                    extra_details={
+                        'member_id': member_id,
+                        'member_name': f'{member.member_initials} {member.member_first_name} {member.member_last_name}',
+                        'is_active': member.member_is_active,
+                        'role': member.member_role or 'No Role',
+                    }
+                )
 
                 return redirect('member_list')  # Redirect to a member list view
 
