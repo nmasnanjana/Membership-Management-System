@@ -410,6 +410,193 @@
             border-color: var(--border-color);
             color: var(--text-primary);
         }
+        
+        /* Modern Toast Notification System */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        @media (max-width: 768px) {
+            .toast-container {
+                top: 70px;
+                right: 10px;
+                left: 10px;
+                max-width: calc(100% - 20px);
+            }
+            
+            .toast-modern {
+                min-width: auto;
+                width: 100%;
+            }
+            
+            .toast-modern {
+                transform: translateY(-100px);
+            }
+            
+            .toast-modern.show {
+                transform: translateY(0);
+            }
+            
+            .toast-modern.hiding {
+                transform: translateY(-100px);
+            }
+        }
+        
+        .toast-modern {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            margin-bottom: 1rem;
+            opacity: 0;
+            transform: translateX(400px);
+            transition: all 0.3s ease;
+            min-width: 300px;
+        }
+        
+        .toast-modern.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .toast-modern.hiding {
+            opacity: 0;
+            transform: translateX(400px);
+        }
+        
+        .toast-header-modern {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .toast-body-modern {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .toast-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+        
+        .toast-message {
+            flex: 1;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        .toast-close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .toast-close-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+        
+        /* Toast Type Colors */
+        .toast-success {
+            border-left: 4px solid var(--success-color);
+        }
+        
+        .toast-success .toast-icon {
+            color: var(--success-color);
+        }
+        
+        .toast-error,
+        .toast-danger {
+            border-left: 4px solid var(--danger-color);
+        }
+        
+        .toast-error .toast-icon,
+        .toast-danger .toast-icon {
+            color: var(--danger-color);
+        }
+        
+        .toast-warning {
+            border-left: 4px solid var(--warning-color);
+        }
+        
+        .toast-warning .toast-icon {
+            color: var(--warning-color);
+        }
+        
+        .toast-info {
+            border-left: 4px solid var(--info-color);
+        }
+        
+        .toast-info .toast-icon {
+            color: var(--info-color);
+        }
+        
+        /* Progress bar for auto-close */
+        .toast-progress {
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+        }
+        
+        .toast-progress-bar {
+            height: 100%;
+            background: currentColor;
+            width: 100%;
+            animation: toastProgress 5s linear forwards;
+        }
+        
+        .toast-success .toast-progress-bar {
+            background: var(--success-color);
+        }
+        
+        .toast-error .toast-progress-bar,
+        .toast-danger .toast-progress-bar {
+            background: var(--danger-color);
+        }
+        
+        .toast-warning .toast-progress-bar {
+            background: var(--warning-color);
+        }
+        
+        .toast-info .toast-progress-bar {
+            background: var(--info-color);
+        }
+        
+        @keyframes toastProgress {
+            from {
+                width: 100%;
+            }
+            to {
+                width: 0%;
+            }
+        }
+        
+        /* Hide inline alerts - toast system handles notifications */
+        .alert-modern.alert-dismissible {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -418,6 +605,9 @@
             {% include 'navbar.html' %}
         {% endif %}
     </header>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <main class="main-content">
         {% block content %}
@@ -440,7 +630,116 @@
                 card.style.animationDelay = `${index * 0.1}s`;
                 card.classList.add('fade-in');
             });
+            
+            // Initialize toast notifications from Django messages
+            initToastNotifications();
         });
+        
+        // Toast Notification System
+        function initToastNotifications() {
+            const messages = [
+                {% if messages %}
+                    {% for message in messages %}
+                        {
+                            text: "{{ message|escapejs }}",
+                            type: "{{ message.tags }}"
+                        }{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                {% endif %}
+            ];
+            
+            messages.forEach(function(message) {
+                if (message.text) {
+                    showToast(message.text, message.type);
+                }
+            });
+        }
+        
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            
+            // Map Django message tags to toast types
+            const typeMap = {
+                'error': 'error',
+                'danger': 'danger',
+                'warning': 'warning',
+                'success': 'success',
+                'info': 'info',
+                'debug': 'info'
+            };
+            
+            const toastType = typeMap[type] || 'info';
+            
+            // Icon mapping
+            const icons = {
+                'success': 'fa-check-circle',
+                'error': 'fa-exclamation-circle',
+                'danger': 'fa-exclamation-triangle',
+                'warning': 'fa-exclamation-triangle',
+                'info': 'fa-info-circle'
+            };
+            
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `toast-modern toast-${toastType}`;
+            toast.innerHTML = `
+                <div class="toast-header-modern">
+                    <div class="toast-icon">
+                        <i class="fas ${icons[toastType]}"></i>
+                    </div>
+                    <button type="button" class="toast-close-btn" onclick="closeToast(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="toast-body-modern">
+                    <div class="toast-message">${message}</div>
+                </div>
+                <div class="toast-progress">
+                    <div class="toast-progress-bar"></div>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Auto-close after 5 seconds
+            const autoCloseTimeout = setTimeout(() => {
+                closeToastElement(toast);
+            }, 5000);
+            
+            // Store timeout ID for manual close
+            toast.dataset.timeoutId = autoCloseTimeout;
+        }
+        
+        function closeToast(button) {
+            const toast = button.closest('.toast-modern');
+            if (toast) {
+                closeToastElement(toast);
+            }
+        }
+        
+        function closeToastElement(toast) {
+            // Clear auto-close timeout if exists
+            if (toast.dataset.timeoutId) {
+                clearTimeout(parseInt(toast.dataset.timeoutId));
+            }
+            
+            // Add hiding class
+            toast.classList.add('hiding');
+            toast.classList.remove('show');
+            
+            // Remove from DOM after animation
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300);
+        }
     </script>
 </body>
 </html>
