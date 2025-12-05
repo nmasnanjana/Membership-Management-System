@@ -56,10 +56,12 @@
 
         {% if selected_meeting and members_data %}
             <!-- Bulk Attendance Form -->
-            <div class="alert alert-warning mb-3" id="unsavedWarning" style="display: none;">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                <strong>Warning:</strong> You have unsaved changes. Your data is saved in browser, but make sure to click "Save All Attendance" to submit.
+            {% if not is_superuser %}
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Note:</strong> You can only mark new attendance. Existing attendance records are locked and can only be edited by superusers.
             </div>
+            {% endif %}
             
             <form method="post" id="bulkAttendanceForm">
                 {% csrf_token %}
@@ -111,7 +113,7 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <input type="hidden" name="member_ids" value="{{ data.member.member_id }}" class="member-id-input">
+                                                <input type="hidden" value="{{ data.member.member_id }}" class="member-id-input">
                                                 <div class="form-check form-check-inline">
                                                     <input class="form-check-input attendance-radio" 
                                                            type="radio" 
@@ -141,8 +143,7 @@
                                                            id="fee_{{ data.member.member_id }}" 
                                                            value="True" 
                                                            {% if data.is_fee_paid %}checked{% endif %}
-                                                           {% if data.has_existing and not is_superuser %}disabled{% endif %}
-                                                           onchange="validateFeeCheckbox(this, '{{ data.member.member_id }}')">
+                                                           {% if data.has_existing and not is_superuser %}disabled{% endif %}>
                                                     <label class="form-check-label" for="fee_{{ data.member.member_id }}">Paid</label>
                                                 </div>
                                             </td>
@@ -276,35 +277,29 @@
                             
                             // Only restore if it's for the same meeting
                             if (data.meeting_id === {{ selected_meeting.meeting_id }}) {
-                                // Ask user if they want to restore
-                                if (confirm('Found previously saved attendance data. Would you like to restore it?')) {
-                                    Object.keys(data.attendance).forEach(memberId => {
-                                        const row = document.querySelector(`input.member-id-input[value="${memberId}"]`)?.closest('tr');
-                                        if (row) {
-                                            const attendance = data.attendance[memberId];
-                                            const presentRadio = row.querySelector(`input[name="attendance_status_${memberId}"][value="True"]`);
-                                            const absentRadio = row.querySelector(`input[name="attendance_status_${memberId}"][value="False"]`);
-                                            const feeCheckbox = row.querySelector(`input[id="fee_${memberId}"]`);
-                                            
-                                            if (attendance.is_present && presentRadio) {
-                                                presentRadio.checked = true;
-                                            } else if (!attendance.is_present && absentRadio) {
-                                                absentRadio.checked = true;
-                                            }
-                                            
-                                            if (feeCheckbox) {
-                                                feeCheckbox.checked = attendance.is_fee_paid;
-                                            }
+                                // Automatically restore data without prompting user
+                                Object.keys(data.attendance).forEach(memberId => {
+                                    const row = document.querySelector(`input.member-id-input[value="${memberId}"]`)?.closest('tr');
+                                    if (row) {
+                                        const attendance = data.attendance[memberId];
+                                        const presentRadio = row.querySelector(`input[name="attendance_status_${memberId}"][value="True"]`);
+                                        const absentRadio = row.querySelector(`input[name="attendance_status_${memberId}"][value="False"]`);
+                                        const feeCheckbox = row.querySelector(`input[id="fee_${memberId}"]`);
+                                        
+                                        if (attendance.is_present && presentRadio) {
+                                            presentRadio.checked = true;
+                                        } else if (!attendance.is_present && absentRadio) {
+                                            absentRadio.checked = true;
                                         }
-                                    });
-                                    
-                                    updateSelectedCount();
-                                    updateSaveIndicator(true);
-                                } else {
-                                    // Clear saved data if user doesn't want to restore
-                                    localStorage.removeItem(STORAGE_KEY);
-                                    updateSaveIndicator(false);
-                                }
+                                        
+                                        if (feeCheckbox) {
+                                            feeCheckbox.checked = attendance.is_fee_paid;
+                                        }
+                                    }
+                                });
+                                
+                                updateSelectedCount();
+                                updateSaveIndicator(true);
                             }
                         } catch (e) {
                             console.error('Error restoring saved data:', e);
@@ -314,52 +309,13 @@
                 }
                 
                 function updateSaveIndicator(hasUnsavedChanges) {
-                    let indicator = document.getElementById('saveIndicator');
-                    if (!indicator) {
-                        indicator = document.createElement('div');
-                        indicator.id = 'saveIndicator';
-                        indicator.className = 'alert alert-info mb-3';
-                        indicator.style.cssText = 'padding: 0.5rem 1rem; font-size: 0.875rem;';
-                        const form = document.getElementById('bulkAttendanceForm');
-                        if (form) {
-                            form.insertBefore(indicator, form.firstChild);
-                        }
-                    }
-                    
-                    const warningDiv = document.getElementById('unsavedWarning');
-                    
-                    if (hasUnsavedChanges) {
-                        indicator.innerHTML = '<i class="fas fa-save me-2"></i><strong>Auto-saved:</strong> Your changes are saved in browser. Click "Save All Attendance" to submit.';
-                        indicator.className = 'alert alert-info mb-3';
-                        if (warningDiv) warningDiv.style.display = 'block';
-                    } else {
-                        indicator.innerHTML = '<i class="fas fa-check-circle me-2"></i>All changes saved successfully.';
-                        indicator.className = 'alert alert-success mb-3';
-                        if (warningDiv) warningDiv.style.display = 'none';
-                        // Remove after 3 seconds
-                        setTimeout(() => {
-                            if (indicator) indicator.remove();
-                        }, 3000);
-                    }
+                    // Silent auto-save - no visual indicators
+                    // Data is saved automatically but we don't show any messages
                 }
                 
                 function setupBeforeUnload() {
-                    // Warn before leaving if there's saved data
-                    window.addEventListener('beforeunload', function(e) {
-                        const saved = localStorage.getItem(STORAGE_KEY);
-                        if (saved) {
-                            try {
-                                const data = JSON.parse(saved);
-                                if (data.meeting_id === {{ selected_meeting.meeting_id }}) {
-                                    e.preventDefault();
-                                    e.returnValue = 'You have unsaved attendance data. Your changes are saved in browser, but make sure to submit before leaving.';
-                                    return e.returnValue;
-                                }
-                            } catch (err) {
-                                // Invalid data, allow navigation
-                            }
-                        }
-                    });
+                    // No browser pop-ups - data is auto-saved silently
+                    // Users can navigate freely without interruption
                 }
                 
                 // Clear storage when form is successfully submitted
@@ -420,17 +376,8 @@
                 }
 
                 function validateFeeCheckbox(checkbox, memberId) {
-                    const row = checkbox.closest('tr');
-                    const presentRadio = row.querySelector('input[value="True"]');
-                    
-                    if (checkbox.checked && !presentRadio.checked) {
-                        if (typeof showToast === 'function') {
-                            showToast('Fee can only be paid if member is present.', 'error');
-                        } else {
-                            alert('Fee can only be paid if member is present.');
-                        }
-                        checkbox.checked = false;
-                    }
+                    // Members can pay fees even if absent - no validation needed
+                    // This function is kept for potential future use but does nothing now
                 }
 
                 // Process form submission - collect all member data
@@ -454,15 +401,15 @@
                         const memberCheckbox = $row.find('.member-checkbox')[0];
                         
                         // Skip if row is disabled (non-superuser trying to edit existing attendance)
+                        // Normal staff can only mark new attendance, not edit existing ones
                         if (memberCheckbox && memberCheckbox.disabled) {
-                            return;
+                            return; // Skip this row - it's locked for non-superusers
                         }
                         
                         if (memberIdInput) {
                             const memberId = memberIdInput.value;
                             
                             // Find the checked radio button in this member's group
-                            // Try multiple selectors to ensure we get the right element
                             let checkedRadio = $row.find(`input[name="attendance_status_${memberId}"]:checked`)[0];
                             
                             // Fallback: if no checked radio found, check both radio buttons
@@ -478,9 +425,12 @@
                             const feeCheckbox = $row.find(`input[id="fee_${memberId}"]`)[0];
                             const isFeePaid = feeCheckbox && feeCheckbox.checked;
                             
+                            // Always collect data for all members (not just checked ones)
+                            // The checkbox is just for visual selection, but we need to save all attendance
                             // Debug logging
                             console.log(`Member ${memberId}: Present=${isPresent}, FeePaid=${isFeePaid}, CheckedRadio=${checkedRadio ? checkedRadio.value : 'none'}, FeeCheckbox=${feeCheckbox ? feeCheckbox.checked : 'none'}`);
                             
+                            // Add member data - we save all members' attendance status
                             memberIds.push(memberId);
                             attendanceStatuses.push(isPresent ? 'True' : 'False');
                             feeStatuses.push(isFeePaid ? 'True' : 'False');
@@ -490,8 +440,28 @@
                     console.log('Submitting:', {
                         memberIds: memberIds,
                         attendanceStatuses: attendanceStatuses,
-                        feeStatuses: feeStatuses
+                        feeStatuses: feeStatuses,
+                        counts: {
+                            members: memberIds.length,
+                            attendance: attendanceStatuses.length,
+                            fees: feeStatuses.length
+                        }
                     });
+                    
+                    // Validate data alignment
+                    if (memberIds.length !== attendanceStatuses.length || memberIds.length !== feeStatuses.length) {
+                        console.error('Data misalignment detected!', {
+                            members: memberIds.length,
+                            attendance: attendanceStatuses.length,
+                            fees: feeStatuses.length
+                        });
+                        if (typeof showToast === 'function') {
+                            showToast('Error: Data mismatch. Please refresh and try again.', 'error');
+                        } else {
+                            alert('Error: Data mismatch. Please refresh and try again.');
+                        }
+                        return;
+                    }
                     
                     if (memberIds.length === 0) {
                         if (typeof showToast === 'function') {
@@ -502,35 +472,41 @@
                         return;
                     }
                     
-                    // Remove existing hidden inputs if any
-                    document.querySelectorAll('input[name="member_ids"][type="hidden"]:not(.member-id-input)').forEach(input => input.remove());
-                    document.querySelectorAll('input[name="attendance_status"]').forEach(input => input.remove());
-                    document.querySelectorAll('input[name="fee_status"]').forEach(input => input.remove());
+                    // Remove ALL existing dynamically created hidden inputs
+                    // The original .member-id-input doesn't have name="member_ids" so it's safe
+                    document.querySelectorAll('input[name="member_ids"][type="hidden"]').forEach(input => input.remove());
+                    document.querySelectorAll('input[name="attendance_status"][type="hidden"]').forEach(input => input.remove());
+                    document.querySelectorAll('input[name="fee_status"][type="hidden"]').forEach(input => input.remove());
                     
-                    // Create hidden inputs for form submission
-                    memberIds.forEach(id => {
-                        const hidden = document.createElement('input');
-                        hidden.type = 'hidden';
-                        hidden.name = 'member_ids';
-                        hidden.value = id;
-                        this.appendChild(hidden);
-                    });
-                    
-                    attendanceStatuses.forEach(status => {
-                        const hidden = document.createElement('input');
-                        hidden.type = 'hidden';
-                        hidden.name = 'attendance_status';
-                        hidden.value = status;
-                        this.appendChild(hidden);
-                    });
-                    
-                    feeStatuses.forEach(status => {
-                        const hidden = document.createElement('input');
-                        hidden.type = 'hidden';
-                        hidden.name = 'fee_status';
-                        hidden.value = status;
-                        this.appendChild(hidden);
-                    });
+                    // Create hidden inputs for form submission - ensure one-to-one mapping
+                    for (let i = 0; i < memberIds.length; i++) {
+                        const memberId = memberIds[i];
+                        const attendanceStatus = attendanceStatuses[i];
+                        const feeStatus = feeStatuses[i];
+                        
+                        // Create member_id input
+                        const memberHidden = document.createElement('input');
+                        memberHidden.type = 'hidden';
+                        memberHidden.name = 'member_ids';
+                        memberHidden.value = memberId;
+                        this.appendChild(memberHidden);
+                        
+                        // Create attendance_status input
+                        const attendanceHidden = document.createElement('input');
+                        attendanceHidden.type = 'hidden';
+                        attendanceHidden.name = 'attendance_status';
+                        attendanceHidden.value = attendanceStatus;
+                        this.appendChild(attendanceHidden);
+                        
+                        // Create fee_status input
+                        const feeHidden = document.createElement('input');
+                        feeHidden.type = 'hidden';
+                        feeHidden.name = 'fee_status';
+                        feeHidden.value = feeStatus;
+                        this.appendChild(feeHidden);
+                        
+                        console.log(`Added: Member=${memberId}, Attendance=${attendanceStatus}, Fee=${feeStatus}`);
+                    }
                     
                     // Clear saved data before submitting
                     localStorage.removeItem(STORAGE_KEY);

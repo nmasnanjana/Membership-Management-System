@@ -271,15 +271,7 @@ class AttendanceMarkForm(forms.ModelForm):
     
     def clean(self):
         cleaned_data = super().clean()
-        attendance_status = cleaned_data.get('attendance_status')
-        fee_status = cleaned_data.get('attendance_fee_status')
-        
-        # Business rule: Fee can only be paid if member is present
-        if fee_status and not attendance_status:
-            raise forms.ValidationError({
-                'attendance_fee_status': 'Fee can only be paid if member is present.'
-            })
-        
+        # Members can pay fees even if absent - no validation needed
         return cleaned_data
 
 
@@ -304,21 +296,33 @@ class AttendanceEditForm(forms.ModelForm):
     
     def clean(self):
         cleaned_data = super().clean()
-        attendance_status = cleaned_data.get('attendance_status')
-        fee_status = cleaned_data.get('attendance_fee_status')
-        
-        # Business rule: Fee can only be paid if member is present
-        if fee_status and not attendance_status:
-            raise forms.ValidationError({
-                'attendance_fee_status': 'Fee can only be paid if member is present.'
-            })
-        
+        # Members can pay fees even if absent - no validation needed
         return cleaned_data
 
 
 class QRScann(forms.Form):
 
-    member_id = forms.CharField(max_length=10,
-                                widget=forms.TextInput(attrs={"class": "form-control"}),
-                                label="Member ID")
+    member_id = forms.CharField(
+        max_length=10,
+        widget=forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "Enter or scan Member ID",
+            "autocomplete": "off"
+        }),
+        label="Member ID",
+        help_text="Scan QR code or enter member ID manually"
+    )
+    
+    def clean_member_id(self):
+        member_id = self.cleaned_data.get('member_id')
+        if member_id:
+            # Strip whitespace
+            member_id = member_id.strip()
+            
+            # Validate member exists
+            from .models import Member
+            if not Member.objects.filter(member_id=member_id).exists():
+                raise forms.ValidationError(f'Member with ID "{member_id}" does not exist.')
+        
+        return member_id
 

@@ -37,9 +37,14 @@ def attendance_bulk_mark(request):
     
     if request.method == 'POST' and selected_meeting:
         # Process bulk attendance submission
-        member_ids = request.POST.getlist('member_ids')
-        attendance_statuses = request.POST.getlist('attendance_status')
-        fee_statuses = request.POST.getlist('fee_status')
+        member_ids_raw = request.POST.getlist('member_ids')
+        attendance_statuses_raw = request.POST.getlist('attendance_status')
+        fee_statuses_raw = request.POST.getlist('fee_status')
+        
+        # Filter out empty values
+        member_ids = [mid.strip() for mid in member_ids_raw if mid and mid.strip()]
+        attendance_statuses = [ast for ast in attendance_statuses_raw if ast]
+        fee_statuses = [fs for fs in fee_statuses_raw if fs]
         
         # Debug: Log what we received
         import logging
@@ -47,6 +52,35 @@ def attendance_bulk_mark(request):
         logger.info(f'Received {len(member_ids)} members, {len(attendance_statuses)} attendance statuses, {len(fee_statuses)} fee statuses')
         if len(member_ids) > 0:
             logger.info(f'First member: {member_ids[0]}, attendance: {attendance_statuses[0] if len(attendance_statuses) > 0 else "N/A"}, fee: {fee_statuses[0] if len(fee_statuses) > 0 else "N/A"}')
+            if len(member_ids) > 1:
+                logger.info(f'All member IDs: {member_ids}')
+                logger.info(f'All attendance statuses: {attendance_statuses}')
+                logger.info(f'All fee statuses: {fee_statuses}')
+        
+        # Ensure arrays are the same length - this is critical for correct processing
+        if len(member_ids) != len(attendance_statuses) or len(member_ids) != len(fee_statuses):
+            logger.error(f'Array length mismatch! Members: {len(member_ids)}, Attendance: {len(attendance_statuses)}, Fees: {len(fee_statuses)}')
+            messages.error(request, f'Error: Data mismatch detected. Please try again.')
+            return redirect('attendance_bulk_mark')
+        
+        # Remove duplicates while preserving order (in case of duplicate submissions)
+        seen = set()
+        unique_member_ids = []
+        unique_attendance_statuses = []
+        unique_fee_statuses = []
+        
+        for i, member_id in enumerate(member_ids):
+            if member_id not in seen:
+                seen.add(member_id)
+                unique_member_ids.append(member_id)
+                unique_attendance_statuses.append(attendance_statuses[i] if i < len(attendance_statuses) else 'False')
+                unique_fee_statuses.append(fee_statuses[i] if i < len(fee_statuses) else 'False')
+        
+        member_ids = unique_member_ids
+        attendance_statuses = unique_attendance_statuses
+        fee_statuses = unique_fee_statuses
+        
+        logger.info(f'After deduplication: {len(member_ids)} unique members to process')
         
         if not member_ids:
             messages.error(request, 'Please select at least one member.')
@@ -98,9 +132,7 @@ def attendance_bulk_mark(request):
                     logger = logging.getLogger(__name__)
                     logger.debug(f'Processing member {member_id}: attendance={attendance_status}, fee={fee_status}')
                     
-                    # Validate business rule: fee can only be paid if present
-                    if fee_status and not attendance_status:
-                        fee_status = False
+                    # Members can pay fees even if absent - no validation needed
                     
                     # Check if attendance already exists
                     existing = MemberAttendance.objects.filter(
@@ -110,11 +142,12 @@ def attendance_bulk_mark(request):
                     
                     if existing:
                         # Only superusers can update existing attendance
+                        # Normal staff can only mark new attendance, not edit existing ones
                         if not is_superuser:
                             permission_denied_count += 1
-                            continue
+                            continue  # Skip this member - non-superuser cannot edit existing attendance
                         
-                        # Update existing record
+                        # Update existing record (only superusers reach here)
                         existing.attendance_status = attendance_status
                         existing.attendance_fee_status = fee_status
                         existing.save()

@@ -114,12 +114,9 @@ class MemberAttendance(models.Model):
         return str(self.attendance_id)
     
     def clean(self):
-        """Business rule: Fee can only be paid if member is present"""
-        from django.core.exceptions import ValidationError
-        if self.attendance_fee_status and not self.attendance_status:
-            raise ValidationError({
-                'attendance_fee_status': 'Fee can only be paid if member is present.'
-            })
+        """Model validation - members can pay fees even if absent"""
+        # No validation needed - members can pay fees regardless of attendance status
+        pass
     
     def save(self, *args, **kwargs):
         self.full_clean()  # Run validation

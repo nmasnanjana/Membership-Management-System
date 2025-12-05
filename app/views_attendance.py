@@ -30,24 +30,18 @@ def attendance_mark(request):
                 # Duplicate record found, show an error message
                 messages.error(request, 'Member attendance is already added for this date.')
             else:
-                # Validate business rule: Fee can only be paid if present
-                attendance_status = form.cleaned_data['attendance_status']
-                fee_status = form.cleaned_data['attendance_fee_status']
-                
-                if fee_status and not attendance_status:
-                    messages.error(request, 'Fee can only be paid if member is present.')
-                else:
-                    # No duplicate record found, save the attendance record
-                    try:
-                        form.save()
-                        messages.success(request, 'Member attendance has been recorded successfully.')
-                        return redirect('attendance_mark')
-                    except Exception as e:
-                        # Handle unique constraint violation
-                        if 'unique' in str(e).lower() or 'duplicate' in str(e).lower():
-                            messages.error(request, 'Member attendance is already added for this date.')
-                        else:
-                            messages.error(request, f'Error saving attendance: {str(e)}')
+                # No duplicate record found, save the attendance record
+                # Members can pay fees even if absent
+                try:
+                    form.save()
+                    messages.success(request, 'Member attendance has been recorded successfully.')
+                    return redirect('attendance_mark')
+                except Exception as e:
+                    # Handle unique constraint violation
+                    if 'unique' in str(e).lower() or 'duplicate' in str(e).lower():
+                        messages.error(request, 'Member attendance is already added for this date.')
+                    else:
+                        messages.error(request, f'Error saving attendance: {str(e)}')
         else:
             messages.error(request, form.errors)
 
@@ -136,21 +130,16 @@ def attendance_edit(request, attendance_id, meeting_id):
         if request.method == 'POST':
             form = AttendanceEditForm(request.POST, instance=attendance_to_edit)
             if form.is_valid():
-                # Validate business rule: Fee can only be paid if present
-                attendance_status = form.cleaned_data['attendance_status']
-                fee_status = form.cleaned_data['attendance_fee_status']
-                
-                if fee_status and not attendance_status:
-                    messages.error(request, 'Fee can only be paid if member is present.')
-                else:
-                    try:
-                        form.save()
-                        messages.success(request, "Attendance Details Edited Successfully.")
-                        return redirect('attendance_date', meeting_id)
-                    except Exception as e:
-                        messages.error(request, f"Error saving attendance: {str(e)}")
+                # Members can pay fees even if absent
+                try:
+                    form.save()
+                    messages.success(request, "Attendance Details Edited Successfully.")
+                    return redirect('attendance_date', meeting_id)
+                except Exception as e:
+                    messages.error(request, f"Error saving attendance: {str(e)}")
+        else:
+            form = AttendanceEditForm(instance=attendance_to_edit)
 
-        form = AttendanceEditForm(instance=attendance_to_edit)
         context['member_info'] = attendance_to_edit
         context['form'] = form
         return render(request, 'attendance/edit.html', context)
