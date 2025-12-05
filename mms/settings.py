@@ -163,7 +163,7 @@ SESSION_COOKIE_SECURE = not DEBUG  # Only send over HTTPS in production
 SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access
 SESSION_COOKIE_SAMESITE = 'Strict'  # CSRF protection
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Session expires on browser close
-SESSION_COOKIE_AGE = 3600  # 1 hour session timeout
+SESSION_COOKIE_AGE = 21600  # 6 hours session timeout (6 * 60 * 60 seconds)
 SESSION_SAVE_EVERY_REQUEST = True  # Extend session on activity
 
 # CSRF Security Settings
