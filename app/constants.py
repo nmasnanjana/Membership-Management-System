@@ -31,3 +31,6 @@ ATTENDANCE_ABSENT = False
 FEE_PAID = True
 FEE_NOT_PAID = False
 
+# Member Deactivation
+CONSECUTIVE_MEETINGS_FOR_DEACTIVATION = 3  # Number of consecutive missed meetings to deactivate
+
