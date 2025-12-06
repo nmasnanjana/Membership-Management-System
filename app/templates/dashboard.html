@@ -760,38 +760,50 @@
         const REQUIRED_CLICKS = 8;
         let easterEggTriggered = false;
         let clickTimeout;
+        let authorNameElement = null;
 
         function initEasterEgg() {
             // Try multiple times to find the element (footer might load later)
             let attempts = 0;
-            const maxAttempts = 10;
+            const maxAttempts = 20;
             
             function tryInit() {
                 attempts++;
-                const authorName = document.getElementById('author-name');
+                authorNameElement = document.getElementById('author-name');
                 
-                if (authorName) {
-                    console.log('Easter egg: Author name element found on attempt', attempts);
-                    authorName.style.cursor = 'pointer';
-                    authorName.style.transition = 'color 0.2s, transform 0.1s';
-                    authorName.style.userSelect = 'none';
-                    authorName.style.display = 'inline-block';
+                if (authorNameElement) {
+                    console.log('✅ Easter egg: Author name element found on attempt', attempts);
+                    console.log('✅ Element text:', authorNameElement.textContent);
+                    console.log('✅ Element parent:', authorNameElement.parentElement);
                     
-                    authorName.addEventListener('mouseenter', function() {
+                    // Style the element
+                    authorNameElement.style.cursor = 'pointer';
+                    authorNameElement.style.transition = 'color 0.2s, transform 0.1s';
+                    authorNameElement.style.userSelect = 'none';
+                    authorNameElement.style.display = 'inline-block';
+                    authorNameElement.style.position = 'relative';
+                    
+                    // Add a title attribute for better UX
+                    authorNameElement.setAttribute('title', 'Click me 8 times! 🎉');
+                    
+                    // Hover effects
+                    authorNameElement.addEventListener('mouseenter', function() {
                         this.style.color = '#3b82f6';
                         this.style.transform = 'scale(1.05)';
+                        console.log('🖱️ Mouse entered author name');
                     });
                     
-                    authorName.addEventListener('mouseleave', function() {
+                    authorNameElement.addEventListener('mouseleave', function() {
                         this.style.color = '#9ca3af';
                         this.style.transform = 'scale(1)';
                     });
                     
-                    authorName.addEventListener('click', function(e) {
+                    // Click handler
+                    authorNameElement.addEventListener('click', function(e) {
                         e.preventDefault();
                         e.stopPropagation();
                         clickCount++;
-                        console.log('Easter egg: Click count:', clickCount);
+                        console.log('🖱️ Easter egg: Click detected! Count:', clickCount, '/', REQUIRED_CLICKS);
                         
                         // Visual feedback
                         this.style.transform = 'scale(0.95)';
@@ -803,39 +815,77 @@
                         clearTimeout(clickTimeout);
                         clickTimeout = setTimeout(() => {
                             if (clickCount < REQUIRED_CLICKS) {
+                                console.log('⏱️ Easter egg: Click count reset (timeout)');
                                 clickCount = 0;
-                                console.log('Easter egg: Click count reset');
                             }
                         }, 3000);
                         
                         if (clickCount >= REQUIRED_CLICKS && !easterEggTriggered) {
-                            console.log('Easter egg: Triggered!');
+                            console.log('🎉 Easter egg: TRIGGERED!');
                             easterEggTriggered = true;
                             triggerEasterEgg();
                             clickCount = 0;
                         }
                     });
+                    
+                    // Also use event delegation on footer as backup
+                    const footer = document.querySelector('footer');
+                    if (footer) {
+                        footer.addEventListener('click', function(e) {
+                            if (e.target && e.target.id === 'author-name') {
+                                // This is handled by the direct listener above
+                                console.log('🖱️ Click detected via event delegation');
+                            }
+                        });
+                    }
                 } else if (attempts < maxAttempts) {
                     // Try again after a short delay
+                    if (attempts % 5 === 0) {
+                        console.log('⏳ Easter egg: Still looking for author-name element... attempt', attempts);
+                    }
                     setTimeout(tryInit, 200);
                 } else {
-                    console.error('Easter egg: Author name element not found after', maxAttempts, 'attempts');
+                    console.error('❌ Easter egg: Author name element not found after', maxAttempts, 'attempts');
+                    console.error('❌ Searched for element with ID: author-name');
+                    console.error('❌ Available elements in footer:', document.querySelectorAll('footer *'));
                 }
             }
             
             tryInit();
         }
 
+        // Use MutationObserver to watch for footer being added
+        const observer = new MutationObserver(function(mutations) {
+            if (!authorNameElement) {
+                const element = document.getElementById('author-name');
+                if (element) {
+                    console.log('👀 Easter egg: Element found via MutationObserver');
+                    initEasterEgg();
+                }
+            }
+        });
+
+        // Start observing
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
         // Wait for DOM to be fully loaded
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initEasterEgg);
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('📄 DOMContentLoaded fired');
+                setTimeout(initEasterEgg, 100);
+            });
         } else {
             // DOM already loaded, but wait a bit for footer
+            console.log('📄 DOM already loaded');
             setTimeout(initEasterEgg, 100);
         }
         
         // Also try on window load as backup
         window.addEventListener('load', function() {
+            console.log('🌐 Window load fired');
             setTimeout(initEasterEgg, 200);
         });
 
