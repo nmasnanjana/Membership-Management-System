@@ -1,6 +1,24 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block footer_override %}
+<!-- Custom Footer for Dashboard with Easter Egg -->
+<footer class="text-center py-3 mt-5 border-top" style="background: #374151; color: #9ca3af; border-color: #4b5563 !important;">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <p class="mb-1" style="font-weight: 400; font-size: 0.875rem;">
+                    {{ system_name }} - Developed by <span id="author-name">{{ auther_name }}</span> ({{ project_start_date }} - {{ current_year }})
+                </p>
+                <p class="mb-0" style="font-size: 0.75rem; color: #9ca3af;">
+                    Secure & Reliable Membership Management
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+{% endblock footer_override %}
+
 {% block head %}
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

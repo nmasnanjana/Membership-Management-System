@@ -678,7 +678,9 @@
 
     <footer>
         {% if footer %}
-            {% include 'footer.html' %}
+            {% block footer_override %}
+                {% include 'footer.html' %}
+            {% endblock footer_override %}
         {% endif %}
     </footer>
 
