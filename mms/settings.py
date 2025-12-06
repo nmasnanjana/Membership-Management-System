@@ -41,7 +41,7 @@ ALLOWED_HOSTS = [host.strip() for host in config('ALLOWED_HOSTS', default='local
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    # 'django.contrib.admin',  # Django admin is disabled
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
