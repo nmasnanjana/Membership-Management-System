@@ -8,7 +8,7 @@
         <div class="row">
             <div class="col-md-12">
                 <p class="mb-1" style="font-weight: 400; font-size: 0.875rem;">
-                    {{ system_name }} - Developed by <span id="author-name">{{ auther_name }}</span> ({{ project_start_date }} - {{ current_year }})
+                    {{ system_name }} - Developed by <span id="author-name" onclick="handleAuthorClick(event)" style="cursor: pointer; color: #9ca3af; transition: all 0.2s; display: inline-block; user-select: none;" onmouseover="this.style.color='#3b82f6'; this.style.transform='scale(1.05)';" onmouseout="this.style.color='#9ca3af'; this.style.transform='scale(1)';" title="Click me 8 times! 🎉">{{ auther_name }}</span> ({{ project_start_date }} - {{ current_year }})
                 </p>
                 <p class="mb-0" style="font-size: 0.75rem; color: #9ca3af;">
                     Secure & Reliable Membership Management
@@ -911,20 +911,27 @@
         });
 
         function triggerEasterEgg() {
-        // Show congratulations animation
-        showCongratsAnimation();
+            console.log('🎉 triggerEasterEgg called');
+            // Show congratulations animation
+            showCongratsAnimation();
+            
+            // Launch balloons
+            launchBalloons();
+            
+            // Show modal after a short delay
+            setTimeout(() => {
+                const modal = document.getElementById('easterEggModal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    console.log('✅ Modal displayed');
+                } else {
+                    console.error('❌ Modal not found!');
+                }
+            }, 500);
+        }
         
-        // Launch balloons
-        launchBalloons();
-        
-        // Show modal after a short delay
-        setTimeout(() => {
-            const modal = document.getElementById('easterEggModal');
-            if (modal) {
-                modal.style.display = 'flex';
-            }
-        }, 500);
-    }
+        // Make triggerEasterEgg globally available
+        window.triggerEasterEgg = triggerEasterEgg;
 
     function showCongratsAnimation() {
         const container = document.getElementById('congratsAnimation');
