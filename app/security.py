@@ -32,6 +32,16 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
         )
         response['Content-Security-Policy'] = csp
         
+        # Cache-Control headers for development (disable caching)
+        if settings.DEBUG:
+            response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+            response['Pragma'] = 'no-cache'
+            response['Expires'] = '0'
+        else:
+            # In production, cache static files but not HTML
+            if not request.path.startswith('/static/') and not request.path.startswith('/media/'):
+                response['Cache-Control'] = 'no-cache, must-revalidate'
+        
         # Strict Transport Security (HSTS) - only in production
         if not settings.DEBUG:
             response['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
