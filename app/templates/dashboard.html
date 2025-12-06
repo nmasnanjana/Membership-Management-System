@@ -716,6 +716,43 @@
 
 {% endblock content %}
 
+<!-- Easter Egg Modal and Containers -->
+<div id="easterEggModal" class="easter-egg-modal">
+    <div class="easter-egg-modal-content">
+        <div class="easter-egg-header">
+            <i class="fas fa-trophy"></i>
+            <h2>🎉 Congratulations! 🎉</h2>
+        </div>
+        <div class="easter-egg-body">
+            <p class="easter-egg-greeting">Hey there, <strong id="easterEggUserName">{% if user.is_authenticated %}{{ user.username }}{% else %}Curious User{% endif %}</strong>!</p>
+            <p class="easter-egg-message">
+                You found the Easter egg! 🥚
+            </p>
+            <p class="easter-egg-joke">
+                But seriously... did you really just click on my name <strong>8 times</strong>? 😅<br>
+                That's some dedication right there! Are you okay? Do you need help? 😂
+            </p>
+            <p class="easter-egg-thanks">
+                Just kidding! Thanks for reading this and exploring the system. I hope you're enjoying it! 🙏
+            </p>
+            <p class="easter-egg-signature">
+                - Anjana Narasinghe
+            </p>
+        </div>
+        <div class="easter-egg-footer">
+            <button class="easter-egg-close-btn" onclick="closeEasterEgg()">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Balloons Container -->
+<div id="balloonsContainer"></div>
+
+<!-- Congratulations Animation Container -->
+<div id="congratsAnimation"></div>
+
 <!-- Easter Egg Script (Dashboard Only) -->
 <script>
     let clickCount = 0;
@@ -723,26 +760,60 @@
     let easterEggTriggered = false;
     let clickTimeout;
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const authorName = document.getElementById('author-name');
-        if (authorName) {
-            authorName.addEventListener('click', function(e) {
-                e.preventDefault();
-                clickCount++;
+    // Wait for DOM to be fully loaded, including footer
+    window.addEventListener('load', function() {
+        // Also try DOMContentLoaded as backup
+        setTimeout(function() {
+            const authorName = document.getElementById('author-name');
+            if (authorName) {
+                console.log('Easter egg: Author name element found');
+                authorName.style.cursor = 'pointer';
+                authorName.style.transition = 'color 0.2s, transform 0.1s';
+                authorName.style.userSelect = 'none';
+                authorName.style.display = 'inline-block';
                 
-                // Reset counter if no clicks for 3 seconds
-                clearTimeout(clickTimeout);
-                clickTimeout = setTimeout(() => {
-                    clickCount = 0;
-                }, 3000);
+                authorName.addEventListener('mouseenter', function() {
+                    this.style.color = '#3b82f6';
+                    this.style.transform = 'scale(1.05)';
+                });
                 
-                if (clickCount >= REQUIRED_CLICKS && !easterEggTriggered) {
-                    easterEggTriggered = true;
-                    triggerEasterEgg();
-                    clickCount = 0;
-                }
-            });
-        }
+                authorName.addEventListener('mouseleave', function() {
+                    this.style.color = '#9ca3af';
+                    this.style.transform = 'scale(1)';
+                });
+                
+                authorName.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    clickCount++;
+                    console.log('Easter egg: Click count:', clickCount);
+                    
+                    // Visual feedback
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1.05)';
+                    }, 100);
+                    
+                    // Reset counter if no clicks for 3 seconds
+                    clearTimeout(clickTimeout);
+                    clickTimeout = setTimeout(() => {
+                        if (clickCount < REQUIRED_CLICKS) {
+                            clickCount = 0;
+                            console.log('Easter egg: Click count reset');
+                        }
+                    }, 3000);
+                    
+                    if (clickCount >= REQUIRED_CLICKS && !easterEggTriggered) {
+                        console.log('Easter egg: Triggered!');
+                        easterEggTriggered = true;
+                        triggerEasterEgg();
+                        clickCount = 0;
+                    }
+                });
+            } else {
+                console.error('Easter egg: Author name element not found!');
+            }
+        }, 100);
     });
 
     function triggerEasterEgg() {
@@ -1060,39 +1131,3 @@
     }
 </style>
 
-<!-- Easter Egg Modal -->
-<div id="easterEggModal" class="easter-egg-modal">
-    <div class="easter-egg-modal-content">
-        <div class="easter-egg-header">
-            <i class="fas fa-trophy"></i>
-            <h2>🎉 Congratulations! 🎉</h2>
-        </div>
-        <div class="easter-egg-body">
-            <p class="easter-egg-greeting">Hey there, <strong id="easterEggUserName">{% if user.is_authenticated %}{{ user.username }}{% else %}Curious User{% endif %}</strong>!</p>
-            <p class="easter-egg-message">
-                You found the Easter egg! 🥚
-            </p>
-            <p class="easter-egg-joke">
-                But seriously... did you really just click on my name <strong>8 times</strong>? 😅<br>
-                That's some dedication right there! Are you okay? Do you need help? 😂
-            </p>
-            <p class="easter-egg-thanks">
-                Just kidding! Thanks for reading this and exploring the system. I hope you're enjoying it! 🙏
-            </p>
-            <p class="easter-egg-signature">
-                - Anjana Narasinghe
-            </p>
-        </div>
-        <div class="easter-egg-footer">
-            <button class="easter-egg-close-btn" onclick="closeEasterEgg()">
-                <i class="fas fa-times"></i> Close
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Balloons Container -->
-<div id="balloonsContainer"></div>
-
-<!-- Congratulations Animation Container -->
-<div id="congratsAnimation"></div>
