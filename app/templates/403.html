@@ -1,0 +1,201 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="icon" href="{% static 'icons/mms Icon.png' %}" type="image/x-icon">
+    <title>403 Forbidden | Membership Management System</title>
+    
+    <style>
+        :root {
+            --bg-primary: #1f2937;
+            --bg-secondary: #374151;
+            --bg-tertiary: #4b5563;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-muted: #9ca3af;
+            --border-color: #4b5563;
+            --danger-color: #ef4444;
+            --primary-color: #3b82f6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .error-container {
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .error-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            padding: 3rem 2rem;
+        }
+
+        .error-icon {
+            font-size: 5rem;
+            color: var(--danger-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .error-code {
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .error-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .error-message {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+
+        .error-details {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+
+        .error-details h4 {
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .error-details p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .error-details ul {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            padding-left: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .error-details li {
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-home {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.2s ease;
+            cursor: pointer;
+        }
+
+        .btn-home:hover {
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            .error-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .error-icon {
+                font-size: 4rem;
+            }
+
+            .error-code {
+                font-size: 3rem;
+            }
+
+            .error-title {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-card">
+            <div class="error-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="error-code">403</div>
+            <div class="error-title">Forbidden</div>
+            <div class="error-message">
+                CSRF verification failed. Request aborted.
+            </div>
+            
+            <div class="error-details">
+                <h4><i class="fas fa-info-circle"></i> What happened?</h4>
+                <p>This site requires a CSRF cookie when submitting forms. This cookie is required for security reasons, to ensure that your browser is not being hijacked by third parties.</p>
+                
+                <h4 style="margin-top: 1rem;"><i class="fas fa-tools"></i> How to fix:</h4>
+                <ul>
+                    <li>If you have configured your browser to disable cookies, please re-enable them, at least for this site, or for "same-origin" requests.</li>
+                    <li>Make sure you're accessing the site through the correct URL.</li>
+                    <li>Try refreshing the page and submitting the form again.</li>
+                    <li>Clear your browser cache and cookies, then try again.</li>
+                </ul>
+            </div>
+            
+            <a href="/" class="btn-home">
+                <i class="fas fa-home"></i> Go to Homepage
+            </a>
+        </div>
+    </div>
+</body>
+</html>
+
