@@ -69,6 +69,9 @@ def validate_file_upload(file, max_size=MAX_IMAGE_SIZE, allowed_extensions=ALLOW
                 import logging
                 logger = logging.getLogger('security')
                 logger.warning(f'MIME type validation failed: {str(e)}')
+    except Exception:
+        # If file reading fails, skip MIME validation but continue with other checks
+        pass
     
     # Check for dangerous file names
     dangerous_patterns = ['..', '/', '\\', '\x00']
