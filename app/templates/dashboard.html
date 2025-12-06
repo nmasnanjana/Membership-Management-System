@@ -755,66 +755,89 @@
 
 <!-- Easter Egg Script (Dashboard Only) -->
 <script>
-    let clickCount = 0;
-    const REQUIRED_CLICKS = 8;
-    let easterEggTriggered = false;
-    let clickTimeout;
+    (function() {
+        let clickCount = 0;
+        const REQUIRED_CLICKS = 8;
+        let easterEggTriggered = false;
+        let clickTimeout;
 
-    // Wait for DOM to be fully loaded, including footer
-    window.addEventListener('load', function() {
-        // Also try DOMContentLoaded as backup
-        setTimeout(function() {
-            const authorName = document.getElementById('author-name');
-            if (authorName) {
-                console.log('Easter egg: Author name element found');
-                authorName.style.cursor = 'pointer';
-                authorName.style.transition = 'color 0.2s, transform 0.1s';
-                authorName.style.userSelect = 'none';
-                authorName.style.display = 'inline-block';
+        function initEasterEgg() {
+            // Try multiple times to find the element (footer might load later)
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            function tryInit() {
+                attempts++;
+                const authorName = document.getElementById('author-name');
                 
-                authorName.addEventListener('mouseenter', function() {
-                    this.style.color = '#3b82f6';
-                    this.style.transform = 'scale(1.05)';
-                });
-                
-                authorName.addEventListener('mouseleave', function() {
-                    this.style.color = '#9ca3af';
-                    this.style.transform = 'scale(1)';
-                });
-                
-                authorName.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    clickCount++;
-                    console.log('Easter egg: Click count:', clickCount);
+                if (authorName) {
+                    console.log('Easter egg: Author name element found on attempt', attempts);
+                    authorName.style.cursor = 'pointer';
+                    authorName.style.transition = 'color 0.2s, transform 0.1s';
+                    authorName.style.userSelect = 'none';
+                    authorName.style.display = 'inline-block';
                     
-                    // Visual feedback
-                    this.style.transform = 'scale(0.95)';
-                    setTimeout(() => {
+                    authorName.addEventListener('mouseenter', function() {
+                        this.style.color = '#3b82f6';
                         this.style.transform = 'scale(1.05)';
-                    }, 100);
+                    });
                     
-                    // Reset counter if no clicks for 3 seconds
-                    clearTimeout(clickTimeout);
-                    clickTimeout = setTimeout(() => {
-                        if (clickCount < REQUIRED_CLICKS) {
+                    authorName.addEventListener('mouseleave', function() {
+                        this.style.color = '#9ca3af';
+                        this.style.transform = 'scale(1)';
+                    });
+                    
+                    authorName.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        clickCount++;
+                        console.log('Easter egg: Click count:', clickCount);
+                        
+                        // Visual feedback
+                        this.style.transform = 'scale(0.95)';
+                        setTimeout(() => {
+                            this.style.transform = 'scale(1.05)';
+                        }, 100);
+                        
+                        // Reset counter if no clicks for 3 seconds
+                        clearTimeout(clickTimeout);
+                        clickTimeout = setTimeout(() => {
+                            if (clickCount < REQUIRED_CLICKS) {
+                                clickCount = 0;
+                                console.log('Easter egg: Click count reset');
+                            }
+                        }, 3000);
+                        
+                        if (clickCount >= REQUIRED_CLICKS && !easterEggTriggered) {
+                            console.log('Easter egg: Triggered!');
+                            easterEggTriggered = true;
+                            triggerEasterEgg();
                             clickCount = 0;
-                            console.log('Easter egg: Click count reset');
                         }
-                    }, 3000);
-                    
-                    if (clickCount >= REQUIRED_CLICKS && !easterEggTriggered) {
-                        console.log('Easter egg: Triggered!');
-                        easterEggTriggered = true;
-                        triggerEasterEgg();
-                        clickCount = 0;
-                    }
-                });
-            } else {
-                console.error('Easter egg: Author name element not found!');
+                    });
+                } else if (attempts < maxAttempts) {
+                    // Try again after a short delay
+                    setTimeout(tryInit, 200);
+                } else {
+                    console.error('Easter egg: Author name element not found after', maxAttempts, 'attempts');
+                }
             }
-        }, 100);
-    });
+            
+            tryInit();
+        }
+
+        // Wait for DOM to be fully loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initEasterEgg);
+        } else {
+            // DOM already loaded, but wait a bit for footer
+            setTimeout(initEasterEgg, 100);
+        }
+        
+        // Also try on window load as backup
+        window.addEventListener('load', function() {
+            setTimeout(initEasterEgg, 200);
+        });
 
     function triggerEasterEgg() {
         // Show congratulations animation
