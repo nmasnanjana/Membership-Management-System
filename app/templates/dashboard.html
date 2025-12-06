@@ -798,10 +798,11 @@
                         this.style.transform = 'scale(1)';
                     });
                     
-                    // Click handler
+                    // Click handler - use capture phase to ensure it fires
                     authorNameElement.addEventListener('click', function(e) {
                         e.preventDefault();
                         e.stopPropagation();
+                        e.stopImmediatePropagation();
                         clickCount++;
                         console.log('🖱️ Easter egg: Click detected! Count:', clickCount, '/', REQUIRED_CLICKS);
                         
@@ -822,6 +823,26 @@
                         
                         if (clickCount >= REQUIRED_CLICKS && !easterEggTriggered) {
                             console.log('🎉 Easter egg: TRIGGERED!');
+                            easterEggTriggered = true;
+                            triggerEasterEgg();
+                            clickCount = 0;
+                        }
+                    }, true); // Use capture phase
+                    
+                    // Also add mousedown as backup
+                    authorNameElement.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        clickCount++;
+                        console.log('🖱️ Easter egg: Mouse down detected! Count:', clickCount, '/', REQUIRED_CLICKS);
+                        
+                        clearTimeout(clickTimeout);
+                        clickTimeout = setTimeout(() => {
+                            if (clickCount < REQUIRED_CLICKS) {
+                                clickCount = 0;
+                            }
+                        }, 3000);
+                        
+                        if (clickCount >= REQUIRED_CLICKS && !easterEggTriggered) {
                             easterEggTriggered = true;
                             triggerEasterEgg();
                             clickCount = 0;
