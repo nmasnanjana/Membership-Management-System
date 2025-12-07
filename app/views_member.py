@@ -260,8 +260,8 @@ def member_edit(request, member_id):
                     profile_picture_name = f"{new_member_id}_profile.png"
                     profile_picture_path = os.path.join('profiles', new_member_id, profile_picture_name)
 
-                    # Create the directory for the profile picture
-                    profile_picture_directory = os.path.join(settings.MEDIA_ROOT, 'profiles', member_id)
+                    # Create the directory for the profile picture (use new_member_id)
+                    profile_picture_directory = os.path.join(settings.MEDIA_ROOT, 'profiles', new_member_id)
                     os.makedirs(profile_picture_directory, exist_ok=True)
 
                     # Save the new profile picture
