@@ -231,13 +231,14 @@ def member_edit(request, member_id):
                             context['member'] = member
                             return render(request, 'member/edit.html', context)
 
-                # Check if the new member ID is the same as the current one
+                # Check if the new member ID is different from the current one
                 if new_member_id != member_id:
-                    # Check if the new member ID already exists
-                    form.add_error('member_id', 'Member with this ID already exists.')
-                    context['form'] = form
-                    context['member'] = member
-                    return render(request, 'member/edit.html', context)
+                    # Check if the new member ID already exists (excluding current member)
+                    if Member.objects.filter(member_id=new_member_id).exclude(member_id=member_id).exists():
+                        form.add_error('member_id', 'Member with this ID already exists.')
+                        context['form'] = form
+                        context['member'] = member
+                        return render(request, 'member/edit.html', context)
 
                 # Check if a new profile picture was uploaded
                 if profile_picture and hasattr(profile_picture, 'name'):
@@ -255,9 +256,9 @@ def member_edit(request, member_id):
                         if os.path.exists(old_picture_path):
                             os.remove(old_picture_path)
 
-                    # Set the profile picture upload path
-                    profile_picture_name = f"{member_id}_profile.png"
-                    profile_picture_path = os.path.join('profiles', member_id, profile_picture_name)
+                    # Set the profile picture upload path - use member.member_id (will be updated if changed)
+                    profile_picture_name = f"{new_member_id}_profile.png"
+                    profile_picture_path = os.path.join('profiles', new_member_id, profile_picture_name)
 
                     # Create the directory for the profile picture
                     profile_picture_directory = os.path.join(settings.MEDIA_ROOT, 'profiles', member_id)
@@ -272,8 +273,26 @@ def member_edit(request, member_id):
 
                 # Update the member details
                 member = form.save(commit=False)
+                
+                # Update member_id if it was changed
+                if new_member_id != member.member_id:
+                    # If ID changed and no new profile picture, move existing profile picture
+                    if member.member_profile_picture and not (profile_picture and hasattr(profile_picture, 'name')):
+                        old_path = member.member_profile_picture
+                        new_path = os.path.join('profiles', new_member_id, f"{new_member_id}_profile.png")
+                        # Move the file if it exists
+                        old_full_path = os.path.join(settings.MEDIA_ROOT, old_path)
+                        new_full_path = os.path.join(settings.MEDIA_ROOT, new_path)
+                        new_dir = os.path.dirname(new_full_path)
+                        os.makedirs(new_dir, exist_ok=True)
+                        if os.path.exists(old_full_path):
+                            import shutil
+                            shutil.move(old_full_path, new_full_path)
+                        member.member_profile_picture = new_path
+                    member.member_id = new_member_id
+                
                 if profile_picture and hasattr(profile_picture, 'name'):
-                    member.member_profile_picture = os.path.join('profiles', member_id, f"{member_id}_profile.png")
+                    member.member_profile_picture = os.path.join('profiles', member.member_id, f"{member.member_id}_profile.png")
                 
                 # For superusers, ensure member_is_active and member_role are saved
                 if request.user.is_superuser:
@@ -288,15 +307,17 @@ def member_edit(request, member_id):
                 audit_log_user_action(
                     request=request,
                     action='member_updated',
-                    target=f'member:{member_id}',
+                    target=f'member:{member.member_id}',
                     extra_details={
-                        'member_id': member_id,
+                        'member_id': member.member_id,
                         'member_name': f'{member.member_initials} {member.member_first_name} {member.member_last_name}',
                         'is_active': member.member_is_active,
                         'role': member.member_role or 'No Role',
                     }
                 )
 
+                from django.contrib import messages
+                messages.success(request, f'Member {member.member_initials} {member.member_first_name} {member.member_last_name} updated successfully.')
                 return redirect('member_list')  # Redirect to a member list view
 
         else:

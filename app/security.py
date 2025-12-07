@@ -32,15 +32,22 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
         )
         response['Content-Security-Policy'] = csp
         
-        # Cache-Control headers for development (disable caching)
-        if settings.DEBUG:
+        # Cache-Control headers - always disable caching for dynamic content
+        # Only cache static files (CSS, JS, images) in production
+        if request.path.startswith('/static/') or request.path.startswith('/media/'):
+            # Static files can be cached in production
+            if not settings.DEBUG:
+                response['Cache-Control'] = 'public, max-age=31536000'  # 1 year for static files
+        else:
+            # All dynamic content (HTML pages, API responses) should never be cached
             response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
             response['Pragma'] = 'no-cache'
             response['Expires'] = '0'
-        else:
-            # In production, cache static files but not HTML
-            if not request.path.startswith('/static/') and not request.path.startswith('/media/'):
-                response['Cache-Control'] = 'no-cache, must-revalidate'
+            # Add ETag prevention
+            if 'ETag' in response:
+                del response['ETag']
+            if 'Last-Modified' in response:
+                del response['Last-Modified']
         
         # Strict Transport Security (HSTS) - only in production
         if not settings.DEBUG:
