@@ -206,7 +206,18 @@ def member_edit(request, member_id):
 
         if request.method == 'POST':
             form = MemberEditForm(request.POST, request.FILES, instance=member, user=request.user)
-            if form.is_valid():
+            if not form.is_valid():
+                # Form is invalid - display errors
+                import logging
+                logger = logging.getLogger('app')
+                logger.error(f'Form validation failed: {form.errors}')
+                from django.contrib import messages
+                messages.error(request, f'Please correct the errors below: {form.errors}')
+                context['form'] = form
+                context['member'] = member
+                return render(request, 'member/edit.html', context)
+            
+            # Form is valid - proceed with update
                 new_member_id = form.cleaned_data['member_id']
                 profile_picture = form.cleaned_data.get('member_profile_picture')
                 
