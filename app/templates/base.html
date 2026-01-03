@@ -740,6 +740,10 @@
         }
     </style>
 
+    {% block extra_styles %}
+    {# Allow templates to add styles that load after base styles #}
+    {% endblock extra_styles %}
+
     <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     
     <!-- PWA Service Worker Registration -->

@@ -28,6 +28,39 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 {% endblock head %}
 
+{% block extra_styles %}
+<style>
+    /* Override sticky footer for dashboard - make it flow naturally at bottom */
+    /* This block loads AFTER base.html styles, so it can properly override */
+    footer.sticky-footer {
+        position: relative !important;
+        left: auto !important;
+        right: auto !important;
+        width: 100% !important;
+        margin-top: 2rem !important;
+        flex-shrink: 1 !important; /* Override flex-shrink: 0 from sb-admin-2.css */
+        padding: 0 !important; /* Remove padding from sb-admin-2.css */
+        bottom: auto !important;
+        z-index: auto !important;
+    }
+
+    .sticky-footer {
+        position: relative !important;
+        left: auto !important;
+        right: auto !important;
+        width: 100% !important;
+        margin-top: 2rem !important;
+        bottom: auto !important;
+        z-index: auto !important;
+    }
+
+    /* Remove padding-bottom from main-content on dashboard since footer is not fixed */
+    .main-content {
+        padding-bottom: 2rem !important;
+    }
+</style>
+{% endblock extra_styles %}
+
 {% block content %}
     <div class="container-fluid px-3 px-md-4" style="overflow-x: hidden;">
         <div class="mb-4">
@@ -1497,31 +1530,6 @@
             transform: translateY(100vh) rotate(720deg);
             opacity: 0;
         }
-    }
-
-    /* Override sticky footer for dashboard - make it flow naturally at bottom */
-    /* Override the more specific footer.sticky-footer rule from sb-admin-2.css */
-    footer.sticky-footer {
-        position: relative !important;
-        left: auto !important;
-        right: auto !important;
-        width: 100% !important;
-        margin-top: 2rem !important;
-        flex-shrink: 1 !important; /* Override flex-shrink: 0 from sb-admin-2.css */
-        padding: 0 !important; /* Remove padding from sb-admin-2.css */
-    }
-
-    .sticky-footer {
-        position: relative !important;
-        left: auto !important;
-        right: auto !important;
-        width: 100% !important;
-        margin-top: 2rem;
-    }
-
-    /* Remove padding-bottom from main-content on dashboard since footer is not fixed */
-    .main-content {
-        padding-bottom: 2rem !important;
     }
 </style>
 
