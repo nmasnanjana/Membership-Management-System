@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <div class="mb-4">
+        <h1 class="page-title">
+            <i class="fas fa-database text-primary me-2"></i>Database Management
+        </h1>
+        <p class="text-muted">Import and export database dumps. <span class="badge bg-danger">Superuser Only</span></p>
+    </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <!-- Export Section -->
+        <div class="col-md-6 mb-4">
+            <div class="modern-card h-100">
+                <div class="modern-card-header">
+                    <h5 class="mb-0"><i class="fas fa-file-export me-2"></i>Export Database</h5>
+                </div>
+                <div class="modern-card-body">
+                    <div class="mb-4">
+                        <h6>Full Backup</h6>
+                        <p class="small text-muted">Download a complete SQL dump of the entire database.</p>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="export_full">
+                            <button type="submit" class="btn btn-primary btn-modern w-100">
+                                <i class="fas fa-download me-2"></i>Download Full Backup
+                            </button>
+                        </form>
+                    </div>
+
+                    <hr>
+
+                    <div>
+                        <h6>Custom Backup</h6>
+                        <p class="small text-muted">Select specific tables to export.</p>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="export_custom">
+                            <div class="mb-3"
+                                style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px;">
+                                {% for table in tables %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="tables" value="{{ table }}"
+                                        id="table_{{ forloop.counter }}">
+                                    <label class="form-check-label" for="table_{{ forloop.counter }}">
+                                        {{ table }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <button type="submit" class="btn btn-outline-primary btn-modern w-100">
+                                <i class="fas fa-filter me-2"></i>Download Custom Backup
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Section -->
+        <div class="col-md-6 mb-4">
+            <div class="modern-card h-100">
+                <div class="modern-card-header">
+                    <h5 class="mb-0"><i class="fas fa-file-import me-2"></i>Import Database</h5>
+                </div>
+                <div class="modern-card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> Importing a database dump will <strong>overwrite</strong> existing
+                        data. This action cannot be undone.
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data"
+                        onsubmit="return confirm('WARNING: This will overwrite the current database. Are you sure you want to proceed?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="import">
+
+                        <div class="mb-3">
+                            <label for="sql_file" class="form-label">Upload SQL File</label>
+                            <input class="form-control" type="file" id="sql_file" name="sql_file" accept=".sql"
+                                required>
+                        </div>
+
+                        <button type="submit" class="btn btn-danger btn-modern w-100">
+                            <i class="fas fa-upload me-2"></i>Restore Database
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

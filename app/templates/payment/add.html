@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="container-fluid px-3 px-md-4">
+        {% include 'breadcrumb.html' %}
+        
+        <div class="mb-4">
+            <h1 class="page-title">
+                <i class="fas fa-plus-circle text-primary me-2"></i>Add Payment
+            </h1>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-modern alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-money-bill-wave me-2"></i>Payment Details
+                </h5>
+            </div>
+            <div class="modern-card-body">
+                <form method="post" action="{% url 'payment_add' %}">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Member <span class="text-danger">*</span></label>
+                            <select class="form-select" name="member_id" required>
+                                <option value="">Select Member</option>
+                                {% for member in members %}
+                                    <option value="{{ member.member_id }}">
+                                        {{ member.member_id }} - {{ member.member_first_name }} {{ member.member_last_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Amount (Rs.) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" name="amount" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Payment Method <span class="text-danger">*</span></label>
+                            <select class="form-select" name="payment_method" required>
+                                {% for value, label in payment_methods %}
+                                    <option value="{{ value }}" {% if value == 'CASH' %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Meeting (Optional)</label>
+                            <select class="form-select" name="meeting_id">
+                                <option value="">No Meeting</option>
+                                {% for meeting in meetings %}
+                                    <option value="{{ meeting.meeting_id }}">
+                                        {{ meeting.meeting_date|date:"d M Y" }} - Rs.{{ meeting.meeting_fee }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Receipt Number</label>
+                            <input type="text" class="form-control" name="receipt_number" placeholder="Optional">
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" name="notes" rows="3" placeholder="Additional notes (optional)"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Save Payment
+                            </button>
+                            <a href="{% url 'payment_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+

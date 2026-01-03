@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock head %}
+
+{% block content %}
+    <div class="container-fluid px-3 px-md-4">
+        {% include 'breadcrumb.html' %}
+        
+        <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap">
+            <h1 class="page-title">
+                <i class="fas fa-chart-bar text-info me-2"></i>Payment Statistics
+            </h1>
+            <form method="get" class="d-flex gap-2">
+                <input type="number" class="form-control" name="year" value="{{ year }}" min="2020" max="2030" style="width: 100px;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter me-1"></i>Filter
+                </button>
+            </form>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row mb-4 g-3">
+            <div class="col-md-4">
+                <div class="modern-card">
+                    <div class="modern-card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-muted small mb-1">Total Amount ({{ year }})</div>
+                                <div class="h4 mb-0 fw-bold text-success">Rs. {{ total_amount|floatformat:2 }}</div>
+                            </div>
+                            <i class="fas fa-money-bill-wave fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="modern-card">
+                    <div class="modern-card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-muted small mb-1">Total Payments</div>
+                                <div class="h4 mb-0 fw-bold text-primary">{{ total_count }}</div>
+                            </div>
+                            <i class="fas fa-list fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="modern-card">
+                    <div class="modern-card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="text-muted small mb-1">Average Payment</div>
+                                <div class="h4 mb-0 fw-bold text-info">
+                                    Rs. {% if total_count > 0 %}{{ total_amount|floatformat:2|div:total_count|floatformat:2 }}{% else %}0.00{% endif %}
+                                </div>
+                            </div>
+                            <i class="fas fa-chart-line fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <!-- Monthly Chart -->
+            <div class="col-lg-8">
+                <div class="modern-card">
+                    <div class="modern-card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-area me-2"></i>Monthly Payment Breakdown
+                        </h5>
+                    </div>
+                    <div class="modern-card-body">
+                        <canvas id="monthlyChart" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Methods -->
+            <div class="col-lg-4">
+                <div class="modern-card">
+                    <div class="modern-card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-pie-chart me-2"></i>By Payment Method
+                        </h5>
+                    </div>
+                    <div class="modern-card-body">
+                        <canvas id="methodChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Members -->
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="modern-card">
+                    <div class="modern-card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-trophy me-2"></i>Top Paying Members
+                        </h5>
+                    </div>
+                    <div class="modern-card-body">
+                        <div class="table-responsive">
+                            <table class="table modern-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Member</th>
+                                        <th>Total Amount</th>
+                                        <th>Payment Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for member in top_members %}
+                                        <tr>
+                                            <td class="fw-bold">#{{ forloop.counter }}</td>
+                                            <td>{{ member.member__member_id }} - {{ member.member__member_first_name }} {{ member.member__member_last_name }}</td>
+                                            <td class="fw-bold text-success">Rs. {{ member.total|floatformat:2 }}</td>
+                                            <td>{{ member.count }}</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-4">No data available</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Monthly Chart
+        const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+        new Chart(monthlyCtx, {
+            type: 'bar',
+            data: {
+                labels: [{% for data in monthly_data %}'{{ data.month }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+                datasets: [{
+                    label: 'Amount (Rs.)',
+                    data: [{% for data in monthly_data %}{{ data.amount }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rs. ' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Method Chart
+        const methodCtx = document.getElementById('methodChart').getContext('2d');
+        new Chart(methodCtx, {
+            type: 'pie',
+            data: {
+                labels: [{% for method in by_method %}'{{ method.payment_method }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+                datasets: [{
+                    data: [{% for method in by_method %}{{ method.total }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(245, 158, 11, 0.8)',
+                        'rgba(239, 68, 68, 0.8)',
+                        'rgba(139, 92, 246, 0.8)',
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+    </script>
+{% endblock content %}
+

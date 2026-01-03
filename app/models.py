@@ -121,3 +121,107 @@ class MemberAttendance(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()  # Run validation
         super().save(*args, **kwargs)
+
+
+class ActivityLog(models.Model):
+    """Track all user activities for audit and recent activity feed"""
+    ACTION_CHOICES = [
+        ('CREATE', 'Created'),
+        ('UPDATE', 'Updated'),
+        ('DELETE', 'Deleted'),
+        ('VIEW', 'Viewed'),
+        ('EXPORT', 'Exported'),
+    ]
+    
+    activity_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True)
+    action_type = models.CharField(max_length=10, choices=ACTION_CHOICES)
+    target_model = models.CharField(max_length=50)  # Member, Meeting, etc.
+    target_id = models.CharField(max_length=50)
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['target_model', 'target_id']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user} {self.action_type} {self.target_model} at {self.created_at}"
+
+
+class Payment(models.Model):
+    """Track member payments separately from attendance"""
+    PAYMENT_METHOD_CHOICES = [
+        ('CASH', 'Cash'),
+        ('BANK', 'Bank Transfer'),
+        ('CARD', 'Card'),
+        ('OTHER', 'Other'),
+    ]
+    
+    payment_id = models.AutoField(primary_key=True)
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='payments')
+    meeting = models.ForeignKey(MeetingInfo, on_delete=models.CASCADE, related_name='payments', null=True, blank=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_date = models.DateTimeField(auto_now_add=True)
+    payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES, default='CASH')
+    receipt_number = models.CharField(max_length=50, blank=True)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-payment_date']
+        indexes = [
+            models.Index(fields=['member', '-payment_date']),
+            models.Index(fields=['-payment_date']),
+            models.Index(fields=['meeting']),
+        ]
+    
+    def __str__(self):
+        return f"Payment {self.payment_id} - {self.member.member_id} - Rs.{self.amount}"
+
+
+class BadgeType(models.TextChoices):
+    """Achievement badge types"""
+    # Attendance badges
+    PERFECT_ATTENDANCE = 'PERFECT_ATTENDANCE', '🎯 Perfect Attendance'
+    ATTENDANCE_STREAK_5 = 'ATTENDANCE_STREAK_5', '🔥 5 Meeting Streak'
+    ATTENDANCE_STREAK_10 = 'ATTENDANCE_STREAK_10', '⚡ 10 Meeting Streak'
+    EARLY_BIRD = 'EARLY_BIRD', '🌅 Early Bird'
+    
+    # Payment badges
+    PAYMENT_CHAMPION = 'PAYMENT_CHAMPION', '💰 Payment Champion'
+    ALWAYS_PAID = 'ALWAYS_PAID', '💳 Always Paid'
+    
+    # Membership badges
+    FOUNDING_MEMBER = 'FOUNDING_MEMBER', '👑 Founding Member'
+    VETERAN_MEMBER = 'VETERAN_MEMBER', '🏆 Veteran Member'
+    ACTIVE_MEMBER = 'ACTIVE_MEMBER', '⭐ Active Member'
+    
+    # Leadership badges
+    LEADER = 'LEADER', '👔 Leader'
+    COMMITTEE = 'COMMITTEE', '🤝 Committee Member'
+
+
+class MemberBadge(models.Model):
+    """Track badges earned by members"""
+    badge_id = models.AutoField(primary_key=True)
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='badges')
+    badge_type = models.CharField(max_length=30, choices=BadgeType.choices)
+    earned_date = models.DateTimeField(auto_now_add=True)
+    description = models.TextField(blank=True)
+    
+    class Meta:
+        unique_together = [['member', 'badge_type']]
+        ordering = ['-earned_date']
+        indexes = [
+            models.Index(fields=['member', '-earned_date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.member.member_id} - {self.get_badge_type_display()}"

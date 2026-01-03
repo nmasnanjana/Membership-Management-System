@@ -1,12 +1,13 @@
 """
-Django signals for automatic member deactivation
+Django signals for automatic member deactivation and badge awarding
 """
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.core.cache import cache
-from .models import MemberAttendance
+from .models import MemberAttendance, Member
 from .utils import check_and_deactivate_inactive_members
 from .constants import CONSECUTIVE_MEETINGS_FOR_DEACTIVATION
+from .gamification import check_and_award_badges
 
 
 # Cache key to prevent running the check too frequently
@@ -59,5 +60,34 @@ def auto_deactivate_inactive_members(sender, instance, created, **kwargs):
     except Exception:
         # Silently fail to not interrupt the attendance saving process
         # This ensures attendance saving always works, even if deactivation check fails
+        pass
+
+
+@receiver(post_save, sender=MemberAttendance)
+def auto_award_badges(sender, instance, created, **kwargs):
+    """
+    Automatically check and award badges when attendance is saved
+    """
+    try:
+        member = instance.member_id
+        if member and member.member_is_active:
+            # Check and award badges
+            newly_awarded = check_and_award_badges(member)
+            # Badges are automatically created, no need to do anything else
+    except Exception:
+        # Silently fail to not interrupt the attendance saving process
+        pass
+
+
+@receiver(post_save, sender=Member)
+def check_membership_badges_on_save(sender, instance, created, **kwargs):
+    """
+    Check and award membership-related badges when member is saved
+    """
+    try:
+        if instance.member_is_active:
+            check_and_award_badges(instance)
+    except Exception:
+        # Silently fail
         pass
 

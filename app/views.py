@@ -247,6 +247,23 @@ def dashboard(request):
     # Format numbers with commas for better readability (meeting_fee is IntegerField, so no decimals)
     context['total_collected'] = f'{int(total_collected):,}'
     context['total_to_receive'] = f'{int(total_to_receive):,}'
+    
+    # Calendar widget data - upcoming holidays and meetings
+    from .holidays_utils import get_upcoming_holidays
+    from datetime import date
+    upcoming_holidays = get_upcoming_holidays(5, date.today())
+    context['upcoming_holidays'] = upcoming_holidays
+    
+    # Upcoming meetings (next 5)
+    upcoming_meetings = MeetingInfo.objects.filter(
+        meeting_date__gte=date.today()
+    ).order_by('meeting_date')[:5]
+    context['upcoming_meetings'] = upcoming_meetings
+    
+    # Smart Recommendations
+    from .recommendations import get_smart_recommendations
+    recommendations = get_smart_recommendations(request.user)
+    context['recommendations'] = recommendations
 
     return render(request, 'dashboard.html', context)
 

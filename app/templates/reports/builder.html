@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="container-fluid px-3 px-md-4">
+        {% include 'breadcrumb.html' %}
+        
+        <div class="mb-4">
+            <h1 class="page-title">
+                <i class="fas fa-file-alt text-primary me-2"></i>Custom Reports Builder
+            </h1>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-modern alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="modern-card">
+                    <div class="modern-card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cog me-2"></i>Report Configuration
+                        </h5>
+                    </div>
+                    <div class="modern-card-body">
+                        <form method="post" action="{% url 'reports_builder' %}" id="reportForm">
+                            {% csrf_token %}
+                            
+                            <!-- Report Type -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Report Type <span class="text-danger">*</span></label>
+                                <select class="form-select" name="report_type" id="reportType" required>
+                                    <option value="">Select Report Type</option>
+                                    <option value="members">Members Report</option>
+                                    <option value="attendance">Attendance Report</option>
+                                    <option value="meetings">Meetings Report</option>
+                                    <option value="payments">Payments Report</option>
+                                </select>
+                            </div>
+
+                            <!-- Date Range (Common) -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label">Date From</label>
+                                    <input type="date" class="form-control" name="date_from" id="dateFrom">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Date To</label>
+                                    <input type="date" class="form-control" name="date_to" id="dateTo">
+                                </div>
+                            </div>
+
+                            <!-- Members Report Filters -->
+                            <div id="membersFilters" class="report-filters" style="display: none;">
+                                <h6 class="mb-3">Member Filters</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Status</label>
+                                        <select class="form-select" name="member_status">
+                                            <option value="">All</option>
+                                            <option value="true">Active</option>
+                                            <option value="false">Inactive</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Role</label>
+                                        <select class="form-select" name="member_role">
+                                            <option value="">All Roles</option>
+                                            <option value="PRESIDENT">President</option>
+                                            <option value="SECRETARY">Secretary</option>
+                                            <option value="TREASURY">Treasury</option>
+                                            <option value="VICE_PRESIDENT">Vice President</option>
+                                            <option value="VICE_SECRETARY">Vice Secretary</option>
+                                            <option value="VICE_TREASURY">Vice Treasury</option>
+                                            <option value="COMMITTEE_MEMBER">Committee Member</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Joined From</label>
+                                        <input type="date" class="form-control" name="join_date_from">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Joined To</label>
+                                        <input type="date" class="form-control" name="join_date_to">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Attendance Report Filters -->
+                            <div id="attendanceFilters" class="report-filters" style="display: none;">
+                                <h6 class="mb-3">Attendance Filters</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Member ID</label>
+                                        <input type="text" class="form-control" name="member_id" placeholder="Optional">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Meeting</label>
+                                        <select class="form-select" name="meeting_id">
+                                            <option value="">All Meetings</option>
+                                            {% for meeting in meetings %}
+                                                <option value="{{ meeting.meeting_id }}">{{ meeting.meeting_date|date:"d M Y" }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Attendance Status</label>
+                                        <select class="form-select" name="attendance_status">
+                                            <option value="">All</option>
+                                            <option value="true">Present</option>
+                                            <option value="false">Absent</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Fee Status</label>
+                                        <select class="form-select" name="fee_status">
+                                            <option value="">All</option>
+                                            <option value="true">Paid</option>
+                                            <option value="false">Not Paid</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Meetings Report Filters -->
+                            <div id="meetingsFilters" class="report-filters" style="display: none;">
+                                <h6 class="mb-3">Meeting Filters</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Fee Min</label>
+                                        <input type="number" class="form-control" name="fee_min" placeholder="Optional">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Fee Max</label>
+                                        <input type="number" class="form-control" name="fee_max" placeholder="Optional">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payments Report Filters -->
+                            <div id="paymentsFilters" class="report-filters" style="display: none;">
+                                <h6 class="mb-3">Payment Filters</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Member ID</label>
+                                        <input type="text" class="form-control" name="member_id" placeholder="Optional">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Payment Method</label>
+                                        <select class="form-select" name="payment_method">
+                                            <option value="">All Methods</option>
+                                            <option value="CASH">Cash</option>
+                                            <option value="BANK">Bank Transfer</option>
+                                            <option value="CARD">Card</option>
+                                            <option value="OTHER">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Export Format -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Export Format <span class="text-danger">*</span></label>
+                                <select class="form-select" name="export_format" required>
+                                    <option value="excel" selected>Excel (.xlsx)</option>
+                                    <option value="pdf">PDF (.pdf) - Members only</option>
+                                </select>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-download me-1"></i>Generate Report
+                                </button>
+                                <a href="{% url 'reports_quick_stats' %}" class="btn btn-info">
+                                    <i class="fas fa-chart-bar me-1"></i>Quick Statistics
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="modern-card">
+                    <div class="modern-card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Report Types
+                        </h5>
+                    </div>
+                    <div class="modern-card-body">
+                        <div class="mb-3">
+                            <h6><i class="fas fa-users text-primary me-2"></i>Members Report</h6>
+                            <p class="text-muted small mb-0">Export member details with filters for status, role, and join date.</p>
+                        </div>
+                        <div class="mb-3">
+                            <h6><i class="fas fa-check-circle text-success me-2"></i>Attendance Report</h6>
+                            <p class="text-muted small mb-0">Export attendance records with filters for member, meeting, and status.</p>
+                        </div>
+                        <div class="mb-3">
+                            <h6><i class="fas fa-calendar text-info me-2"></i>Meetings Report</h6>
+                            <p class="text-muted small mb-0">Export meeting information with date and fee filters.</p>
+                        </div>
+                        <div class="mb-3">
+                            <h6><i class="fas fa-money-bill-wave text-warning me-2"></i>Payments Report</h6>
+                            <p class="text-muted small mb-0">Export payment records with filters for member, method, and date.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('reportType').addEventListener('change', function() {
+            // Hide all filter sections
+            document.querySelectorAll('.report-filters').forEach(el => el.style.display = 'none');
+            
+            // Show relevant filter section
+            const reportType = this.value;
+            if (reportType) {
+                document.getElementById(reportType + 'Filters').style.display = 'block';
+            }
+        });
+    </script>
+{% endblock content %}
+

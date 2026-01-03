@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'DataTables/datatables.min.css' %}">
+    <script src="{% static 'DataTables/datatables.min.js' %}"></script>
+    <style>
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: var(--border-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .calendar-day {
+            background: var(--bg-secondary);
+            padding: 0.75rem;
+            min-height: 100px;
+            position: relative;
+        }
+        
+        .calendar-day.other-month {
+            background: var(--bg-primary);
+            opacity: 0.5;
+        }
+        
+        .calendar-day.today {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--primary-color);
+        }
+        
+        .calendar-day.has-meeting {
+            border-left: 3px solid var(--primary-color);
+        }
+        
+        .calendar-day.has-holiday {
+            border-top: 3px solid var(--warning-color);
+        }
+        
+        .day-number {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .day-events {
+            font-size: 0.75rem;
+        }
+        
+        .event-meeting {
+            background: var(--primary-color);
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+            margin: 2px 0;
+            display: block;
+        }
+        
+        .event-holiday {
+            background: var(--warning-color);
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+            margin: 2px 0;
+            display: block;
+        }
+        
+        .calendar-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            background: var(--bg-tertiary);
+            padding: 0.5rem;
+            font-weight: 600;
+            text-align: center;
+            border-bottom: 2px solid var(--border-color);
+        }
+    </style>
+{% endblock head %}
+
+{% block content %}
+    <div class="container-fluid px-3 px-md-4">
+        {% include 'breadcrumb.html' %}
+        
+        <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap">
+            <h1 class="page-title">
+                <i class="fas fa-calendar-alt text-primary me-2"></i>Calendar View
+            </h1>
+            <div class="d-flex gap-2">
+                <a href="{% url 'calendar_view' %}?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-chevron-left me-1"></i>Previous
+                </a>
+                <a href="{% url 'calendar_view' %}?year={{ next_year }}&month={{ next_month }}" class="btn btn-secondary btn-sm">
+                    Next<i class="fas fa-chevron-right ms-1"></i>
+                </a>
+                <a href="{% url 'calendar_view' %}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-calendar-day me-1"></i>Today
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-9">
+                <div class="modern-card mb-4">
+                    <div class="modern-card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calendar me-2"></i>{{ month_name }} {{ year }}
+                        </h5>
+                    </div>
+                    <div class="modern-card-body p-0">
+                        <div class="calendar-header">
+                            <div>Sun</div>
+                            <div>Mon</div>
+                            <div>Tue</div>
+                            <div>Wed</div>
+                            <div>Thu</div>
+                            <div>Fri</div>
+                            <div>Sat</div>
+                        </div>
+                        <div class="calendar-grid">
+                            {% for week in calendar_data %}
+                                {% for day_info in week %}
+                                    {% if day_info %}
+                                        <div class="calendar-day {% if day_info.is_today %}today{% endif %} {% if day_info.meetings %}has-meeting{% endif %} {% if day_info.holidays %}has-holiday{% endif %}">
+                                            <div class="day-number">{{ day_info.day }}</div>
+                                            <div class="day-events">
+                                                {% for holiday in day_info.holidays %}
+                                                    <span class="event-holiday" title="{{ holiday.name }}">
+                                                        <i class="fas fa-star me-1"></i>{{ holiday.name|truncatewords:2 }}
+                                                    </span>
+                                                {% endfor %}
+                                                {% for meeting in day_info.meetings %}
+                                                    <a href="{% url 'attendance_date' meeting.meeting_id %}" class="event-meeting" title="Meeting - Fee: Rs.{{ meeting.meeting_fee }}">
+                                                        <i class="fas fa-calendar-check me-1"></i>Meeting
+                                                    </a>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="calendar-day other-month"></div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3">
+                <div class="modern-card mb-4">
+                    <div class="modern-card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calendar-star me-2"></i>Upcoming Holidays
+                        </h5>
+                    </div>
+                    <div class="modern-card-body">
+                        {% for holiday in upcoming_holidays %}
+                            <div class="mb-3 pb-3 {% if not forloop.last %}border-bottom border-secondary{% endif %}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <div class="fw-bold text-warning">{{ holiday.name }}</div>
+                                        <div class="text-muted small">{{ holiday.date|date:"d M Y" }}</div>
+                                        <span class="badge bg-secondary mt-1">{{ holiday.type|title }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="modern-card">
+                    <div class="modern-card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Legend
+                        </h5>
+                    </div>
+                    <div class="modern-card-body">
+                        <div class="mb-2">
+                            <span class="event-meeting d-inline-block mb-1">Meeting</span>
+                            <span class="text-muted small d-block">Club meetings</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="event-holiday d-inline-block mb-1">Holiday</span>
+                            <span class="text-muted small d-block">Sri Lankan holidays</span>
+                        </div>
+                        <div class="mb-2">
+                            <div class="calendar-day today d-inline-block" style="width: 30px; height: 30px; padding: 0;"></div>
+                            <span class="text-muted small d-inline-block ms-2">Today</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+
