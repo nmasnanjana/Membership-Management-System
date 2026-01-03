@@ -27,10 +27,23 @@
                 </li>
                 {% endif %}
 
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'member_list' %}" style="font-weight: 400; color: #d1d5db;">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="membersDropdown" role="button" 
+                       data-bs-toggle="dropdown" aria-expanded="false" style="font-weight: 400; color: #d1d5db;">
                         <i class="fas fa-users me-1"></i> Members
                     </a>
+                    <ul class="dropdown-menu" style="background: #374151; border: 1px solid #4b5563;">
+                        <li>
+                            <a class="dropdown-item" href="{% url 'member_list' %}" style="color: #d1d5db;">
+                                <i class="fas fa-child me-2"></i> Members Directory
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'member_list_adults' %}" style="color: #d1d5db;">
+                                <i class="fas fa-user me-2"></i> Adults Directory
+                            </a>
+                        </li>
+                    </ul>
                 </li>
 
                 {% if user.is_superuser %}

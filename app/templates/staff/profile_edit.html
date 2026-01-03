@@ -78,7 +78,7 @@
                         <button type="submit" class="btn btn-primary-modern btn-modern">
                             <i class="fas fa-save me-2"></i>Update Profile
                         </button>
-                        {% if user.is_superuser %}
+                        {% if request.user.is_superuser %}
                             <a href="{% url 'staff_list' %}" class="btn btn-secondary btn-modern">
                                 <i class="fas fa-times me-2"></i>Cancel
                             </a>

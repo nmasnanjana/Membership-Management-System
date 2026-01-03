@@ -236,12 +236,15 @@ def staff_profile_edit(request, staff_id):
             messages.error(request, "You can only edit your own profile.")
             return redirect('dashboard')
         
-        form = CustomUserChangeForm(request.POST or None, instance=user)
+        # Pass request.user to form so it can determine if admin privilege field should be shown
+        form = CustomUserChangeForm(request.POST or None, instance=user, request_user=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, "User Profile has been updated successfully")
 
-            if user.is_superuser:
+            # If accessed from staff management (admin user), always redirect to staff_list
+            # Otherwise, redirect to dashboard (for self-editing)
+            if request.user.is_superuser:
                 return redirect('staff_list')
             else:
                 return redirect('dashboard')

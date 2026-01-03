@@ -18,6 +18,7 @@ def member_list(request):
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
     from .search_utils import search_members
     from .models import MemberRole
+    from datetime import date
     
     context = context_data(request)
     context['page_name'] = 'List Members'
@@ -29,19 +30,31 @@ def member_list(request):
     join_date_from = request.GET.get('join_date_from', '')
     join_date_to = request.GET.get('join_date_to', '')
     
-    # Build filters dict
+    # Build filters dict - if search query exists, override filters (only apply search)
     filters = {}
-    if is_active_filter != '':
-        filters['is_active'] = is_active_filter.lower() == 'true'
-    if role_filter:
-        filters['role'] = role_filter
-    if join_date_from:
-        filters['join_date_from'] = join_date_from
-    if join_date_to:
-        filters['join_date_to'] = join_date_to
+    if search_query:
+        # When searching, ignore other filters - search takes priority
+        filters = {}
+    else:
+        # Only apply filters when not searching
+        if is_active_filter != '':
+            filters['is_active'] = is_active_filter.lower() == 'true'
+        if role_filter:
+            filters['role'] = role_filter
+        if join_date_from:
+            filters['join_date_from'] = join_date_from
+        if join_date_to:
+            filters['join_date_to'] = join_date_to
     
-    # Apply search and filters
-    members_list = search_members(search_query, filters).order_by('-member_join_at')
+    # Filter members under 18 years old (for this page)
+    today = date.today()
+    # Calculate date 18 years ago
+    cutoff_date = date(today.year - 18, today.month, today.day)
+    if today.month == 2 and today.day == 29:  # Handle leap year
+        cutoff_date = date(today.year - 18, 2, 28)
+    
+    # Apply search and filters, then filter by age
+    members_list = search_members(search_query, filters).filter(member_dob__gt=cutoff_date).order_by('-member_join_at')
     
     # Pagination
     paginator = Paginator(members_list, PAGINATION_MEMBER_LIST)
@@ -65,6 +78,78 @@ def member_list(request):
     context['breadcrumb_items'] = [
         {'name': 'Home', 'url': 'dashboard'},
         {'name': 'Members', 'url': 'member_list'},
+        {'name': 'List', 'url': None},
+    ]
+    return render(request, 'member/list.html', context)
+
+
+@login_required
+def member_list_adults(request):
+    """List members who are 18 years or older"""
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    from .search_utils import search_members
+    from .models import MemberRole
+    from datetime import date
+    
+    context = context_data(request)
+    context['page_name'] = 'Adults Directory'
+    
+    # Get search query and filters from request
+    search_query = request.GET.get('search', '').strip()
+    is_active_filter = request.GET.get('is_active', '')
+    role_filter = request.GET.get('role', '')
+    join_date_from = request.GET.get('join_date_from', '')
+    join_date_to = request.GET.get('join_date_to', '')
+    
+    # Build filters dict - if search query exists, override filters (only apply search)
+    filters = {}
+    if search_query:
+        # When searching, ignore other filters - search takes priority
+        filters = {}
+    else:
+        # Only apply filters when not searching
+        if is_active_filter != '':
+            filters['is_active'] = is_active_filter.lower() == 'true'
+        if role_filter:
+            filters['role'] = role_filter
+        if join_date_from:
+            filters['join_date_from'] = join_date_from
+        if join_date_to:
+            filters['join_date_to'] = join_date_to
+    
+    # Filter members 18 years or older (for this page)
+    today = date.today()
+    # Calculate date 18 years ago
+    cutoff_date = date(today.year - 18, today.month, today.day)
+    if today.month == 2 and today.day == 29:  # Handle leap year
+        cutoff_date = date(today.year - 18, 2, 28)
+    
+    # Apply search and filters, then filter by age (18+)
+    members_list = search_members(search_query, filters).filter(member_dob__lte=cutoff_date).order_by('-member_join_at')
+    
+    # Pagination
+    paginator = Paginator(members_list, PAGINATION_MEMBER_LIST)
+    page = request.GET.get('page', 1)
+    
+    try:
+        members = paginator.page(page)
+    except PageNotAnInteger:
+        members = paginator.page(1)
+    except EmptyPage:
+        members = paginator.page(paginator.num_pages)
+    
+    context['members'] = members
+    context['page_obj'] = members
+    context['search_query'] = search_query
+    context['is_active_filter'] = is_active_filter
+    context['role_filter'] = role_filter
+    context['join_date_from'] = join_date_from
+    context['join_date_to'] = join_date_to
+    context['roles'] = MemberRole.choices
+    context['is_adults_page'] = True  # Flag to identify adults page
+    context['breadcrumb_items'] = [
+        {'name': 'Home', 'url': 'dashboard'},
+        {'name': 'Adults', 'url': 'member_list_adults'},
         {'name': 'List', 'url': None},
     ]
     return render(request, 'member/list.html', context)

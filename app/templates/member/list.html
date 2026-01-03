@@ -15,7 +15,7 @@
         {% endif %}
         <div class="mb-4">
             <h1 class="page-title">
-                <i class="fas fa-users text-primary me-2"></i>Members Directory
+                <i class="fas fa-users text-primary me-2"></i>{% if is_adults_page %}Adults Directory{% else %}Members Directory{% endif %}
             </h1>
         </div>
 
@@ -36,7 +36,7 @@
         <div class="modern-card mb-4">
             <div class="modern-card-header d-flex justify-content-between align-items-center flex-wrap">
                 <h5 class="mb-0">
-                    <i class="fas fa-list me-2"></i>All Members
+                    <i class="fas fa-list me-2"></i>{% if is_adults_page %}All Adults (18+){% else %}All Members (Under 18){% endif %}
                 </h5>
                 <div class="d-flex gap-2 mt-2 mt-md-0">
                     <div class="btn-group" role="group">
@@ -51,43 +51,13 @@
                         <i class="fas fa-user-plus me-1"></i> Add Member
                     </a>
                     {% if user.is_superuser %}
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-light btn-sm" id="bulkActionsBtn" style="display: none;">
-                                <i class="fas fa-tasks me-1"></i>Bulk Actions (<span id="selectedCount">0</span>)
-                            </button>
-                            <a href="{% url 'member_info_export' %}" class="btn btn-light btn-sm">
-                                <i class="fas fa-download me-1"></i> Export
-                            </a>
-                        </div>
+                        <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#exportModal">
+                            <i class="fas fa-download me-1"></i> Export
+                        </button>
                     {% endif %}
                 </div>
             </div>
             <div class="modern-card-body">
-                <!-- Bulk Actions Panel -->
-                {% if user.is_superuser %}
-                <div id="bulkActionsPanel" class="mb-3 p-3 bg-dark rounded" style="display: none;">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong class="text-light"><span id="bulkSelectedCount">0</span> member(s) selected</strong>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-sm btn-success" id="bulkActivateBtn">
-                                <i class="fas fa-check me-1"></i>Activate
-                            </button>
-                            <button type="button" class="btn btn-sm btn-warning" id="bulkDeactivateBtn">
-                                <i class="fas fa-times me-1"></i>Deactivate
-                            </button>
-                            <button type="button" class="btn btn-sm btn-danger" id="bulkDeleteBtn">
-                                <i class="fas fa-trash me-1"></i>Delete
-                            </button>
-                            <button type="button" class="btn btn-sm btn-secondary" id="bulkCancelBtn">
-                                <i class="fas fa-times me-1"></i>Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-                
                 <!-- Advanced Search & Filters -->
                 <div class="mb-4 p-3 bg-dark rounded">
                     <form method="get" action="{% url 'member_list' %}" id="searchForm">
@@ -141,16 +111,12 @@
                         <table id="memberTable" class="table modern-table">
                         <thead>
                         <tr>
-                            {% if user.is_superuser %}
-                            <th>
-                                <input type="checkbox" id="selectAll" title="Select All">
-                            </th>
-                            {% endif %}
                             <th>Profile Picture</th>
                             <th>Member ID</th>
                             <th>First Name</th>
                             <th>Last Name</th>
                             <th>Telephone Number</th>
+                            <th>Status</th>
                             <th>Date Joined</th>
                             <th>Actions</th>
                         </tr>
@@ -158,11 +124,6 @@
                         <tbody>
                         {% for member in members %}
                             <tr data-member-id="{{ member.member_id }}">
-                                {% if user.is_superuser %}
-                                <td class="align-middle">
-                                    <input type="checkbox" class="member-checkbox" value="{{ member.member_id }}">
-                                </td>
-                                {% endif %}
                                 <td class="align-middle">
                                     <div class="position-relative d-inline-block">
                                         {% if member.member_profile_picture %}
@@ -205,12 +166,13 @@
                                 <td class="align-middle">
                                     <span class="editable" data-field="member_tp_number" data-member-id="{{ member.member_id }}">{{ member.member_tp_number }}</span>
                                 </td>
-                                <td class="align-middle">{{ member.member_join_at|date:"d M Y" }}</td>
                                 <td class="align-middle">
-                                    <!-- Status Badge -->
-                                    <span class="badge {% if member.member_is_active %}bg-success{% else %}bg-warning{% endif %} me-2">
+                                    <span class="badge {% if member.member_is_active %}bg-success{% else %}bg-warning{% endif %}">
                                         {% if member.member_is_active %}Active{% else %}Inactive{% endif %}
                                     </span>
+                                </td>
+                                <td class="align-middle">{{ member.member_join_at|date:"d M Y" }}</td>
+                                <td class="align-middle">
                                     {% if member.member_role %}
                                         {% if member.member_role == 'PRESIDENT' or member.member_role == 'SECRETARY' or member.member_role == 'TREASURY' %}
                                             <span class="badge bg-warning text-dark" title="Main Role">
@@ -314,12 +276,9 @@
             $('#memberTable').DataTable({
                 paging: false,
                 searching: true,
-                order: [[{% if user.is_superuser %}6{% else %}5{% endif %}, 'desc']],
+                order: [[6, 'desc']],  // Date Joined column
                 columnDefs: [
-                    {targets: -1, orderable: false},
-                    {% if user.is_superuser %}
-                    {targets: 0, orderable: false},
-                    {% endif %}
+                    {targets: -1, orderable: false},  // Actions column
                 ],
                 info: false,
                 language: {
@@ -343,93 +302,6 @@
                     $('[data-view="cards"]').removeClass('active');
                 }
             });
-            
-            // Bulk Selection
-            let selectedMembers = new Set();
-            
-            $('#selectAll').on('change', function() {
-                const checked = $(this).is(':checked');
-                $('.member-checkbox').prop('checked', checked);
-                if (checked) {
-                    $('.member-checkbox').each(function() {
-                        selectedMembers.add($(this).val());
-                    });
-                } else {
-                    selectedMembers.clear();
-                }
-                updateBulkActions();
-            });
-            
-            $('.member-checkbox').on('change', function() {
-                const memberId = $(this).val();
-                if ($(this).is(':checked')) {
-                    selectedMembers.add(memberId);
-                } else {
-                    selectedMembers.delete(memberId);
-                    $('#selectAll').prop('checked', false);
-                }
-                updateBulkActions();
-            });
-            
-            function updateBulkActions() {
-                const count = selectedMembers.size;
-                $('#selectedCount, #bulkSelectedCount').text(count);
-                if (count > 0) {
-                    $('#bulkActionsBtn, #bulkActionsPanel').show();
-                } else {
-                    $('#bulkActionsBtn, #bulkActionsPanel').hide();
-                }
-            }
-            
-            // Bulk Actions
-            $('#bulkActivateBtn').on('click', function() {
-                if (selectedMembers.size === 0) return;
-                if (confirm(`Activate ${selectedMembers.size} member(s)?`)) {
-                    bulkAction('activate', Array.from(selectedMembers));
-                }
-            });
-            
-            $('#bulkDeactivateBtn').on('click', function() {
-                if (selectedMembers.size === 0) return;
-                if (confirm(`Deactivate ${selectedMembers.size} member(s)?`)) {
-                    bulkAction('deactivate', Array.from(selectedMembers));
-                }
-            });
-            
-            $('#bulkDeleteBtn').on('click', function() {
-                if (selectedMembers.size === 0) return;
-                if (confirm(`Delete ${selectedMembers.size} member(s)? This cannot be undone!`)) {
-                    bulkAction('delete', Array.from(selectedMembers));
-                }
-            });
-            
-            $('#bulkCancelBtn').on('click', function() {
-                selectedMembers.clear();
-                $('.member-checkbox, #selectAll').prop('checked', false);
-                updateBulkActions();
-            });
-            
-            function bulkAction(action, memberIds) {
-                $.ajax({
-                    url: '{% url "member_bulk_action" %}',
-                    method: 'POST',
-                    data: {
-                        action: action,
-                        'member_ids[]': memberIds,
-                        csrfmiddlewaretoken: '{{ csrf_token }}'
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            location.reload();
-                        } else {
-                            alert('Error: ' + response.message);
-                        }
-                    },
-                    error: function() {
-                        alert('An error occurred');
-                    }
-                });
-            }
             
             // Inline Editing
             $('.editable').on('dblclick', function() {
@@ -505,4 +377,129 @@
             });
         });
     </script>
+
+    <!-- Export Modal -->
+    {% if user.is_superuser %}
+    <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exportModalLabel">
+                        <i class="fas fa-download me-2"></i>Export Members
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{% url 'member_info_export' %}" id="exportForm">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Export Format</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="format" id="formatExcel" value="excel" checked>
+                                <label class="form-check-label" for="formatExcel">
+                                    <i class="fas fa-file-excel text-success me-1"></i>Excel (.xlsx)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="format" id="formatPdf" value="pdf">
+                                <label class="form-check-label" for="formatPdf">
+                                    <i class="fas fa-file-pdf text-danger me-1"></i>PDF (.pdf)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Select Columns to Export</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="columns" value="member_id" id="col_id" checked>
+                                        <label class="form-check-label" for="col_id">Member ID</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="columns" value="initials" id="col_initials" checked>
+                                        <label class="form-check-label" for="col_initials">Initials</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="columns" value="first_name" id="col_first" checked>
+                                        <label class="form-check-label" for="col_first">First Name</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="columns" value="last_name" id="col_last" checked>
+                                        <label class="form-check-label" for="col_last">Last Name</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="columns" value="address" id="col_address">
+                                        <label class="form-check-label" for="col_address">Address</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="columns" value="dob" id="col_dob">
+                                        <label class="form-check-label" for="col_dob">Date of Birth</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="columns" value="telephone" id="col_phone" checked>
+                                        <label class="form-check-label" for="col_phone">Telephone</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="columns" value="account" id="col_account">
+                                        <label class="form-check-label" for="col_account">Account Number</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="columns" value="guardian" id="col_guardian">
+                                        <label class="form-check-label" for="col_guardian">Guardian Name</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="columns" value="role" id="col_role" checked>
+                                        <label class="form-check-label" for="col_role">Role</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="columns" value="status" id="col_status" checked>
+                                        <label class="form-check-label" for="col_status">Status</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="columns" value="join_date" id="col_join" checked>
+                                        <label class="form-check-label" for="col_join">Join Date</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> Current filters and search will be applied to the export.
+                            {% if is_adults_page %}
+                            <input type="hidden" name="is_adults" value="true">
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Preserve current filters -->
+                        {% if search_query %}
+                        <input type="hidden" name="search" value="{{ search_query }}">
+                        {% endif %}
+                        {% if is_active_filter %}
+                        <input type="hidden" name="is_active" value="{{ is_active_filter }}">
+                        {% endif %}
+                        {% if role_filter %}
+                        <input type="hidden" name="role" value="{{ role_filter }}">
+                        {% endif %}
+                        {% if join_date_from %}
+                        <input type="hidden" name="join_date_from" value="{{ join_date_from }}">
+                        {% endif %}
+                        {% if join_date_to %}
+                        <input type="hidden" name="join_date_to" value="{{ join_date_to }}">
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-download me-2"></i>Export
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 {% endblock content %}

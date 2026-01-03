@@ -26,10 +26,15 @@ class StaffRegisterForm(UserCreationForm):
 class CustomUserChangeForm(UserChangeForm):
 
     def __init__(self, *args, **kwargs):
+        # Extract request_user from kwargs if provided
+        self.request_user = kwargs.pop('request_user', None)
         super().__init__(*args, **kwargs)
         self.fields['password'].widget.attrs.pop('help_text', None)
-        if not self.instance.is_superuser:
-            del self.fields['is_superuser']
+        # Only show is_superuser field if the request user (the one editing) is a superuser
+        # This allows admins to grant/revoke admin privileges for any staff member
+        if not self.request_user or not self.request_user.is_superuser:
+            if 'is_superuser' in self.fields:
+                del self.fields['is_superuser']
 
     is_superuser = forms.BooleanField(label='Is Superuser', required=False)
 
