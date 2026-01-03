@@ -2,18 +2,34 @@
 
 {% block head %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/instascan@1.0.0/dist/instascan.min.js"></script>
     <style>
         #preview {
             width: 100%;
             height: auto;
+            max-height: 500px;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            object-fit: cover;
         }
         .scanner-container {
             position: relative;
             overflow: hidden;
             border-radius: 12px;
+            background: #1f2937;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        @media (max-width: 768px) {
+            #preview {
+                max-height: 400px;
+            }
+            .scanner-container {
+                min-height: 250px;
+            }
         }
     </style>
 {% endblock head %}

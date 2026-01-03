@@ -1,6 +1,29 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block head %}
+<style>
+    .row.g-3 {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    
+    .row.g-3 > [class*='col-'] {
+        display: flex;
+    }
+    
+    .row.g-3 .modern-card {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .row.g-3 .modern-card-body {
+        flex: 1;
+    }
+</style>
+{% endblock head %}
+
 {% block content %}
     <div class="container-fluid px-3 px-md-4">
         {% include 'breadcrumb.html' %}
@@ -20,9 +43,9 @@
             {% endfor %}
         {% endif %}
 
-        <div class="row">
+        <div class="row g-3">
             <div class="col-lg-8">
-                <div class="modern-card">
+                <div class="modern-card h-100">
                     <div class="modern-card-header">
                         <h5 class="mb-0">
                             <i class="fas fa-cog me-2"></i>Report Configuration
@@ -188,7 +211,7 @@
             </div>
 
             <div class="col-lg-4">
-                <div class="modern-card">
+                <div class="modern-card h-100">
                     <div class="modern-card-header">
                         <h5 class="mb-0">
                             <i class="fas fa-info-circle me-2"></i>Report Types
