@@ -10,6 +10,9 @@
 
 {% block content %}
     <div class="container">
+        {% if breadcrumb_items %}
+            {% include 'breadcrumb.html' %}
+        {% endif %}
         <div class="mb-4">
             <h1 class="page-title">
                 <i class="fas fa-users text-primary me-2"></i>Members Directory
@@ -36,21 +39,113 @@
                     <i class="fas fa-list me-2"></i>All Members
                 </h5>
                 <div class="d-flex gap-2 mt-2 mt-md-0">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-light btn-sm" id="viewToggle" data-view="table">
+                            <i class="fas fa-table me-1"></i>Table
+                        </button>
+                        <button type="button" class="btn btn-light btn-sm" id="viewToggle" data-view="cards">
+                            <i class="fas fa-th me-1"></i>Cards
+                        </button>
+                    </div>
                     <a class="btn btn-light btn-sm" href="{% url 'member_register' %}">
                         <i class="fas fa-user-plus me-1"></i> Add Member
                     </a>
                     {% if user.is_superuser %}
-                        <a href="{% url 'member_info_export' %}" class="btn btn-light btn-sm">
-                            <i class="fas fa-download me-1"></i> Export
-                        </a>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-light btn-sm" id="bulkActionsBtn" style="display: none;">
+                                <i class="fas fa-tasks me-1"></i>Bulk Actions (<span id="selectedCount">0</span>)
+                            </button>
+                            <a href="{% url 'member_info_export' %}" class="btn btn-light btn-sm">
+                                <i class="fas fa-download me-1"></i> Export
+                            </a>
+                        </div>
                     {% endif %}
                 </div>
             </div>
             <div class="modern-card-body">
-                <div class="table-responsive">
-                    <table id="memberTable" class="table modern-table">
+                <!-- Bulk Actions Panel -->
+                {% if user.is_superuser %}
+                <div id="bulkActionsPanel" class="mb-3 p-3 bg-dark rounded" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong class="text-light"><span id="bulkSelectedCount">0</span> member(s) selected</strong>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-success" id="bulkActivateBtn">
+                                <i class="fas fa-check me-1"></i>Activate
+                            </button>
+                            <button type="button" class="btn btn-sm btn-warning" id="bulkDeactivateBtn">
+                                <i class="fas fa-times me-1"></i>Deactivate
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" id="bulkDeleteBtn">
+                                <i class="fas fa-trash me-1"></i>Delete
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary" id="bulkCancelBtn">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Advanced Search & Filters -->
+                <div class="mb-4 p-3 bg-dark rounded">
+                    <form method="get" action="{% url 'member_list' %}" id="searchForm">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label text-light"><i class="fas fa-search me-1"></i>Search</label>
+                                <input type="text" class="form-control" name="search" value="{{ search_query }}" 
+                                       placeholder="Search by ID, name, phone, address...">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-light"><i class="fas fa-toggle-on me-1"></i>Status</label>
+                                <select class="form-select" name="is_active">
+                                    <option value="">All</option>
+                                    <option value="true" {% if is_active_filter == 'true' %}selected{% endif %}>Active</option>
+                                    <option value="false" {% if is_active_filter == 'false' %}selected{% endif %}>Inactive</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-light"><i class="fas fa-user-tag me-1"></i>Role</label>
+                                <select class="form-select" name="role">
+                                    <option value="">All Roles</option>
+                                    {% for value, label in roles %}
+                                        <option value="{{ value }}" {% if role_filter == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-light"><i class="fas fa-calendar me-1"></i>Joined From</label>
+                                <input type="date" class="form-control" name="join_date_from" value="{{ join_date_from }}">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-light"><i class="fas fa-calendar me-1"></i>Joined To</label>
+                                <input type="date" class="form-control" name="join_date_to" value="{{ join_date_to }}">
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary btn-sm me-2">
+                                    <i class="fas fa-filter me-1"></i>Apply Filters
+                                </button>
+                                <a href="{% url 'member_list' %}" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-times me-1"></i>Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <!-- Table View -->
+                <div id="tableView">
+                    <div class="table-responsive">
+                        <table id="memberTable" class="table modern-table">
                         <thead>
                         <tr>
+                            {% if user.is_superuser %}
+                            <th>
+                                <input type="checkbox" id="selectAll" title="Select All">
+                            </th>
+                            {% endif %}
                             <th>Profile Picture</th>
                             <th>Member ID</th>
                             <th>First Name</th>
@@ -62,7 +157,12 @@
                         </thead>
                         <tbody>
                         {% for member in members %}
-                            <tr>
+                            <tr data-member-id="{{ member.member_id }}">
+                                {% if user.is_superuser %}
+                                <td class="align-middle">
+                                    <input type="checkbox" class="member-checkbox" value="{{ member.member_id }}">
+                                </td>
+                                {% endif %}
                                 <td class="align-middle">
                                     <div class="position-relative d-inline-block">
                                         {% if member.member_profile_picture %}
@@ -93,12 +193,41 @@
                                         {% endif %}
                                     </div>
                                 </td>
-                                <td class="align-middle">{{ member.member_id }}</td>
-                                <td class="align-middle">{{ member.member_first_name }}</td>
-                                <td class="align-middle">{{ member.member_last_name }}</td>
-                                <td class="align-middle">{{ member.member_tp_number }}</td>
+                                <td class="align-middle">
+                                    <span class="member-id" data-field="member_id" data-member-id="{{ member.member_id }}">{{ member.member_id }}</span>
+                                </td>
+                                <td class="align-middle">
+                                    <span class="editable" data-field="member_first_name" data-member-id="{{ member.member_id }}">{{ member.member_first_name }}</span>
+                                </td>
+                                <td class="align-middle">
+                                    <span class="editable" data-field="member_last_name" data-member-id="{{ member.member_id }}">{{ member.member_last_name }}</span>
+                                </td>
+                                <td class="align-middle">
+                                    <span class="editable" data-field="member_tp_number" data-member-id="{{ member.member_id }}">{{ member.member_tp_number }}</span>
+                                </td>
                                 <td class="align-middle">{{ member.member_join_at|date:"d M Y" }}</td>
                                 <td class="align-middle">
+                                    <!-- Status Badge -->
+                                    <span class="badge {% if member.member_is_active %}bg-success{% else %}bg-warning{% endif %} me-2">
+                                        {% if member.member_is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                    {% if member.member_role %}
+                                        {% if member.member_role == 'PRESIDENT' or member.member_role == 'SECRETARY' or member.member_role == 'TREASURY' %}
+                                            <span class="badge bg-warning text-dark" title="Main Role">
+                                                <i class="fas fa-crown"></i> {{ member.get_member_role_display }}
+                                            </span>
+                                        {% elif member.member_role == 'VICE_PRESIDENT' or member.member_role == 'VICE_SECRETARY' or member.member_role == 'VICE_TREASURY' %}
+                                            <span class="badge bg-info" title="Vice Role">
+                                                <i class="fas fa-star"></i> {{ member.get_member_role_display }}
+                                            </span>
+                                        {% elif member.member_role == 'COMMITTEE_MEMBER' %}
+                                            <span class="badge bg-success" title="Committee Member">
+                                                <i class="fas fa-users"></i> {{ member.get_member_role_display }}
+                                            </span>
+                                        {% endif %}
+                                    {% endif %}
+                                    <br>
+                                    <div class="btn-group mt-2" role="group">
                                     <div class="btn-group" role="group">
                                         <a class="btn btn-sm btn-primary-modern" href="{% url 'member_view' member.member_id %}">
                                             <i class="fas fa-eye"></i>
@@ -120,26 +249,259 @@
                     </table>
                 </div>
                 {% include 'pagination.html' %}
+                </div>
+                
+                <!-- Cards View -->
+                <div id="cardsView" style="display: none;">
+                    <div class="row g-3">
+                        {% for member in members %}
+                            <div class="col-md-4 col-lg-3">
+                                <div class="modern-card h-100 member-card" data-member-id="{{ member.member_id }}">
+                                    <div class="modern-card-body text-center">
+                                        <div class="mb-3">
+                                            {% if member.member_profile_picture %}
+                                                <img src="{{ member.member_profile_picture.url }}" 
+                                                     class="rounded-circle" 
+                                                     style="width: 80px; height: 80px; object-fit: cover; border: 3px solid var(--border-color);">
+                                            {% else %}
+                                                <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center" 
+                                                     style="width: 80px; height: 80px;">
+                                                    <i class="fas fa-user fa-2x text-white"></i>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <h6 class="fw-bold mb-1">{{ member.member_first_name }} {{ member.member_last_name }}</h6>
+                                        <p class="text-muted small mb-2">{{ member.member_id }}</p>
+                                        <div class="mb-2">
+                                            <span class="badge {% if member.member_is_active %}bg-success{% else %}bg-warning{% endif %}">
+                                                {% if member.member_is_active %}Active{% else %}Inactive{% endif %}
+                                            </span>
+                                            {% if member.member_role %}
+                                                <span class="badge bg-info ms-1">{{ member.get_member_role_display }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-muted small mb-2">
+                                            <i class="fas fa-phone me-1"></i>{{ member.member_tp_number }}
+                                        </p>
+                                        <div class="btn-group w-100">
+                                            <a href="{% url 'member_view' member.member_id %}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'member_edit' member.member_id %}" class="btn btn-sm btn-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% if user.is_superuser %}
+                                                <a href="{% url 'member_delete' member.member_id %}" 
+                                                   class="btn btn-sm btn-danger"
+                                                   onclick="return confirm('Are you sure?')">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% include 'pagination.html' %}
+                </div>
             </div>
         </div>
     </div>
-
 
     <script>
         $(document).ready(function (){
             $('#memberTable').DataTable({
                 paging: false,
                 searching: true,
-                order: [[5, 'desc']],
+                order: [[{% if user.is_superuser %}6{% else %}5{% endif %}, 'desc']],
                 columnDefs: [
                     {targets: -1, orderable: false},
+                    {% if user.is_superuser %}
                     {targets: 0, orderable: false},
+                    {% endif %}
                 ],
                 info: false,
                 language: {
                     search: "<i class='fas fa-search'></i>",
                     searchPlaceholder: "Search members..."
                 }
+            });
+            
+            // View Toggle
+            $('[id="viewToggle"]').on('click', function() {
+                const view = $(this).data('view');
+                if (view === 'cards') {
+                    $('#tableView').hide();
+                    $('#cardsView').show();
+                    $(this).addClass('active');
+                    $('[data-view="table"]').removeClass('active');
+                } else {
+                    $('#cardsView').hide();
+                    $('#tableView').show();
+                    $(this).addClass('active');
+                    $('[data-view="cards"]').removeClass('active');
+                }
+            });
+            
+            // Bulk Selection
+            let selectedMembers = new Set();
+            
+            $('#selectAll').on('change', function() {
+                const checked = $(this).is(':checked');
+                $('.member-checkbox').prop('checked', checked);
+                if (checked) {
+                    $('.member-checkbox').each(function() {
+                        selectedMembers.add($(this).val());
+                    });
+                } else {
+                    selectedMembers.clear();
+                }
+                updateBulkActions();
+            });
+            
+            $('.member-checkbox').on('change', function() {
+                const memberId = $(this).val();
+                if ($(this).is(':checked')) {
+                    selectedMembers.add(memberId);
+                } else {
+                    selectedMembers.delete(memberId);
+                    $('#selectAll').prop('checked', false);
+                }
+                updateBulkActions();
+            });
+            
+            function updateBulkActions() {
+                const count = selectedMembers.size;
+                $('#selectedCount, #bulkSelectedCount').text(count);
+                if (count > 0) {
+                    $('#bulkActionsBtn, #bulkActionsPanel').show();
+                } else {
+                    $('#bulkActionsBtn, #bulkActionsPanel').hide();
+                }
+            }
+            
+            // Bulk Actions
+            $('#bulkActivateBtn').on('click', function() {
+                if (selectedMembers.size === 0) return;
+                if (confirm(`Activate ${selectedMembers.size} member(s)?`)) {
+                    bulkAction('activate', Array.from(selectedMembers));
+                }
+            });
+            
+            $('#bulkDeactivateBtn').on('click', function() {
+                if (selectedMembers.size === 0) return;
+                if (confirm(`Deactivate ${selectedMembers.size} member(s)?`)) {
+                    bulkAction('deactivate', Array.from(selectedMembers));
+                }
+            });
+            
+            $('#bulkDeleteBtn').on('click', function() {
+                if (selectedMembers.size === 0) return;
+                if (confirm(`Delete ${selectedMembers.size} member(s)? This cannot be undone!`)) {
+                    bulkAction('delete', Array.from(selectedMembers));
+                }
+            });
+            
+            $('#bulkCancelBtn').on('click', function() {
+                selectedMembers.clear();
+                $('.member-checkbox, #selectAll').prop('checked', false);
+                updateBulkActions();
+            });
+            
+            function bulkAction(action, memberIds) {
+                $.ajax({
+                    url: '{% url "member_bulk_action" %}',
+                    method: 'POST',
+                    data: {
+                        action: action,
+                        'member_ids[]': memberIds,
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert('Error: ' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('An error occurred');
+                    }
+                });
+            }
+            
+            // Inline Editing
+            $('.editable').on('dblclick', function() {
+                const $this = $(this);
+                const currentValue = $this.text().trim();
+                const field = $this.data('field');
+                const memberId = $this.data('member-id');
+                
+                const $input = $('<input>', {
+                    type: 'text',
+                    class: 'form-control form-control-sm',
+                    value: currentValue
+                });
+                
+                $this.replaceWith($input);
+                $input.focus().select();
+                
+                $input.on('blur', function() {
+                    const newValue = $(this).val().trim();
+                    if (newValue !== currentValue && newValue !== '') {
+                        $.ajax({
+                            url: '{% url "member_inline_edit" %}',
+                            method: 'POST',
+                            data: {
+                                member_id: memberId,
+                                field: field,
+                                value: newValue,
+                                csrfmiddlewaretoken: '{{ csrf_token }}'
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    $input.replaceWith($('<span>', {
+                                        class: 'editable',
+                                        'data-field': field,
+                                        'data-member-id': memberId,
+                                        text: newValue
+                                    }));
+                                } else {
+                                    alert('Error: ' + response.message);
+                                    $input.replaceWith($('<span>', {
+                                        class: 'editable',
+                                        'data-field': field,
+                                        'data-member-id': memberId,
+                                        text: currentValue
+                                    }));
+                                }
+                            },
+                            error: function() {
+                                alert('An error occurred');
+                                $input.replaceWith($('<span>', {
+                                    class: 'editable',
+                                    'data-field': field,
+                                    'data-member-id': memberId,
+                                    text: currentValue
+                                }));
+                            }
+                        });
+                    } else {
+                        $input.replaceWith($('<span>', {
+                            class: 'editable',
+                            'data-field': field,
+                            'data-member-id': memberId,
+                            text: currentValue
+                        }));
+                    }
+                });
+                
+                $input.on('keypress', function(e) {
+                    if (e.which === 13) {
+                        $(this).blur();
+                    }
+                });
             });
         });
     </script>

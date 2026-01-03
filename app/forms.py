@@ -147,7 +147,9 @@ class MemberEditForm(forms.ModelForm):
         widget=forms.TextInput(attrs={
             "placeholder": "4 Digit Member ID",
             "class": "form-control",
+            "readonly": "readonly",  # Visual indication
         }),
+        disabled=True,  # Prevent value change in backend
         validators=[RegexValidator(
             regex=r'^\d{4,10}$',
             message='Member ID must be 4-10 digits.'

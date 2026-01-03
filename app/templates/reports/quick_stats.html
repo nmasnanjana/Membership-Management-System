@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="container-fluid px-3 px-md-4">
+        {% include 'breadcrumb.html' %}
+        
+        <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap">
+            <h1 class="page-title">
+                <i class="fas fa-chart-bar text-info me-2"></i>Quick Statistics
+            </h1>
+            <form method="get" class="d-flex gap-2">
+                <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+                <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter me-1"></i>Filter
+                </button>
+            </form>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="modern-card">
+                    <div class="modern-card-body">
+                        <div class="text-muted small mb-1">Total Members</div>
+                        <div class="h4 mb-0 fw-bold">{{ stats.total_members }}</div>
+                        <small class="text-success">{{ stats.active_members }} active</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="modern-card">
+                    <div class="modern-card-body">
+                        <div class="text-muted small mb-1">Total Meetings</div>
+                        <div class="h4 mb-0 fw-bold text-primary">{{ stats.total_meetings }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="modern-card">
+                    <div class="modern-card-body">
+                        <div class="text-muted small mb-1">Attendance Rate</div>
+                        <div class="h4 mb-0 fw-bold text-success">{{ stats.attendance_rate|floatformat:1 }}%</div>
+                        <small class="text-muted">{{ stats.present_count }}/{{ stats.total_attendance }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="modern-card">
+                    <div class="modern-card-body">
+                        <div class="text-muted small mb-1">Total Payments</div>
+                        <div class="h4 mb-0 fw-bold text-warning">Rs. {{ stats.total_payments|floatformat:2 }}</div>
+                        <small class="text-muted">{{ stats.payment_count }} payments</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="modern-card">
+                    <div class="modern-card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Summary
+                        </h5>
+                    </div>
+                    <div class="modern-card-body">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td>Active Members:</td>
+                                <td class="fw-bold text-end">{{ stats.active_members }}</td>
+                            </tr>
+                            <tr>
+                                <td>Total Attendance Records:</td>
+                                <td class="fw-bold text-end">{{ stats.total_attendance }}</td>
+                            </tr>
+                            <tr>
+                                <td>Present Count:</td>
+                                <td class="fw-bold text-end text-success">{{ stats.present_count }}</td>
+                            </tr>
+                            <tr>
+                                <td>Paid Count:</td>
+                                <td class="fw-bold text-end text-primary">{{ stats.paid_count }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="modern-card">
+                    <div class="modern-card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calendar me-2"></i>Date Range
+                        </h5>
+                    </div>
+                    <div class="modern-card-body">
+                        <p class="mb-2">
+                            <strong>From:</strong> {{ date_from|date:"d M Y" }}
+                        </p>
+                        <p class="mb-0">
+                            <strong>To:</strong> {{ date_to|date:"d M Y" }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+

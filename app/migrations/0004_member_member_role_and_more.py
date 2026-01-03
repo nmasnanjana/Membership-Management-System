@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('app', '0003_alter_meetinginfo_options_and_more'),
+        ('app', '0002_alter_memberattendance_member_id'),
     ]
 
     operations = [
@@ -14,31 +14,6 @@ class Migration(migrations.Migration):
             model_name='member',
             name='member_role',
             field=models.CharField(blank=True, choices=[('PRESIDENT', 'President'), ('SECRETARY', 'Secretary'), ('TREASURY', 'Treasury'), ('VICE_PRESIDENT', 'Vice President'), ('VICE_SECRETARY', 'Vice Secretary'), ('VICE_TREASURY', 'Vice Treasury'), ('COMMITTEE_MEMBER', 'Committee Member'), ('', 'No Role')], default='', help_text='Club role assigned to member (for display purposes only)', max_length=20),
-        ),
-        migrations.AlterField(
-            model_name='meetinginfo',
-            name='meeting_created_at',
-            field=models.DateTimeField(auto_now_add=True),
-        ),
-        migrations.AlterField(
-            model_name='meetinginfo',
-            name='meeting_updated_at',
-            field=models.DateTimeField(auto_now=True),
-        ),
-        migrations.AlterField(
-            model_name='member',
-            name='member_updated_at',
-            field=models.DateTimeField(auto_now=True),
-        ),
-        migrations.AlterField(
-            model_name='memberattendance',
-            name='attendance_created_at',
-            field=models.DateTimeField(auto_now_add=True),
-        ),
-        migrations.AlterField(
-            model_name='memberattendance',
-            name='attendance_updated_at',
-            field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddIndex(
             model_name='member',

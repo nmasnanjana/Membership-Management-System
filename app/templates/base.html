@@ -24,6 +24,11 @@
     {% endblock head %}
     
     <link rel="icon" href="{% static 'icons/mms Icon.png' %}" type="image/x-icon">
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MMS">
     <title>{{ page_name }} | {{ system_name }}</title>
     
     <!-- Dark Mode Minimal Styles -->
@@ -672,6 +677,7 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <main class="main-content">
+        {% include 'loading_states.html' %}
         {% block content %}
         {% endblock content %}
     </main>
@@ -685,6 +691,21 @@
     </footer>
 
     <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('{% static "service-worker.js" %}')
+                    .then((registration) => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch((error) => {
+                        console.log('ServiceWorker registration failed:', error);
+                    });
+            });
+        }
+    </script>
     
     <script>
         // Add fade-in animation to cards

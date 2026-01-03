@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+    <style>
+        .heatmap-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            margin: 20px 0;
+        }
+        
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+        
+        .heatmap-cell:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        
+        .heatmap-cell.present {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        
+        .heatmap-cell.absent {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        
+        .heatmap-cell.unknown {
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+        }
+        
+        .heatmap-cell.rate-high {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        
+        .heatmap-cell.rate-medium {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+        
+        .heatmap-cell.rate-low {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        
+        .month-section {
+            margin-bottom: 30px;
+        }
+        
+        .month-header {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+    </style>
+{% endblock head %}
+
+{% block content %}
+    <div class="container-fluid px-3 px-md-4">
+        {% include 'breadcrumb.html' %}
+        
+        <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap">
+            <h1 class="page-title">
+                <i class="fas fa-chart-area text-primary me-2"></i>Attendance Heatmap
+            </h1>
+            <form method="get" class="d-flex gap-2">
+                <select name="member_id" class="form-select" style="width: 200px;">
+                    <option value="">All Members</option>
+                    {% for member in members %}
+                        <option value="{{ member.member_id }}" {% if member_id == member.member_id %}selected{% endif %}>
+                            {{ member.member_id }} - {{ member.member_first_name }} {{ member.member_last_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <select name="year" class="form-select" style="width: 100px;">
+                    {% for y in years %}
+                        <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter me-1"></i>Filter
+                </button>
+            </form>
+        </div>
+
+        {% if selected_member %}
+        <div class="modern-card mb-4">
+            <div class="modern-card-body">
+                <h5>
+                    <i class="fas fa-user me-2"></i>{{ selected_member.member_first_name }} {{ selected_member.member_last_name }}
+                    <span class="text-muted">({{ selected_member.member_id }})</span>
+                </h5>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Monthly Summary -->
+        <div class="modern-card mb-4">
+            <div class="modern-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-alt me-2"></i>Monthly Summary - {{ year }}
+                </h5>
+            </div>
+            <div class="modern-card-body">
+                <div class="row g-3">
+                    {% for month in monthly_summary %}
+                        <div class="col-md-3 col-6">
+                            <div class="modern-card">
+                                <div class="modern-card-body text-center">
+                                    <div class="text-muted small mb-1">{{ month.month_name }}</div>
+                                    <div class="h5 mb-1 fw-bold">
+                                        {% if member_id %}
+                                            {{ month.present }}/{{ month.total }}
+                                        {% else %}
+                                            {{ month.rate|floatformat:1 }}%
+                                        {% endif %}
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar" 
+                                             style="width: {{ month.rate }}%; background: {% if month.rate >= 70 %}var(--success-color){% elif month.rate >= 40 %}var(--warning-color){% else %}var(--danger-color){% endif %};">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Heatmap -->
+        <div class="modern-card">
+            <div class="modern-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-th me-2"></i>Attendance Heatmap
+                </h5>
+            </div>
+            <div class="modern-card-body">
+                {% if heatmap_data %}
+                    <div class="heatmap-container">
+                        {% for data in heatmap_data %}
+                            <div class="heatmap-cell 
+                                {% if member_id %}
+                                    {% if data.attended is True %}present{% elif data.attended is False %}absent{% else %}unknown{% endif %}
+                                {% else %}
+                                    {% if data.attendance_rate >= 70 %}rate-high{% elif data.attendance_rate >= 40 %}rate-medium{% else %}rate-low{% endif %}
+                                {% endif %}"
+                                title="{% if member_id %}{{ data.date|date:"d M Y" }} - {% if data.attended %}Present{% elif data.attended is False %}Absent{% else %}Not Recorded{% endif %}{% else %}{{ data.date|date:"d M Y" }} - {{ data.attendance_rate|floatformat:1 }}% ({{ data.present_count }}/{{ data.total_members }}){% endif %}"
+                                {% if data.meeting_id %}onclick="window.location.href='{% url 'attendance_date' data.meeting_id %}'"{% endif %}>
+                                <div>
+                                    <div style="font-size: 0.6rem;">{{ data.date|date:"d M" }}</div>
+                                    {% if member_id %}
+                                        {% if data.attended is True %}
+                                            <i class="fas fa-check"></i>
+                                        {% elif data.attended is False %}
+                                            <i class="fas fa-times"></i>
+                                        {% else %}
+                                            <i class="fas fa-minus"></i>
+                                        {% endif %}
+                                    {% else %}
+                                        <div style="font-size: 0.7rem;">{{ data.attendance_rate|floatformat:0 }}%</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Legend -->
+                    <div class="mt-4 d-flex justify-content-center gap-4">
+                        {% if member_id %}
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="heatmap-cell present" style="width: 30px; height: 30px; cursor: default;"></div>
+                                <span>Present</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="heatmap-cell absent" style="width: 30px; height: 30px; cursor: default;"></div>
+                                <span>Absent</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="heatmap-cell unknown" style="width: 30px; height: 30px; cursor: default;"></div>
+                                <span>Not Recorded</span>
+                            </div>
+                        {% else %}
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="heatmap-cell rate-high" style="width: 30px; height: 30px; cursor: default;"></div>
+                                <span>High (≥70%)</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="heatmap-cell rate-medium" style="width: 30px; height: 30px; cursor: default;"></div>
+                                <span>Medium (40-69%)</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="heatmap-cell rate-low" style="width: 30px; height: 30px; cursor: default;"></div>
+                                <span>Low (&lt;40%)</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <p class="text-center text-muted py-4">No data available for the selected period</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+

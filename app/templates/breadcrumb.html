@@ -1,0 +1,25 @@
+{% comment %}
+Breadcrumb Navigation Component
+Usage: {% include 'breadcrumb.html' with items=breadcrumb_items %}
+items format: [{'name': 'Home', 'url': '/dashboard'}, {'name': 'Members', 'url': '/member/list'}, {'name': 'Current Page'}]
+{% endcomment %}
+{% if items %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb" style="background: transparent; padding: 0; margin: 0;">
+        {% for item in items %}
+            {% if forloop.last %}
+                <li class="breadcrumb-item active" aria-current="page" style="color: var(--text-primary);">
+                    <i class="fas fa-{{ item.icon|default:'circle' }} me-1"></i>{{ item.name }}
+                </li>
+            {% else %}
+                <li class="breadcrumb-item">
+                    <a href="{{ item.url }}" style="color: var(--text-secondary); text-decoration: none;">
+                        <i class="fas fa-{{ item.icon|default:'home' }} me-1"></i>{{ item.name }}
+                    </a>
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ol>
+</nav>
+{% endif %}
+
