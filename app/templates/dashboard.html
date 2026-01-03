@@ -216,7 +216,7 @@
             </div>
         </div>
 
-        <!-- Charts Row 1 -->
+        <!-- Charts Row 1: Member Status Distribution and Attendance Trend -->
         <div class="row mb-3 g-3">
             <!-- Member Status Pie Chart -->
             <div class="col-xl-6 col-lg-6 col-12">
@@ -232,42 +232,27 @@
                 </div>
             </div>
 
-            <!-- Monthly Attendance Bar Chart -->
+            <!-- Attendance Trend Line Chart -->
             <div class="col-xl-6 col-lg-6 col-12">
                 <div class="modern-card">
                     <div class="modern-card-header">
-                        <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Monthly Attendance - {{ current_year }}</h6>
+                        <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Attendance Trend (Last 12 Months)</h6>
                     </div>
                     <div class="modern-card-body">
                         <div class="chart-container" style="position: relative; height: 300px;">
-                            <canvas id="monthlyAttendanceChart"></canvas>
+                            <canvas id="attendanceTrendChart"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Charts Row 2 -->
+        <!-- Charts Row 2: Attendance & Payment (Full Width) -->
         <div class="row mb-3 g-3">
-            <!-- Attendance Over Time Line Chart -->
-            <div class="col-xl-8 col-lg-8 col-12">
+            <div class="col-12">
                 <div class="modern-card">
                     <div class="modern-card-header">
-                        <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Attendance Trend - {{ current_year }}</h6>
-                    </div>
-                    <div class="modern-card-body">
-                        <div class="chart-container" style="position: relative; height: 300px;">
-                            <canvas id="attendanceChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Attendance vs Fee Payment -->
-            <div class="col-xl-4 col-lg-4 col-12">
-                <div class="modern-card">
-                    <div class="modern-card-header">
-                        <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Attendance & Payment</h6>
+                        <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Attendance & Payment (Last 12 Months)</h6>
                     </div>
                     <div class="modern-card-body">
                         <div class="chart-container" style="position: relative; height: 300px;">
@@ -404,10 +389,10 @@
             </div>
         </div>
 
-        <!-- Member Roles Section - Row 2: Committee Members -->
+        <!-- Member Roles Section - Row 2: Committee Members and Smart Recommendations -->
         <div class="row mb-3 g-3">
             <!-- Committee Members Widget -->
-            <div class="col-xl-12 col-lg-12 col-12">
+            <div class="col-xl-6 col-lg-6 col-12">
                 <div class="modern-card h-100">
                     <div class="modern-card-header">
                         <h5 class="mb-0">
@@ -430,18 +415,48 @@
                                                 </div>
                                             {% endif %}
                                             <div>
-                                                <div class="fw-bold" style="font-size: 0.9rem;">{{ member.member_id }} - {{ member.member_first_name }} {{ member.member_last_name }}</div>
+                                                <div class="fw-bold text-white" style="font-size: 0.9rem;">{{ member.member_id }} - {{ member.member_first_name }} {{ member.member_last_name }}</div>
                                             </div>
                                         </div>
                                     </div>
                                 {% endfor %}
                             </div>
                         {% else %}
-                            <p class="text-muted mb-0 text-center py-3">No committee members assigned yet</p>
+                            <p class="text-white mb-0 text-center py-3">No committee members assigned yet</p>
                         {% endif %}
                     </div>
                 </div>
             </div>
+            
+            <!-- Smart Recommendations Widget -->
+            {% if recommendations %}
+            <div class="col-xl-6 col-lg-6 col-12">
+                <div class="modern-card h-100" style="background: #f9fafb;">
+                    <div class="modern-card-header" style="background: #e5e7eb; border-bottom: 1px solid #d1d5db;">
+                        <h5 class="mb-0" style="color: #1f2937;">
+                            <i class="fas fa-lightbulb text-warning me-2"></i>Smart Recommendations
+                        </h5>
+                    </div>
+                    <div class="modern-card-body" style="background: #f9fafb;">
+                        <div class="list-group list-group-flush">
+                            {% for rec in recommendations %}
+                                <div class="list-group-item d-flex justify-content-between align-items-start border-0 px-0 py-2" style="background: transparent;">
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold" style="color: #000000;">
+                                            <i class="fas fa-{{ rec.icon }} text-{{ rec.type }} me-2"></i>{{ rec.title }}
+                                        </div>
+                                        <small style="color: #000000;">{{ rec.message }}</small>
+                                    </div>
+                                    <a href="{{ rec.url }}" class="btn btn-sm btn-primary ms-3">
+                                        <i class="fas fa-arrow-right me-1"></i>{{ rec.action }}
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
         
         <!-- Calendar Widget Row -->
@@ -452,30 +467,23 @@
                         <h5 class="mb-0">
                             <i class="fas fa-calendar-alt text-primary me-2"></i>Upcoming Meetings
                         </h5>
-                        <a href="{% url 'calendar_view' %}" class="btn btn-sm btn-primary">
-                            <i class="fas fa-calendar me-1"></i>Full Calendar
-                        </a>
+                        <div class="d-flex gap-2 align-items-center">
+                            <button type="button" class="btn btn-sm btn-secondary" id="prevMonthBtn">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <span id="currentMonthDisplay" class="text-white fw-bold"></span>
+                            <button type="button" class="btn btn-sm btn-secondary" id="nextMonthBtn">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                            <a href="{% url 'calendar_view' %}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-calendar me-1"></i>Full Calendar
+                            </a>
+                        </div>
                     </div>
                     <div class="modern-card-body">
-                        {% if upcoming_meetings %}
-                            <div class="list-group list-group-flush">
-                                {% for meeting in upcoming_meetings %}
-                                    <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 py-2" style="background: transparent;">
-                                        <div>
-                                            <div class="fw-bold">
-                                                <i class="fas fa-calendar-check text-primary me-2"></i>{{ meeting.meeting_date|date:"d M Y" }}
-                                            </div>
-                                            <small class="text-muted">Fee: Rs.{{ meeting.meeting_fee }}</small>
-                                        </div>
-                                        <a href="{% url 'attendance_date' meeting.meeting_id %}" class="btn btn-sm btn-primary">
-                                            <i class="fas fa-eye me-1"></i>View
-                                        </a>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <p class="text-muted mb-0 text-center py-3">No upcoming meetings scheduled</p>
-                        {% endif %}
+                        <div id="meetingsCalendar" style="min-height: 300px;">
+                            <!-- Calendar will be rendered here by JavaScript -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -507,57 +515,41 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Smart Recommendations Widget -->
-        {% if recommendations %}
-        <div class="row mb-3 g-3">
-            <div class="col-xl-12 col-lg-12 col-12">
-                <div class="modern-card">
-                    <div class="modern-card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-lightbulb text-warning me-2"></i>Smart Recommendations
-                        </h5>
-                    </div>
-                    <div class="modern-card-body">
-                        <div class="list-group list-group-flush">
-                            {% for rec in recommendations %}
-                                <div class="list-group-item d-flex justify-content-between align-items-start border-0 px-0 py-2" style="background: transparent;">
-                                    <div class="flex-grow-1">
-                                        <div class="fw-bold">
-                                            <i class="fas fa-{{ rec.icon }} text-{{ rec.type }} me-2"></i>{{ rec.title }}
-                                        </div>
-                                        <small class="text-muted">{{ rec.message }}</small>
-                                    </div>
-                                    <a href="{{ rec.url }}" class="btn btn-sm btn-primary ms-3">
-                                        <i class="fas fa-arrow-right me-1"></i>{{ rec.action }}
-                                    </a>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
     </div>
 </div>
 
     <script>
-        // Member Status Pie Chart
+        // Member Status Pie Chart (4 categories)
         var memberStatusCtx = document.getElementById('memberStatusChart').getContext('2d');
+        var memberStatusData = {
+            active_under_18: {{ member_status_data.active_under_18|default:0 }},
+            inactive_under_18: {{ member_status_data.inactive_under_18|default:0 }},
+            active_18_plus: {{ member_status_data.active_18_plus|default:0 }},
+            inactive_18_plus: {{ member_status_data.inactive_18_plus|default:0 }}
+        };
+        
         new Chart(memberStatusCtx, {
             type: 'pie',
             data: {
-                labels: ['Active Members', 'Inactive Members'],
+                labels: ['Active Members (Under 18)', 'Inactive Members (Under 18)', 'Active Members (18+)', 'Inactive Members (18+)'],
                 datasets: [{
-                    data: [{{ member_status_data.active }}, {{ member_status_data.passive }}],
+                    data: [
+                        memberStatusData.active_under_18,
+                        memberStatusData.inactive_under_18,
+                        memberStatusData.active_18_plus,
+                        memberStatusData.inactive_18_plus
+                    ],
                     backgroundColor: [
                         'rgba(40, 167, 69, 0.8)',
-                        'rgba(255, 193, 7, 0.8)'
+                        'rgba(255, 193, 7, 0.8)',
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(245, 158, 11, 0.8)'
                     ],
                     borderColor: [
                         'rgba(40, 167, 69, 1)',
-                        'rgba(255, 193, 7, 1)'
+                        'rgba(255, 193, 7, 1)',
+                        'rgba(16, 185, 129, 1)',
+                        'rgba(245, 158, 11, 1)'
                     ],
                     borderWidth: 2
                 }]
@@ -569,6 +561,9 @@
                 plugins: {
                     legend: {
                         position: 'bottom',
+                        labels: {
+                            color: '#f9fafb'
+                        }
                     },
                     tooltip: {
                         callbacks: {
@@ -586,61 +581,32 @@
             }
         });
 
-        // Monthly Attendance Bar Chart
-        var monthlyCtx = document.getElementById('monthlyAttendanceChart').getContext('2d');
-        var months = {{ months|safe }};
-        var monthlyData = {{ monthly_data|safe }};
-        new Chart(monthlyCtx, {
-            type: 'bar',
-            data: {
-                labels: months,
-                datasets: [{
-                    label: 'Attendance Count',
-                    data: monthlyData,
-                    backgroundColor: 'rgba(0, 123, 255, 0.6)',
-                    borderColor: 'rgba(0, 123, 255, 1)',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                aspectRatio: 1.5,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-
-        // Attendance Over Time Line Chart
-        var attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
-        var meetingDates = {{ meeting_dates|safe }};
-        var attendanceCounts = {{ attendance_counts|safe }};
+        // Attendance Trend Line Chart (Last 12 Months)
+        var attendanceTrendCtx = document.getElementById('attendanceTrendChart').getContext('2d');
+        var monthlyLabels = {{ monthly_labels|safe|default:"[]" }};
+        var monthlyAttendanceData = {{ monthly_attendance_data|safe|default:"[]" }};
         
-        // Handle empty data
-        if (!meetingDates || meetingDates.length === 0) {
-            meetingDates = ['No Data'];
-            attendanceCounts = [0];
+        // Ensure we have data (even if empty)
+        if (!monthlyLabels || monthlyLabels.length === 0) {
+            monthlyLabels = [];
+            monthlyAttendanceData = [];
+            // Create empty labels for last 12 months
+            var today = new Date();
+            for (var i = 11; i >= 0; i--) {
+                var monthDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                monthlyLabels.push(monthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
+                monthlyAttendanceData.push(0);
+            }
         }
 
         var isMobile = window.innerWidth <= 768;
-        new Chart(attendanceCtx, {
+        new Chart(attendanceTrendCtx, {
             type: 'line',
             data: {
-                labels: meetingDates,
+                labels: monthlyLabels,
                 datasets: [{
-                    label: 'Attendance Count',
-                    data: attendanceCounts,
+                    label: 'Monthly Attendance',
+                    data: monthlyAttendanceData,
                     fill: true,
                     backgroundColor: 'rgba(0, 123, 255, 0.1)',
                     borderColor: 'rgba(0, 123, 255, 0.8)',
@@ -656,11 +622,14 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                aspectRatio: isMobile ? 1.2 : 2,
+                aspectRatio: 1.5,
                 plugins: {
                     legend: {
                         display: true,
-                        position: 'top'
+                        position: 'top',
+                        labels: {
+                            color: '#f9fafb'
+                        }
                     },
                     tooltip: {
                         mode: 'index',
@@ -671,21 +640,31 @@
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            stepSize: 1
+                            stepSize: 1,
+                            color: '#f9fafb'
                         },
                         title: {
                             display: !isMobile,
-                            text: 'Number of Attendees'
+                            text: 'Number of Attendees',
+                            color: '#f9fafb'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
                         }
                     },
                     x: {
                         title: {
                             display: !isMobile,
-                            text: 'Meeting Date'
+                            text: 'Month',
+                            color: '#f9fafb'
                         },
                         ticks: {
                             maxRotation: isMobile ? 45 : 0,
-                            minRotation: isMobile ? 45 : 0
+                            minRotation: isMobile ? 45 : 0,
+                            color: '#f9fafb'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
                         }
                     }
                 },
@@ -697,51 +676,177 @@
             }
         });
 
-        // Attendance vs Fee Payment Chart
+        // Attendance & Payment Chart (Last 12 Months - Full Width)
         var attendanceFeeCtx = document.getElementById('attendanceFeeChart').getContext('2d');
+        var monthlyPaymentLabels = {{ monthly_payment_labels|safe|default:"[]" }};
+        var monthlyPaymentData = {{ monthly_payment_data|safe|default:"{'paid':[],'unpaid':[]}" }};
+        
+        // Ensure we have data
+        if (!monthlyPaymentLabels || monthlyPaymentLabels.length === 0) {
+            monthlyPaymentLabels = [];
+            monthlyPaymentData = { paid: [], unpaid: [] };
+            var today = new Date();
+            for (var i = 11; i >= 0; i--) {
+                var monthDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                monthlyPaymentLabels.push(monthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
+                monthlyPaymentData.paid.push(0);
+                monthlyPaymentData.unpaid.push(0);
+            }
+        }
+        
         new Chart(attendanceFeeCtx, {
             type: 'bar',
             data: {
-                labels: ['Present & Paid', 'Present & Unpaid', 'Absent'],
-                datasets: [{
-                    label: 'Count',
-                    data: [
-                        {{ attendance_vs_fee.present_paid }},
-                        {{ attendance_vs_fee.present_unpaid }},
-                        {{ attendance_vs_fee.absent }}
-                    ],
-                    backgroundColor: [
-                        'rgba(40, 167, 69, 0.8)',
-                        'rgba(255, 193, 7, 0.8)',
-                        'rgba(220, 53, 69, 0.8)'
-                    ],
-                    borderColor: [
-                        'rgba(40, 167, 69, 1)',
-                        'rgba(255, 193, 7, 1)',
-                        'rgba(220, 53, 69, 1)'
-                    ],
-                    borderWidth: 2
-                }]
+                labels: monthlyPaymentLabels,
+                datasets: [
+                    {
+                        label: 'Paid',
+                        data: monthlyPaymentData.paid || [],
+                        backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Unpaid',
+                        data: monthlyPaymentData.unpaid || [],
+                        backgroundColor: 'rgba(255, 193, 7, 0.8)',
+                        borderColor: 'rgba(255, 193, 7, 1)',
+                        borderWidth: 2
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                aspectRatio: 1.5,
+                aspectRatio: 2.5,
                 scales: {
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            stepSize: 1
+                            stepSize: 1,
+                            color: '#f9fafb'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Number of Members',
+                            color: '#f9fafb'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#f9fafb',
+                            maxRotation: 45,
+                            minRotation: 45
+                        },
+                        title: {
+                            display: true,
+                            text: 'Month',
+                            color: '#f9fafb'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
                         }
                     }
                 },
                 plugins: {
                     legend: {
-                        display: false
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#f9fafb'
+                        }
                     }
                 }
             }
         });
+        
+        // Meetings Calendar Widget
+        var allMeetings = {};
+        try {
+            allMeetings = {{ all_meetings|safe }};
+        } catch(e) {
+            allMeetings = {};
+        }
+        var currentMonth = new Date().getMonth();
+        var currentYear = new Date().getFullYear();
+        
+        function renderCalendar(month, year) {
+            var monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                            'July', 'August', 'September', 'October', 'November', 'December'];
+            var firstDay = new Date(year, month, 1).getDay();
+            var daysInMonth = new Date(year, month + 1, 0).getDate();
+            var today = new Date();
+            
+            var calendarHTML = '<table class="table table-bordered text-center" style="color: #f9fafb; width: 100%;">';
+            calendarHTML += '<thead><tr>';
+            var dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayNames.forEach(function(day) {
+                calendarHTML += '<th style="color: #f9fafb; border-color: #4b5563; padding: 0.5rem;">' + day + '</th>';
+            });
+            calendarHTML += '</tr></thead><tbody>';
+            
+            var date = 1;
+            for (var i = 0; i < 6; i++) {
+                calendarHTML += '<tr>';
+                for (var j = 0; j < 7; j++) {
+                    if (i === 0 && j < firstDay) {
+                        calendarHTML += '<td style="border-color: #4b5563; padding: 0.5rem;"></td>';
+                    } else if (date > daysInMonth) {
+                        calendarHTML += '<td style="border-color: #4b5563; padding: 0.5rem;"></td>';
+                    } else {
+                        var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(date).padStart(2, '0');
+                        var isToday = (date === today.getDate() && month === today.getMonth() && year === today.getFullYear());
+                        var hasMeeting = allMeetings && allMeetings[dateStr] && allMeetings[dateStr].length > 0;
+                        var cellClass = isToday ? 'bg-primary text-white' : '';
+                        var cellStyle = isToday ? 'background-color: #3b82f6; color: white; font-weight: bold;' : 'color: #f9fafb;';
+                        
+                        calendarHTML += '<td style="border-color: #4b5563; padding: 0.5rem; ' + cellStyle + '" class="' + cellClass + '">';
+                        calendarHTML += '<div style="font-weight: bold;">' + date + '</div>';
+                        if (hasMeeting && Array.isArray(allMeetings[dateStr])) {
+                            var meetings = allMeetings[dateStr];
+                            meetings.forEach(function(meeting) {
+                                calendarHTML += '<div class="badge bg-success mt-1" style="font-size: 0.7rem; cursor: pointer; display: block; width: 100%;" ';
+                                calendarHTML += 'onclick="window.location.href=\'/attendance/date/' + meeting.id + '/\'" ';
+                                calendarHTML += 'title="Fee: Rs.' + meeting.fee + '">';
+                                calendarHTML += '<i class="fas fa-calendar-check"></i> Meeting</div>';
+                            });
+                        }
+                        calendarHTML += '</td>';
+                        date++;
+                    }
+                }
+                calendarHTML += '</tr>';
+                if (date > daysInMonth) break;
+            }
+            calendarHTML += '</tbody></table>';
+            
+            document.getElementById('meetingsCalendar').innerHTML = calendarHTML;
+            document.getElementById('currentMonthDisplay').textContent = monthNames[month] + ' ' + year;
+        }
+        
+        document.getElementById('prevMonthBtn').addEventListener('click', function() {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar(currentMonth, currentYear);
+        });
+        
+        document.getElementById('nextMonthBtn').addEventListener('click', function() {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            renderCalendar(currentMonth, currentYear);
+        });
+        
+        // Initialize calendar
+        renderCalendar(currentMonth, currentYear);
     </script>
 
     <style>
