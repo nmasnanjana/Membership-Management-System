@@ -26,6 +26,7 @@ urlpatterns = [
     path('database-management/', database_management, name='database_management'),
 
     path('member/list/', member_list, name='member_list'),
+    path('member/list/adults/', member_list_adults, name='member_list_adults'),
     path('member/register/', member_register, name='member_register'),
     path('member/delete/<str:member_id>', member_delete, name="member_delete"),
     path('member/view/<str:member_id>', member_view, name="member_view"),
