@@ -1,4 +1,8 @@
 # Python
+
+# SQL Backup Files
+*.sql
+sanaelth_mms.sql
 __pycache__/
 *.py[cod]
 *$py.class
