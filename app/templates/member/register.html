@@ -50,7 +50,7 @@
                     <div class="row g-3">
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">
-                                <i class="fas fa-hashtag me-1 text-primary"></i>Member ID
+                                <i class="fas fa-hashtag me-1 text-primary"></i>Member ID <span class="text-danger">*</span>
                             </label>
                         {{ form.member_id }}
                             {% if form.member_id.errors %}
@@ -64,37 +64,37 @@
                             </label>
                             <div class="row g-2">
                                 <div class="col-md-3">
+                                    <label class="form-label small text-muted">Initials <span class="text-danger">*</span></label>
                                     {{ form.member_initials }}
-                                    <small class="text-muted">Initials</small>
                                 </div>
                                 <div class="col-md-4">
+                                    <label class="form-label small text-muted">First Name <span class="text-danger">*</span></label>
                                     {{ form.member_first_name }}
-                                    <small class="text-muted">First Name</small>
                                 </div>
                                 <div class="col-md-5">
+                                    <label class="form-label small text-muted">Last Name <span class="text-danger">*</span></label>
                                     {{ form.member_last_name }}
-                                    <small class="text-muted">Last Name</small>
                                 </div>
                         </div>
                     </div>
 
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">
-                                <i class="fas fa-map-marker-alt me-1 text-primary"></i>Address
+                                <i class="fas fa-map-marker-alt me-1 text-primary"></i>Address <span class="text-danger">*</span>
                             </label>
                         {{ form.member_address }}
                     </div>
 
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
-                                <i class="fas fa-birthday-cake me-1 text-primary"></i>Date of Birth
+                                <i class="fas fa-birthday-cake me-1 text-primary"></i>Date of Birth <span class="text-danger">*</span>
                             </label>
                         {{ form.member_dob }}
                     </div>
 
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
-                                <i class="fas fa-phone me-1 text-primary"></i>Phone Number
+                                <i class="fas fa-phone me-1 text-primary"></i>Phone Number <span class="text-danger">*</span>
                             </label>
                         {{ form.member_tp_number }}
                     </div>
@@ -104,11 +104,11 @@
                                 <i class="fas fa-university me-1 text-primary"></i>Account Number
                             </label>
                         {{ form.member_acc_number }}
-                    </div>
+                        </div>
 
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
-                                <i class="fas fa-user-shield me-1 text-primary"></i>Guardian/Parent Name
+                                <i class="fas fa-user-shield me-1 text-primary"></i>Guardian/Parent Name <span class="text-danger">*</span>
                             </label>
                         {{ form.member_guardian_name }}
                     </div>
@@ -120,6 +120,9 @@
                         {{ form.member_profile_picture }}
                             <small class="text-muted">Upload a clear photo (JPG, PNG, GIF)</small>
                         </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted"><span class="text-danger">*</span> Indicates required fields</small>
                     </div>
 
                     <div class="mt-4 d-flex gap-2">
