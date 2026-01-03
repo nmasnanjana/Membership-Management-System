@@ -1498,5 +1498,41 @@
             opacity: 0;
         }
     }
+
+    /* Override sticky footer for dashboard - make it flow naturally at bottom */
+    .sticky-footer {
+        position: relative !important;
+        left: auto !important;
+        right: auto !important;
+        width: 100% !important;
+        margin-top: 2rem;
+    }
+
+    /* Remove padding-bottom from main-content on dashboard since footer is not fixed */
+    .main-content {
+        padding-bottom: 2rem !important;
+    }
 </style>
+
+<script>
+    // Override sticky footer CSS after page load to ensure it takes precedence
+    document.addEventListener('DOMContentLoaded', function() {
+        const stickyFooter = document.querySelector('.sticky-footer');
+        if (stickyFooter) {
+            stickyFooter.style.position = 'relative';
+            stickyFooter.style.left = 'auto';
+            stickyFooter.style.right = 'auto';
+            stickyFooter.style.width = '100%';
+            stickyFooter.style.marginTop = '2rem';
+            stickyFooter.style.bottom = 'auto';
+            stickyFooter.style.zIndex = 'auto';
+        }
+        
+        // Remove padding-bottom from main-content
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.style.paddingBottom = '2rem';
+        }
+    });
+</script>
 
