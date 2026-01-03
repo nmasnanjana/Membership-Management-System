@@ -449,21 +449,21 @@
             <!-- Smart Recommendations Widget -->
             {% if recommendations %}
             <div class="col-xl-6 col-lg-6 col-12">
-                <div class="modern-card h-100" style="background: #f9fafb;">
-                    <div class="modern-card-header" style="background: #e5e7eb; border-bottom: 1px solid #d1d5db;">
-                        <h5 class="mb-0" style="color: #1f2937;">
+                <div class="modern-card h-100">
+                    <div class="modern-card-header">
+                        <h5 class="mb-0">
                             <i class="fas fa-lightbulb text-warning me-2"></i>Smart Recommendations
                         </h5>
                     </div>
-                    <div class="modern-card-body" style="background: #f9fafb;">
+                    <div class="modern-card-body">
                         <div class="list-group list-group-flush">
                             {% for rec in recommendations %}
                                 <div class="list-group-item d-flex justify-content-between align-items-start border-0 px-0 py-2" style="background: transparent;">
                                     <div class="flex-grow-1">
-                                        <div class="fw-bold" style="color: #000000;">
+                                        <div class="fw-bold" style="color: #f9fafb;">
                                             <i class="fas fa-{{ rec.icon }} text-{{ rec.type }} me-2"></i>{{ rec.title }}
                                         </div>
-                                        <small style="color: #000000;">{{ rec.message }}</small>
+                                        <small style="color: #d1d5db;">{{ rec.message }}</small>
                                     </div>
                                     <a href="{{ rec.url }}" class="btn btn-sm btn-primary ms-3">
                                         <i class="fas fa-arrow-right me-1"></i>{{ rec.action }}
@@ -546,18 +546,35 @@
             inactive_18_plus: {{ member_status_data.inactive_18_plus|default:0 }}
         };
         
+        // Calculate total to check if all values are zero
+        var totalStatus = memberStatusData.active_under_18 + memberStatusData.inactive_under_18 + 
+                         memberStatusData.active_18_plus + memberStatusData.inactive_18_plus;
+        
+        // If all values are zero, show empty pie chart with outlines
+        var pieData = [
+            memberStatusData.active_under_18,
+            memberStatusData.inactive_under_18,
+            memberStatusData.active_18_plus,
+            memberStatusData.inactive_18_plus
+        ];
+        
+        // If all zeros, set to 1 for each slice to show outline, but make transparent
+        if (totalStatus === 0) {
+            pieData = [1, 1, 1, 1];
+        }
+        
         new Chart(memberStatusCtx, {
             type: 'pie',
             data: {
                 labels: ['Active Members (Under 18)', 'Inactive Members (Under 18)', 'Active Members (18+)', 'Inactive Members (18+)'],
                 datasets: [{
-                    data: [
-                        memberStatusData.active_under_18,
-                        memberStatusData.inactive_under_18,
-                        memberStatusData.active_18_plus,
-                        memberStatusData.inactive_18_plus
-                    ],
-                    backgroundColor: [
+                    data: pieData,
+                    backgroundColor: totalStatus === 0 ? [
+                        'rgba(40, 167, 69, 0.1)',
+                        'rgba(255, 193, 7, 0.1)',
+                        'rgba(16, 185, 129, 0.1)',
+                        'rgba(245, 158, 11, 0.1)'
+                    ] : [
                         'rgba(40, 167, 69, 0.8)',
                         'rgba(255, 193, 7, 0.8)',
                         'rgba(16, 185, 129, 0.8)',
@@ -584,8 +601,12 @@
                         }
                     },
                     tooltip: {
+                        enabled: totalStatus > 0,
                         callbacks: {
                             label: function(context) {
+                                if (totalStatus === 0) {
+                                    return context.label + ': 0 members';
+                                }
                                 let label = context.label || '';
                                 if (label) {
                                     label += ': ';
@@ -784,10 +805,17 @@
         // Meetings Calendar Widget
         var allMeetings = {};
         try {
-            allMeetings = {{ all_meetings|safe }};
+            var meetingsData = {{ all_meetings|safe }};
+            if (typeof meetingsData === 'string') {
+                allMeetings = JSON.parse(meetingsData);
+            } else {
+                allMeetings = meetingsData || {};
+            }
         } catch(e) {
+            console.error('Error parsing meetings data:', e);
             allMeetings = {};
         }
+        
         var currentMonth = new Date().getMonth();
         var currentYear = new Date().getFullYear();
         
@@ -817,18 +845,18 @@
                     } else {
                         var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(date).padStart(2, '0');
                         var isToday = (date === today.getDate() && month === today.getMonth() && year === today.getFullYear());
-                        var hasMeeting = allMeetings && allMeetings[dateStr] && allMeetings[dateStr].length > 0;
+                        var hasMeeting = allMeetings && allMeetings[dateStr] && Array.isArray(allMeetings[dateStr]) && allMeetings[dateStr].length > 0;
                         var cellClass = isToday ? 'bg-primary text-white' : '';
                         var cellStyle = isToday ? 'background-color: #3b82f6; color: white; font-weight: bold;' : 'color: #f9fafb;';
                         
                         calendarHTML += '<td style="border-color: #4b5563; padding: 0.5rem; ' + cellStyle + '" class="' + cellClass + '">';
                         calendarHTML += '<div style="font-weight: bold;">' + date + '</div>';
-                        if (hasMeeting && Array.isArray(allMeetings[dateStr])) {
+                        if (hasMeeting) {
                             var meetings = allMeetings[dateStr];
                             meetings.forEach(function(meeting) {
                                 calendarHTML += '<div class="badge bg-success mt-1" style="font-size: 0.7rem; cursor: pointer; display: block; width: 100%;" ';
                                 calendarHTML += 'onclick="window.location.href=\'/attendance/date/' + meeting.id + '/\'" ';
-                                calendarHTML += 'title="Fee: Rs.' + meeting.fee + '">';
+                                calendarHTML += 'title="Fee: Rs.' + (meeting.fee || 0) + '">';
                                 calendarHTML += '<i class="fas fa-calendar-check"></i> Meeting</div>';
                             });
                         }
@@ -841,30 +869,68 @@
             }
             calendarHTML += '</tbody></table>';
             
-            document.getElementById('meetingsCalendar').innerHTML = calendarHTML;
-            document.getElementById('currentMonthDisplay').textContent = monthNames[month] + ' ' + year;
+            var calendarElement = document.getElementById('meetingsCalendar');
+            var monthDisplayElement = document.getElementById('currentMonthDisplay');
+            if (calendarElement) {
+                calendarElement.innerHTML = calendarHTML;
+            }
+            if (monthDisplayElement) {
+                monthDisplayElement.textContent = monthNames[month] + ' ' + year;
+            }
         }
         
-        document.getElementById('prevMonthBtn').addEventListener('click', function() {
-            currentMonth--;
-            if (currentMonth < 0) {
-                currentMonth = 11;
-                currentYear--;
+        // Wait for DOM to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                var prevBtn = document.getElementById('prevMonthBtn');
+                var nextBtn = document.getElementById('nextMonthBtn');
+                if (prevBtn) {
+                    prevBtn.addEventListener('click', function() {
+                        currentMonth--;
+                        if (currentMonth < 0) {
+                            currentMonth = 11;
+                            currentYear--;
+                        }
+                        renderCalendar(currentMonth, currentYear);
+                    });
+                }
+                if (nextBtn) {
+                    nextBtn.addEventListener('click', function() {
+                        currentMonth++;
+                        if (currentMonth > 11) {
+                            currentMonth = 0;
+                            currentYear++;
+                        }
+                        renderCalendar(currentMonth, currentYear);
+                    });
+                }
+                renderCalendar(currentMonth, currentYear);
+            });
+        } else {
+            var prevBtn = document.getElementById('prevMonthBtn');
+            var nextBtn = document.getElementById('nextMonthBtn');
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function() {
+                    currentMonth--;
+                    if (currentMonth < 0) {
+                        currentMonth = 11;
+                        currentYear--;
+                    }
+                    renderCalendar(currentMonth, currentYear);
+                });
+            }
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function() {
+                    currentMonth++;
+                    if (currentMonth > 11) {
+                        currentMonth = 0;
+                        currentYear++;
+                    }
+                    renderCalendar(currentMonth, currentYear);
+                });
             }
             renderCalendar(currentMonth, currentYear);
-        });
-        
-        document.getElementById('nextMonthBtn').addEventListener('click', function() {
-            currentMonth++;
-            if (currentMonth > 11) {
-                currentMonth = 0;
-                currentYear++;
-            }
-            renderCalendar(currentMonth, currentYear);
-        });
-        
-        // Initialize calendar
-        renderCalendar(currentMonth, currentYear);
+        }
     </script>
 
     <style>
