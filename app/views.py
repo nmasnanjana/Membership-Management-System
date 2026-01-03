@@ -96,24 +96,58 @@ def dashboard(request):
     else:
         fee_payment_rate = 0
 
-    # Monthly attendance data for current year
-    monthly_attendance = (
-        MemberAttendance.objects
-        .filter(meeting_date__meeting_date__year=current_year, attendance_status=True)
-        .select_related('meeting_date')
-    )
+    # Last 12 months attendance data for Attendance Trend
+    from datetime import date as date_obj, timedelta
+    today = date_obj.today()
+    # Calculate 12 months ago (approximate - 365 days)
+    twelve_months_ago = today - timedelta(days=365)
     
-    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    monthly_data = [0] * 12
-    for attendance in monthly_attendance:
-        month_index = attendance.meeting_date.meeting_date.month - 1
-        if 0 <= month_index < 12:
-            monthly_data[month_index] += 1
-
-    # Meeting attendance over time (current year)
+    # Get last 12 months of meetings
+    last_12_months_meetings = MeetingInfo.objects.filter(
+        meeting_date__gte=twelve_months_ago,
+        meeting_date__lte=today
+    ).order_by('meeting_date')
+    
+    # Group by month for last 12 months
+    monthly_labels = []
+    monthly_attendance_data = []
+    for i in range(11, -1, -1):  # Last 12 months, most recent last
+        # Calculate month date
+        target_year = today.year
+        target_month = today.month - i
+        while target_month <= 0:
+            target_month += 12
+            target_year -= 1
+        while target_month > 12:
+            target_month -= 12
+            target_year += 1
+        
+        month_date = date_obj(target_year, target_month, 1)
+        month_label = month_date.strftime('%b %Y')
+        monthly_labels.append(month_label)
+        
+        # Count attendance for this month
+        month_start = date_obj(target_year, target_month, 1)
+        if target_month == 12:
+            month_end = date_obj(target_year + 1, 1, 1) - timedelta(days=1)
+        else:
+            month_end = date_obj(target_year, target_month + 1, 1) - timedelta(days=1)
+        
+        month_attendance = MemberAttendance.objects.filter(
+            meeting_date__meeting_date__gte=month_start,
+            meeting_date__meeting_date__lte=month_end,
+            attendance_status=True
+        ).count()
+        monthly_attendance_data.append(month_attendance)
+    
+    # Meeting attendance over time (last 12 months)
     meeting_attendance_counts = (
         MemberAttendance.objects
-        .filter(meeting_date__meeting_date__year=current_year, attendance_status=True)
+        .filter(
+            meeting_date__meeting_date__gte=twelve_months_ago,
+            meeting_date__meeting_date__lte=today,
+            attendance_status=True
+        )
         .values('meeting_date__meeting_date')
         .annotate(attendance_count=Count('attendance_id'))
         .order_by('meeting_date__meeting_date')
@@ -121,24 +155,75 @@ def dashboard(request):
 
     meeting_dates = [entry['meeting_date__meeting_date'].strftime('%d %b') for entry in meeting_attendance_counts]
     attendance_counts = [entry['attendance_count'] for entry in meeting_attendance_counts]
+    
+    # If no data, provide empty arrays for graphs
+    if not meeting_dates:
+        meeting_dates = []
+        attendance_counts = []
 
-    # Attendance vs Fee Payment comparison
+    # Attendance vs Fee Payment comparison (last 12 months)
     attendance_vs_fee = {
         'present_paid': MemberAttendance.objects.filter(
-            meeting_date__meeting_date__year=current_year,
+            meeting_date__meeting_date__gte=twelve_months_ago,
+            meeting_date__meeting_date__lte=today,
             attendance_status=True,
             attendance_fee_status=True
         ).count(),
         'present_unpaid': MemberAttendance.objects.filter(
-            meeting_date__meeting_date__year=current_year,
+            meeting_date__meeting_date__gte=twelve_months_ago,
+            meeting_date__meeting_date__lte=today,
             attendance_status=True,
             attendance_fee_status=False
         ).count(),
         'absent': MemberAttendance.objects.filter(
-            meeting_date__meeting_date__year=current_year,
+            meeting_date__meeting_date__gte=twelve_months_ago,
+            meeting_date__meeting_date__lte=today,
             attendance_status=False
         ).count(),
     }
+    
+    # Last 12 months monthly payment data
+    monthly_payment_labels = []
+    monthly_payment_data = {
+        'paid': [],
+        'unpaid': []
+    }
+    for i in range(11, -1, -1):
+        # Calculate month date
+        target_year = today.year
+        target_month = today.month - i
+        while target_month <= 0:
+            target_month += 12
+            target_year -= 1
+        while target_month > 12:
+            target_month -= 12
+            target_year += 1
+        
+        month_date = date_obj(target_year, target_month, 1)
+        month_label = month_date.strftime('%b %Y')
+        monthly_payment_labels.append(month_label)
+        
+        month_start = date_obj(target_year, target_month, 1)
+        if target_month == 12:
+            month_end = date_obj(target_year + 1, 1, 1) - timedelta(days=1)
+        else:
+            month_end = date_obj(target_year, target_month + 1, 1) - timedelta(days=1)
+        
+        paid = MemberAttendance.objects.filter(
+            meeting_date__meeting_date__gte=month_start,
+            meeting_date__meeting_date__lte=month_end,
+            attendance_status=True,
+            attendance_fee_status=True
+        ).count()
+        unpaid = MemberAttendance.objects.filter(
+            meeting_date__meeting_date__gte=month_start,
+            meeting_date__meeting_date__lte=month_end,
+            attendance_status=True,
+            attendance_fee_status=False
+        ).count()
+        
+        monthly_payment_data['paid'].append(paid)
+        monthly_payment_data['unpaid'].append(unpaid)
 
     # Latest meeting info
     latest_meeting = None
@@ -153,10 +238,23 @@ def dashboard(request):
         latest_meeting = None
         latest_meeting_member_count = 0
 
-    # Member status distribution for pie chart
+    # Member status distribution for pie chart (with age groups)
+    from datetime import date as date_obj
+    today = date_obj.today()
+    cutoff_date = date_obj(today.year - 18, today.month, today.day)
+    if today.month == 2 and today.day == 29:
+        cutoff_date = date_obj(today.year - 18, 2, 28)
+    
+    active_under_18 = Member.objects.filter(member_is_active=True, member_dob__gt=cutoff_date).count()
+    inactive_under_18 = Member.objects.filter(member_is_active=False, member_dob__gt=cutoff_date).count()
+    active_18_plus = Member.objects.filter(member_is_active=True, member_dob__lte=cutoff_date).count()
+    inactive_18_plus = Member.objects.filter(member_is_active=False, member_dob__lte=cutoff_date).count()
+    
     member_status_data = {
-        'active': active_members,
-        'passive': passive_members
+        'active_under_18': active_under_18,
+        'inactive_under_18': inactive_under_18,
+        'active_18_plus': active_18_plus,
+        'inactive_18_plus': inactive_18_plus
     }
 
     # Calculate percentages
@@ -189,8 +287,10 @@ def dashboard(request):
     import json
     context['meeting_dates'] = json.dumps(meeting_dates)
     context['attendance_counts'] = json.dumps(attendance_counts)
-    context['months'] = json.dumps(months)
-    context['monthly_data'] = json.dumps(monthly_data)
+    context['monthly_labels'] = json.dumps(monthly_labels)
+    context['monthly_attendance_data'] = json.dumps(monthly_attendance_data)
+    context['monthly_payment_labels'] = json.dumps(monthly_payment_labels)
+    context['monthly_payment_data'] = json.dumps(monthly_payment_data)
     context['member_status_data'] = member_status_data
     context['attendance_vs_fee'] = attendance_vs_fee
     
@@ -251,14 +351,25 @@ def dashboard(request):
     # Calendar widget data - upcoming holidays and meetings
     from .holidays_utils import get_upcoming_holidays
     from datetime import date
+    import json
     upcoming_holidays = get_upcoming_holidays(5, date.today())
     context['upcoming_holidays'] = upcoming_holidays
     
-    # Upcoming meetings (next 5)
-    upcoming_meetings = MeetingInfo.objects.filter(
-        meeting_date__gte=date.today()
-    ).order_by('meeting_date')[:5]
-    context['upcoming_meetings'] = upcoming_meetings
+    # All meetings for calendar widget (already created above)
+    # All meetings for calendar widget
+    all_meetings = MeetingInfo.objects.all().order_by('meeting_date')
+    meetings_dict = {}
+    for meeting in all_meetings:
+        meeting_date_str = meeting.meeting_date.strftime('%Y-%m-%d')
+        if meeting_date_str not in meetings_dict:
+            meetings_dict[meeting_date_str] = []
+        meetings_dict[meeting_date_str].append({
+            'id': meeting.meeting_id,
+            'date': meeting.meeting_date.strftime('%Y-%m-%d'),
+            'fee': meeting.meeting_fee
+        })
+    # Format meetings for JavaScript
+    context['all_meetings'] = json.dumps(meetings_dict)
     
     # Smart Recommendations
     from .recommendations import get_smart_recommendations

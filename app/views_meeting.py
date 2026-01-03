@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.decorators import user_passes_test, login_required
 from django.core.exceptions import ValidationError
 
 from .forms import *
@@ -9,7 +9,7 @@ from .views import context_data
 from .constants import PAGINATION_MEETING_LIST
 
 
-@user_passes_test(lambda u: u.is_superuser)
+@login_required
 def meeting_list(request):
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
     
@@ -44,7 +44,7 @@ def meeting_delete(request, meeting_date):
     return redirect('meeting_list')
 
 
-@user_passes_test(lambda u: u.is_superuser)
+@login_required
 def meeting_add(request):
     context = context_data(request)
     context['page_name'] = 'Meeting Add'
