@@ -16,7 +16,7 @@
         .calendar-day {
             background: #374151;
             padding: 0.75rem 0.5rem;
-            min-height: 120px;
+            min-height: 140px;
             position: relative;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 6px;
@@ -189,6 +189,47 @@
             text-align: center;
             padding-top: 0.5rem;
         }
+        
+        /* Ensure equal heights for cards in the same row */
+        .row.g-3 {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        
+        .row.g-3 > [class*='col-'] {
+            display: flex;
+        }
+        
+        .row.g-3 .modern-card {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .row.g-3 .modern-card-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Scrollbar styling for holidays */
+        .modern-card-body::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .modern-card-body::-webkit-scrollbar-track {
+            background: #374151;
+            border-radius: 3px;
+        }
+        
+        .modern-card-body::-webkit-scrollbar-thumb {
+            background: #6b7280;
+            border-radius: 3px;
+        }
+        
+        .modern-card-body::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
     </style>
 {% endblock head %}
 
@@ -232,9 +273,10 @@
             {% endif %}
         </div>
 
-        <div class="row">
-            <div class="col-lg-9">
-                <div class="modern-card mb-4">
+        <!-- Calendar Row - Full Width -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="modern-card h-100">
                     <div class="modern-card-body p-0">
                         <div class="calendar-header">
                             <div>Sun</div>
@@ -282,21 +324,24 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="col-lg-3">
-                <div class="modern-card mb-4">
+        </div>
+        
+        <!-- Upcoming Holidays and Legend Row - Equal Heights -->
+        <div class="row g-3">
+            <div class="col-lg-6 col-md-6 col-12">
+                <div class="modern-card h-100">
                     <div class="modern-card-header">
                         <h5 class="mb-0">
                             <i class="fas fa-calendar-star me-2"></i>Upcoming Holidays
                         </h5>
                     </div>
-                    <div class="modern-card-body">
+                    <div class="modern-card-body" style="max-height: 400px; overflow-y: auto;">
                         {% if upcoming_holidays %}
                             {% for holiday in upcoming_holidays %}
                                 <div class="mb-3 pb-3 {% if not forloop.last %}border-bottom border-secondary{% endif %}">
                                     <div class="d-flex align-items-start gap-2">
                                         <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                                             style="width: 40px; height: 40px; background: rgba(245, 158, 11, 0.2); min-width: 40px;">
+                                             style="width: 40px; height: 40px; background: rgba(245, 158, 11, 0.2); min-width: 40px; flex-shrink: 0;">
                                             <i class="fas fa-star text-warning"></i>
                                         </div>
                                         <div class="flex-grow-1">
@@ -310,31 +355,47 @@
                                 </div>
                             {% endfor %}
                         {% else %}
-                            <p class="text-muted text-center py-3">No upcoming holidays</p>
+                            <div class="d-flex align-items-center justify-content-center" style="min-height: 200px;">
+                                <div class="text-center">
+                                    <i class="fas fa-calendar-times text-muted mb-2" style="font-size: 2rem;"></i>
+                                    <p class="text-muted mb-0">No upcoming holidays</p>
+                                </div>
+                            </div>
                         {% endif %}
                     </div>
                 </div>
-                
-                <div class="modern-card">
+            </div>
+            
+            <div class="col-lg-6 col-md-6 col-12">
+                <div class="modern-card h-100">
                     <div class="modern-card-header">
                         <h5 class="mb-0">
                             <i class="fas fa-info-circle me-2"></i>Legend
                         </h5>
                     </div>
-                    <div class="modern-card-body">
-                        <div class="mb-3 d-flex align-items-center gap-2">
-                            <span class="event-meeting d-inline-block" style="width: 80px; text-align: center; padding: 6px;">Meeting</span>
-                            <span class="text-muted small">Club meetings - Click to view</span>
-                        </div>
-                        <div class="mb-3 d-flex align-items-center gap-2">
-                            <span class="event-holiday d-inline-block" style="width: 80px; text-align: center; padding: 6px;">Holiday</span>
-                            <span class="text-muted small">Sri Lankan public holidays</span>
-                        </div>
-                        <div class="mb-0 d-flex align-items-center gap-2">
-                            <div class="calendar-day today d-inline-block" style="width: 40px; height: 40px; padding: 0; cursor: default; display: flex; align-items: center; justify-content: center;">
-                                <span style="color: white; font-weight: 700;">{% now "d" %}</span>
+                    <div class="modern-card-body d-flex flex-column justify-content-center" style="min-height: 200px;">
+                        <div class="mb-4 d-flex align-items-center gap-3">
+                            <span class="event-meeting d-inline-block" style="width: 100px; text-align: center; padding: 8px; flex-shrink: 0;">Meeting</span>
+                            <div>
+                                <div class="text-white fw-semibold mb-1">Club Meetings</div>
+                                <div class="text-muted small">Click to view attendance details</div>
                             </div>
-                            <span class="text-muted small">Today's date</span>
+                        </div>
+                        <div class="mb-4 d-flex align-items-center gap-3">
+                            <span class="event-holiday d-inline-block" style="width: 100px; text-align: center; padding: 8px; flex-shrink: 0;">Holiday</span>
+                            <div>
+                                <div class="text-white fw-semibold mb-1">Public Holidays</div>
+                                <div class="text-muted small">Sri Lankan national holidays</div>
+                            </div>
+                        </div>
+                        <div class="mb-0 d-flex align-items-center gap-3">
+                            <div class="calendar-day today d-inline-block" style="width: 50px; height: 50px; padding: 0; cursor: default; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <span style="color: white; font-weight: 700; font-size: 1.1rem;">{% now "d" %}</span>
+                            </div>
+                            <div>
+                                <div class="text-white fw-semibold mb-1">Today's Date</div>
+                                <div class="text-muted small">Current date highlighted</div>
+                            </div>
                         </div>
                     </div>
                 </div>
