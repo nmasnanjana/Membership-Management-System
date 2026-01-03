@@ -191,6 +191,14 @@ CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Strict'
 CSRF_USE_SESSIONS = True  # Use sessions for CSRF token storage
 
+# CSRF_TRUSTED_ORIGINS is required for HTTPS sites in Django 4.0+
+# Add your production domain(s) here
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip() 
+    for origin in config('CSRF_TRUSTED_ORIGINS', default='https://mms.nmasnanjana.xyz,https://localhost').split(',') 
+    if origin.strip()
+]
+
 # Security Settings
 # OWASP: Security Misconfiguration
 SECURE_BROWSER_XSS_FILTER = True
