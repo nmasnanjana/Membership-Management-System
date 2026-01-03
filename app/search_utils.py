@@ -3,6 +3,7 @@ Advanced search and filtering utilities for all models
 """
 from django.db.models import Q, CharField
 from django.db.models.functions import Lower
+from .models import Member, MeetingInfo, MemberAttendance
 
 
 def search_members(query, filters=None):
