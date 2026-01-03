@@ -218,6 +218,34 @@ def member_edit(request, member_id):
             logger.info(f'POST data: {dict(request.POST)}')
             
             form = MemberEditForm(request.POST, request.FILES, instance=member, user=request.user)
+<<<<<<< Updated upstream
+            if form.is_valid():
+                new_member_id = form.cleaned_data['member_id']
+                profile_picture = form.cleaned_data.get('member_profile_picture')
+=======
+            logger.info(f'Form created, checking validity...')
+            
+            if not form.is_valid():
+                # Form is invalid - display errors
+                logger.error(f'Form validation failed: {form.errors}')
+                from django.contrib import messages
+                messages.error(request, f'Please correct the errors below: {form.errors}')
+                context['form'] = form
+                context['member'] = member
+                return render(request, 'member/edit.html', context)
+            
+            logger.info('Form is valid, proceeding with update')
+            # Form is valid - proceed with update
+            # member_id is disabled in form, so it won't be in cleaned_data or will be ignored
+            # We use the existing member object's ID
+            profile_picture = form.cleaned_data.get('member_profile_picture')
+            logger.info(f'Profile picture update: {profile_picture}')
+            
+            # Role validation (only for superusers)
+            if request.user.is_superuser:
+                new_role = form.cleaned_data.get('member_role', '')
+                from .constants import UNIQUE_ROLES
+>>>>>>> Stashed changes
                 
                 # Check if assigning a unique role that's already taken
                 if new_role in UNIQUE_ROLES:
@@ -226,6 +254,40 @@ def member_edit(request, member_id):
                         member_is_active=True
                     ).exclude(member_id=member_id).first()
                     
+<<<<<<< Updated upstream
+                    # Check if assigning a unique role that's already taken
+                    if new_role in UNIQUE_ROLES:
+                        existing_member = Member.objects.filter(
+                            member_role=new_role,
+                            member_is_active=True
+                        ).exclude(member_id=member_id).first()
+                        
+                        if existing_member:
+                            form.add_error(
+                                'member_role',
+                                f'This role is already assigned to {existing_member.member_initials} {existing_member.member_first_name} {existing_member.member_last_name}. Only one member can have this role.'
+                            )
+                            context['form'] = form
+                            context['member'] = member
+                            return render(request, 'member/edit.html', context)
+
+                # Check if the new member ID is the same as the current one
+                if new_member_id != member_id:
+                    # Check if the new member ID already exists
+                    form.add_error('member_id', 'Member with this ID already exists.')
+                    context['form'] = form
+                    context['member'] = member
+                    return render(request, 'member/edit.html', context)
+=======
+                    if existing_member:
+                        form.add_error(
+                            'member_role',
+                            f'This role is already assigned to {existing_member.member_initials} {existing_member.member_first_name} {existing_member.member_last_name}. Only one member can have this role.'
+                        )
+                        context['form'] = form
+                        context['member'] = member
+                        return render(request, 'member/edit.html', context)
+>>>>>>> Stashed changes
 
 
 
@@ -240,6 +302,42 @@ def member_edit(request, member_id):
                         context['form'] = form
                         context['member'] = member
                         return render(request, 'member/edit.html', context)
+<<<<<<< Updated upstream
+                    
+                    # Delete old profile picture if it exists
+                    if member.member_profile_picture:
+                        old_picture_path = member.member_profile_picture.path
+                        if os.path.exists(old_picture_path):
+                            os.remove(old_picture_path)
+
+                    # Set the profile picture upload path
+                    profile_picture_name = f"{member_id}_profile.png"
+                    profile_picture_path = os.path.join('profiles', member_id, profile_picture_name)
+
+                    # Create the directory for the profile picture
+                    profile_picture_directory = os.path.join(settings.MEDIA_ROOT, 'profiles', member_id)
+                    os.makedirs(profile_picture_directory, exist_ok=True)
+
+                    # Save the new profile picture
+                    with open(os.path.join(profile_picture_directory, profile_picture_name), 'wb') as profile_file:
+                        for chunk in profile_picture.chunks():
+                            profile_file.write(chunk)
+
+                    member.member_profile_picture = profile_picture_path
+
+                # Update the member details
+                member = form.save(commit=False)
+                if profile_picture and hasattr(profile_picture, 'name'):
+                    member.member_profile_picture = os.path.join('profiles', member_id, f"{member_id}_profile.png")
+                
+                # For superusers, ensure member_is_active and member_role are saved
+                if request.user.is_superuser:
+                    member_is_active = form.cleaned_data.get('member_is_active', True)
+                    member_role = form.cleaned_data.get('member_role', '')
+                    member.member_is_active = member_is_active
+                    member.member_role = member_role
+=======
+>>>>>>> Stashed changes
                 
                 # Delete old profile picture if it exists
                 if member.member_profile_picture:
@@ -282,6 +380,36 @@ def member_edit(request, member_id):
             logger.info(f'About to save member. Current state - ID: {member.member_id}, Role: {member.member_role}, Active: {member.member_is_active}')
             try:
                 member.save()
+<<<<<<< Updated upstream
+
+                return redirect('member_list')  # Redirect to a member list view
+=======
+                logger.info('Member saved successfully')
+            except Exception as e:
+                logger.error(f'Error saving member: {str(e)}', exc_info=True)
+                from django.contrib import messages
+                messages.error(request, f'Error saving member: {str(e)}')
+                context['form'] = form
+                context['member'] = member
+                return render(request, 'member/edit.html', context)
+
+            # Audit log: member updated
+            audit_log_user_action(
+                request=request,
+                action='member_updated',
+                target=f'member:{member.member_id}',
+                extra_details={
+                    'member_id': member.member_id,
+                    'member_name': f'{member.member_initials} {member.member_first_name} {member.member_last_name}',
+                    'is_active': member.member_is_active,
+                    'role': member.member_role or 'No Role',
+                }
+            )
+
+            from django.contrib import messages
+            messages.success(request, f'Member {member.member_initials} {member.member_first_name} {member.member_last_name} updated successfully.')
+            return redirect('member_list')  # Redirect to a member list view
+>>>>>>> Stashed changes
 
         else:
             # Prepopulate the form with existing member data
