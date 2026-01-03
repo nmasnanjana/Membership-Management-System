@@ -30,33 +30,11 @@
 
 {% block extra_styles %}
 <style>
-    /* Override sticky footer for dashboard - make it flow naturally at bottom */
-    /* This block loads AFTER base.html styles, so it can properly override */
+    /* Override flex-shrink from sb-admin-2.css to fix footer positioning */
+    /* Keep position: fixed from base.html to maintain sticky footer behavior */
     footer.sticky-footer {
-        position: relative !important;
-        left: auto !important;
-        right: auto !important;
-        width: 100% !important;
-        margin-top: 2rem !important;
         flex-shrink: 1 !important; /* Override flex-shrink: 0 from sb-admin-2.css */
         padding: 0 !important; /* Remove padding from sb-admin-2.css */
-        bottom: auto !important;
-        z-index: auto !important;
-    }
-
-    .sticky-footer {
-        position: relative !important;
-        left: auto !important;
-        right: auto !important;
-        width: 100% !important;
-        margin-top: 2rem !important;
-        bottom: auto !important;
-        z-index: auto !important;
-    }
-
-    /* Remove padding-bottom from main-content on dashboard since footer is not fixed */
-    .main-content {
-        padding-bottom: 2rem !important;
     }
 </style>
 {% endblock extra_styles %}
@@ -1534,25 +1512,13 @@
 </style>
 
 <script>
-    // Override sticky footer CSS after page load to ensure it takes precedence
+    // Override flex-shrink from sb-admin-2.css to fix footer positioning
+    // Keep position: fixed from base.html to maintain sticky footer behavior
     document.addEventListener('DOMContentLoaded', function() {
         const stickyFooter = document.querySelector('footer.sticky-footer');
         if (stickyFooter) {
-            stickyFooter.style.position = 'relative';
-            stickyFooter.style.left = 'auto';
-            stickyFooter.style.right = 'auto';
-            stickyFooter.style.width = '100%';
-            stickyFooter.style.marginTop = '2rem';
-            stickyFooter.style.bottom = 'auto';
-            stickyFooter.style.zIndex = 'auto';
             stickyFooter.style.flexShrink = '1'; // Override flex-shrink: 0 from sb-admin-2.css
             stickyFooter.style.padding = '0'; // Remove padding from sb-admin-2.css
-        }
-        
-        // Remove padding-bottom from main-content
-        const mainContent = document.querySelector('.main-content');
-        if (mainContent) {
-            mainContent.style.paddingBottom = '2rem';
         }
     });
 </script>
