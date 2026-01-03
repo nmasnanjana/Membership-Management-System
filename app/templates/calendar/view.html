@@ -2,80 +2,192 @@
 {% load static %}
 
 {% block head %}
-    <link rel="stylesheet" href="{% static 'DataTables/datatables.min.css' %}">
-    <script src="{% static 'DataTables/datatables.min.js' %}"></script>
     <style>
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 1px;
-            background: var(--border-color);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
+            gap: 2px;
+            background: #4b5563;
+            border-radius: 12px;
             overflow: hidden;
+            padding: 2px;
         }
         
         .calendar-day {
-            background: var(--bg-secondary);
-            padding: 0.75rem;
-            min-height: 100px;
+            background: #374151;
+            padding: 0.75rem 0.5rem;
+            min-height: 120px;
             position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .calendar-day:hover {
+            background: #4b5563;
+            transform: scale(1.02);
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
         
         .calendar-day.other-month {
-            background: var(--bg-primary);
-            opacity: 0.5;
+            background: #1f2937;
+            opacity: 0.4;
+        }
+        
+        .calendar-day.other-month:hover {
+            background: #374151;
+            opacity: 0.7;
         }
         
         .calendar-day.today {
-            background: var(--bg-tertiary);
-            border: 2px solid var(--primary-color);
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: 2px solid #60a5fa;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+        
+        .calendar-day.today:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.5);
         }
         
         .calendar-day.has-meeting {
-            border-left: 3px solid var(--primary-color);
+            border-left: 4px solid #10b981;
         }
         
         .calendar-day.has-holiday {
-            border-top: 3px solid var(--warning-color);
+            border-top: 4px solid #f59e0b;
+        }
+        
+        .calendar-day.has-meeting.has-holiday {
+            border-left: 4px solid #10b981;
+            border-top: 4px solid #f59e0b;
         }
         
         .day-number {
-            font-weight: 600;
-            font-size: 0.9rem;
+            font-weight: 700;
+            font-size: 1rem;
             margin-bottom: 0.5rem;
+            color: #f9fafb;
+        }
+        
+        .calendar-day.today .day-number {
+            color: white;
         }
         
         .day-events {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
         }
         
         .event-meeting {
-            background: var(--primary-color);
+            background: linear-gradient(135deg, #10b981, #059669);
             color: white;
-            padding: 2px 4px;
-            border-radius: 3px;
-            margin: 2px 0;
+            padding: 4px 6px;
+            border-radius: 4px;
             display: block;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+        }
+        
+        .event-meeting:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateX(2px);
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.5);
         }
         
         .event-holiday {
-            background: var(--warning-color);
+            background: linear-gradient(135deg, #f59e0b, #d97706);
             color: white;
-            padding: 2px 4px;
-            border-radius: 3px;
-            margin: 2px 0;
+            padding: 4px 6px;
+            border-radius: 4px;
             display: block;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
         }
         
         .calendar-header {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            background: var(--bg-tertiary);
-            padding: 0.5rem;
-            font-weight: 600;
+            background: linear-gradient(135deg, #4b5563, #374151);
+            padding: 1rem 0.5rem;
+            font-weight: 700;
             text-align: center;
-            border-bottom: 2px solid var(--border-color);
+            color: #f9fafb;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .calendar-month-year {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #f9fafb;
+            min-width: 200px;
+        }
+        
+        .calendar-stats {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .stat-badge {
+            background: #4b5563;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .stat-badge i {
+            font-size: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .calendar-day {
+                min-height: 80px;
+                padding: 0.5rem 0.25rem;
+            }
+            
+            .day-number {
+                font-size: 0.85rem;
+            }
+            
+            .day-events {
+                font-size: 0.65rem;
+            }
+            
+            .event-meeting,
+            .event-holiday {
+                padding: 2px 4px;
+                font-size: 0.65rem;
+            }
+            
+            .calendar-header {
+                padding: 0.75rem 0.25rem;
+                font-size: 0.75rem;
+            }
+        }
+        
+        .empty-day {
+            color: #6b7280;
+            font-size: 0.75rem;
+            text-align: center;
+            padding-top: 0.5rem;
         }
     </style>
 {% endblock head %}
@@ -84,31 +196,45 @@
     <div class="container-fluid px-3 px-md-4">
         {% include 'breadcrumb.html' %}
         
-        <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap">
-            <h1 class="page-title">
-                <i class="fas fa-calendar-alt text-primary me-2"></i>Calendar View
-            </h1>
-            <div class="d-flex gap-2">
-                <a href="{% url 'calendar_view' %}?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-secondary btn-sm">
-                    <i class="fas fa-chevron-left me-1"></i>Previous
-                </a>
-                <a href="{% url 'calendar_view' %}?year={{ next_year }}&month={{ next_month }}" class="btn btn-secondary btn-sm">
-                    Next<i class="fas fa-chevron-right ms-1"></i>
-                </a>
-                <a href="{% url 'calendar_view' %}" class="btn btn-primary btn-sm">
-                    <i class="fas fa-calendar-day me-1"></i>Today
-                </a>
+        <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-calendar-alt text-primary me-2"></i>Calendar View
+                </h1>
+                <div class="calendar-nav">
+                    <a href="{% url 'calendar_view' %}?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-secondary btn-modern">
+                        <i class="fas fa-chevron-left me-1"></i>Previous
+                    </a>
+                    <div class="calendar-month-year text-center">
+                        {{ month_name }} {{ year }}
+                    </div>
+                    <a href="{% url 'calendar_view' %}?year={{ next_year }}&month={{ next_month }}" class="btn btn-secondary btn-modern">
+                        Next<i class="fas fa-chevron-right ms-1"></i>
+                    </a>
+                    <a href="{% url 'calendar_view' %}" class="btn btn-primary btn-modern">
+                        <i class="fas fa-calendar-day me-1"></i>Today
+                    </a>
+                </div>
             </div>
+            {% if meetings %}
+            <div class="calendar-stats">
+                <div class="stat-badge text-success">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>{{ meetings.count }} Meeting{{ meetings.count|pluralize }}</span>
+                </div>
+                {% if month_holidays %}
+                <div class="stat-badge text-warning">
+                    <i class="fas fa-star"></i>
+                    <span>{{ month_holidays|length }} Holiday{{ month_holidays|length|pluralize }}</span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
 
         <div class="row">
             <div class="col-lg-9">
                 <div class="modern-card mb-4">
-                    <div class="modern-card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-calendar me-2"></i>{{ month_name }} {{ year }}
-                        </h5>
-                    </div>
                     <div class="modern-card-body p-0">
                         <div class="calendar-header">
                             <div>Sun</div>
@@ -123,19 +249,28 @@
                             {% for week in calendar_data %}
                                 {% for day_info in week %}
                                     {% if day_info %}
-                                        <div class="calendar-day {% if day_info.is_today %}today{% endif %} {% if day_info.meetings %}has-meeting{% endif %} {% if day_info.holidays %}has-holiday{% endif %}">
+                                        <div class="calendar-day {% if day_info.is_today %}today{% endif %} {% if day_info.meetings %}has-meeting{% endif %} {% if day_info.holidays %}has-holiday{% endif %}"
+                                             title="{% if day_info.is_today %}Today - {% endif %}{{ day_info.date|date:'d M Y' }}{% if day_info.meetings %} - {{ day_info.meetings|length }} meeting{{ day_info.meetings|length|pluralize }}{% endif %}{% if day_info.holidays %} - {{ day_info.holidays|length }} holiday{{ day_info.holidays|length|pluralize }}{% endif %}">
                                             <div class="day-number">{{ day_info.day }}</div>
                                             <div class="day-events">
-                                                {% for holiday in day_info.holidays %}
-                                                    <span class="event-holiday" title="{{ holiday.name }}">
-                                                        <i class="fas fa-star me-1"></i>{{ holiday.name|truncatewords:2 }}
-                                                    </span>
-                                                {% endfor %}
-                                                {% for meeting in day_info.meetings %}
-                                                    <a href="{% url 'attendance_date' meeting.meeting_id %}" class="event-meeting" title="Meeting - Fee: Rs.{{ meeting.meeting_fee }}">
-                                                        <i class="fas fa-calendar-check me-1"></i>Meeting
-                                                    </a>
-                                                {% endfor %}
+                                                {% if day_info.holidays %}
+                                                    {% for holiday in day_info.holidays %}
+                                                        <span class="event-holiday" title="{{ holiday.name }} - {{ holiday.date|date:'d M Y' }}">
+                                                            <i class="fas fa-star me-1"></i>{{ holiday.name|truncatewords:2 }}
+                                                        </span>
+                                                    {% endfor %}
+                                                {% endif %}
+                                                {% if day_info.meetings %}
+                                                    {% for meeting in day_info.meetings %}
+                                                        <a href="{% url 'attendance_date' meeting.meeting_id %}" class="event-meeting" 
+                                                           title="Meeting on {{ meeting.meeting_date|date:'d M Y' }} - Fee: Rs.{{ meeting.meeting_fee }} - Click to view attendance">
+                                                            <i class="fas fa-calendar-check me-1"></i>Meeting
+                                                        </a>
+                                                    {% endfor %}
+                                                {% endif %}
+                                                {% if not day_info.meetings and not day_info.holidays %}
+                                                    <div class="empty-day">—</div>
+                                                {% endif %}
                                             </div>
                                         </div>
                                     {% else %}
@@ -156,17 +291,27 @@
                         </h5>
                     </div>
                     <div class="modern-card-body">
-                        {% for holiday in upcoming_holidays %}
-                            <div class="mb-3 pb-3 {% if not forloop.last %}border-bottom border-secondary{% endif %}">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <div class="fw-bold text-warning">{{ holiday.name }}</div>
-                                        <div class="text-muted small">{{ holiday.date|date:"d M Y" }}</div>
-                                        <span class="badge bg-secondary mt-1">{{ holiday.type|title }}</span>
+                        {% if upcoming_holidays %}
+                            {% for holiday in upcoming_holidays %}
+                                <div class="mb-3 pb-3 {% if not forloop.last %}border-bottom border-secondary{% endif %}">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px; background: rgba(245, 158, 11, 0.2); min-width: 40px;">
+                                            <i class="fas fa-star text-warning"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="fw-bold text-white mb-1">{{ holiday.name }}</div>
+                                            <div class="text-muted small mb-1">
+                                                <i class="fas fa-calendar me-1"></i>{{ holiday.date|date:"l, d M Y" }}
+                                            </div>
+                                            <span class="badge bg-warning text-dark">{{ holiday.type|title }}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        {% endfor %}
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted text-center py-3">No upcoming holidays</p>
+                        {% endif %}
                     </div>
                 </div>
                 
@@ -177,17 +322,19 @@
                         </h5>
                     </div>
                     <div class="modern-card-body">
-                        <div class="mb-2">
-                            <span class="event-meeting d-inline-block mb-1">Meeting</span>
-                            <span class="text-muted small d-block">Club meetings</span>
+                        <div class="mb-3 d-flex align-items-center gap-2">
+                            <span class="event-meeting d-inline-block" style="width: 80px; text-align: center; padding: 6px;">Meeting</span>
+                            <span class="text-muted small">Club meetings - Click to view</span>
                         </div>
-                        <div class="mb-2">
-                            <span class="event-holiday d-inline-block mb-1">Holiday</span>
-                            <span class="text-muted small d-block">Sri Lankan holidays</span>
+                        <div class="mb-3 d-flex align-items-center gap-2">
+                            <span class="event-holiday d-inline-block" style="width: 80px; text-align: center; padding: 6px;">Holiday</span>
+                            <span class="text-muted small">Sri Lankan public holidays</span>
                         </div>
-                        <div class="mb-2">
-                            <div class="calendar-day today d-inline-block" style="width: 30px; height: 30px; padding: 0;"></div>
-                            <span class="text-muted small d-inline-block ms-2">Today</span>
+                        <div class="mb-0 d-flex align-items-center gap-2">
+                            <div class="calendar-day today d-inline-block" style="width: 40px; height: 40px; padding: 0; cursor: default; display: flex; align-items: center; justify-content: center;">
+                                <span style="color: white; font-weight: 700;">{% now "d" %}</span>
+                            </div>
+                            <span class="text-muted small">Today's date</span>
                         </div>
                     </div>
                 </div>
