@@ -350,24 +350,67 @@ def member_qr_generator(request, member_id):
 
 @user_passes_test(lambda u: u.is_superuser)
 def export_member_details(request):
-    response = HttpResponse(content_type='application/ms-excel')
-    response['Content-Disposition'] = 'attachment; filename="Member Details.xlsx"'
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Member Details"
-
-    headers = ["Member ID", "Full Name", "Address", "Date of Birth", "Telephone Number", "Account Number", "Join Date"]
-    ws.append(headers)
-
-    members = Member.objects.all()
-    for member in members:
-        ws.append([member.member_id, f'{member.member_initials}{member.member_first_name} {member.member_last_name}',
-                   member.member_address, member.member_dob.strftime("%d/%m/%Y"), member.member_tp_number,
-                   member.member_acc_number, member.member_join_at.strftime("%d/%m/%Y")])
-
-    wb.save(response)
-    return response
+    """Export members with format selection, column selection, and filter support"""
+    from .search_utils import search_members
+    from .export_utils import export_members_excel, export_members_pdf
+    from datetime import date
+    
+    # Get data from POST or GET
+    data_source = request.POST if request.method == 'POST' else request.GET
+    
+    # Get filters from request (same as member_list)
+    search_query = data_source.get('search', '').strip()
+    is_active_filter = data_source.get('is_active', '')
+    role_filter = data_source.get('role', '')
+    join_date_from = data_source.get('join_date_from', '')
+    join_date_to = data_source.get('join_date_to', '')
+    is_adults = data_source.get('is_adults', 'false').lower() == 'true'
+    
+    # Build filters dict
+    filters = {}
+    if search_query:
+        # When searching, ignore other filters
+        filters = {}
+    else:
+        if is_active_filter != '':
+            filters['is_active'] = is_active_filter.lower() == 'true'
+        if role_filter:
+            filters['role'] = role_filter
+        if join_date_from:
+            filters['join_date_from'] = join_date_from
+        if join_date_to:
+            filters['join_date_to'] = join_date_to
+    
+    # Get members with filters
+    members = search_members(search_query, filters)
+    
+    # Filter by age if needed
+    today = date.today()
+    cutoff_date = date(today.year - 18, today.month, today.day)
+    if today.month == 2 and today.day == 29:
+        cutoff_date = date(today.year - 18, 2, 28)
+    
+    if not is_adults:
+        # Members under 18
+        members = members.filter(member_dob__gt=cutoff_date)
+    else:
+        # Members 18+
+        members = members.filter(member_dob__lte=cutoff_date)
+    
+    # Get export format and selected columns
+    export_format = data_source.get('format', 'excel')
+    selected_columns = data_source.getlist('columns')
+    
+    # Default columns if none selected
+    if not selected_columns:
+        selected_columns = ['member_id', 'initials', 'first_name', 'last_name', 'address', 
+                           'dob', 'telephone', 'account', 'guardian', 'role', 'status', 'join_date']
+    
+    # Export based on format
+    if export_format == 'pdf':
+        return export_members_pdf(members, selected_columns=selected_columns)
+    else:
+        return export_members_excel(members, selected_columns=selected_columns)
 
 
 @user_passes_test(lambda u: u.is_superuser)

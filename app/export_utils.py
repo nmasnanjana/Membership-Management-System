@@ -47,10 +47,35 @@ def style_excel_worksheet(ws, title):
         ws.column_dimensions[column_letter].width = adjusted_width
 
 
-def export_members_excel(members, filename=None):
-    """Export members to Excel with enhanced formatting"""
+def export_members_excel(members, filename=None, selected_columns=None):
+    """Export members to Excel with enhanced formatting and column selection"""
     if filename is None:
         filename = f"Members_Export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    
+    # Column mapping
+    column_map = {
+        'member_id': ('Member ID', lambda m: m.member_id),
+        'initials': ('Initials', lambda m: m.member_initials),
+        'first_name': ('First Name', lambda m: m.member_first_name),
+        'last_name': ('Last Name', lambda m: m.member_last_name),
+        'address': ('Address', lambda m: m.member_address),
+        'dob': ('Date of Birth', lambda m: m.member_dob.strftime("%d/%m/%Y") if m.member_dob else ""),
+        'telephone': ('Telephone', lambda m: m.member_tp_number),
+        'account': ('Account Number', lambda m: m.member_acc_number or ""),
+        'guardian': ('Guardian Name', lambda m: m.member_guardian_name),
+        'role': ('Role', lambda m: m.get_member_role_display() if m.member_role else "No Role"),
+        'status': ('Status', lambda m: "Active" if m.member_is_active else "Inactive"),
+        'join_date': ('Join Date', lambda m: m.member_join_at.strftime("%d/%m/%Y") if m.member_join_at else "")
+    }
+    
+    # Default columns if none selected
+    if selected_columns is None:
+        selected_columns = list(column_map.keys())
+    
+    # Filter to only include valid columns
+    selected_columns = [col for col in selected_columns if col in column_map]
+    if not selected_columns:
+        selected_columns = list(column_map.keys())
     
     response = HttpResponse(content_type='application/ms-excel')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -59,38 +84,48 @@ def export_members_excel(members, filename=None):
     ws = wb.active
     ws.title = "Members"
     
-    headers = [
-        "Member ID", "Initials", "First Name", "Last Name", "Address", 
-        "Date of Birth", "Telephone", "Account Number", "Guardian Name",
-        "Role", "Status", "Join Date"
-    ]
+    # Build headers and data based on selected columns
+    headers = [column_map[col][0] for col in selected_columns]
     ws.append(headers)
     
     for member in members:
-        ws.append([
-            member.member_id,
-            member.member_initials,
-            member.member_first_name,
-            member.member_last_name,
-            member.member_address,
-            member.member_dob.strftime("%d/%m/%Y") if member.member_dob else "",
-            member.member_tp_number,
-            member.member_acc_number or "",
-            member.member_guardian_name,
-            member.get_member_role_display() if member.member_role else "No Role",
-            "Active" if member.member_is_active else "Inactive",
-            member.member_join_at.strftime("%d/%m/%Y") if member.member_join_at else ""
-        ])
+        row = [column_map[col][1](member) for col in selected_columns]
+        ws.append(row)
     
     style_excel_worksheet(ws, "Members")
     wb.save(response)
     return response
 
 
-def export_members_pdf(members, filename=None):
-    """Export members to PDF"""
+def export_members_pdf(members, filename=None, selected_columns=None):
+    """Export members to PDF with column selection"""
     if filename is None:
         filename = f"Members_Export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    
+    # Column mapping
+    column_map = {
+        'member_id': ('Member ID', lambda m: m.member_id),
+        'initials': ('Initials', lambda m: m.member_initials),
+        'first_name': ('First Name', lambda m: m.member_first_name),
+        'last_name': ('Last Name', lambda m: m.member_last_name),
+        'address': ('Address', lambda m: m.member_address),
+        'dob': ('Date of Birth', lambda m: m.member_dob.strftime("%d/%m/%Y") if m.member_dob else ""),
+        'telephone': ('Telephone', lambda m: m.member_tp_number),
+        'account': ('Account Number', lambda m: m.member_acc_number or ""),
+        'guardian': ('Guardian Name', lambda m: m.member_guardian_name),
+        'role': ('Role', lambda m: m.get_member_role_display() if m.member_role else "No Role"),
+        'status': ('Status', lambda m: "Active" if m.member_is_active else "Inactive"),
+        'join_date': ('Join Date', lambda m: m.member_join_at.strftime("%d/%m/%Y") if m.member_join_at else "")
+    }
+    
+    # Default columns if none selected (limit to 6 for PDF readability)
+    if selected_columns is None:
+        selected_columns = ['member_id', 'first_name', 'last_name', 'telephone', 'role', 'status']
+    
+    # Filter to only include valid columns
+    selected_columns = [col for col in selected_columns if col in column_map]
+    if not selected_columns:
+        selected_columns = ['member_id', 'first_name', 'last_name', 'telephone', 'role', 'status']
     
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -112,23 +147,13 @@ def export_members_pdf(members, filename=None):
     elements.append(title)
     elements.append(Spacer(1, 0.2*inch))
     
-    # Table data
-    data = [['Member ID', 'Name', 'Telephone', 'Role', 'Status', 'Join Date']]
+    # Build table data based on selected columns
+    headers = [column_map[col][0] for col in selected_columns]
+    data = [headers]
     
     for member in members:
-        full_name = f"{member.member_initials} {member.member_first_name} {member.member_last_name}"
-        role = member.get_member_role_display() if member.member_role else "No Role"
-        status = "Active" if member.member_is_active else "Inactive"
-        join_date = member.member_join_at.strftime("%d/%m/%Y") if member.member_join_at else ""
-        
-        data.append([
-            member.member_id,
-            full_name,
-            member.member_tp_number,
-            role,
-            status,
-            join_date
-        ])
+        row = [column_map[col][1](member) for col in selected_columns]
+        data.append(row)
     
     # Create table
     table = Table(data, repeatRows=1)
