@@ -71,18 +71,19 @@
 
         .main-content {
             background: var(--bg-primary);
-            min-height: calc(100vh - 80px);
+            min-height: 100vh;
             margin-left: 280px;
             padding: 2rem;
-            padding-bottom: 100px;
+            padding-bottom: 120px;
             transition: margin-left 0.3s ease;
+            box-sizing: border-box;
         }
         
         @media (max-width: 991px) {
             .main-content {
                 margin-left: 0;
                 padding: 1rem;
-                padding-bottom: 100px;
+                padding-bottom: 120px;
             }
         }
 
@@ -709,11 +710,13 @@
             z-index: 100;
             background: transparent;
             transition: left 0.3s ease;
+            width: calc(100% - 280px);
         }
         
         @media (max-width: 991px) {
             .sticky-footer {
                 left: 0;
+                width: 100%;
             }
         }
         
@@ -722,6 +725,18 @@
             border-top: 1px solid rgba(75, 85, 99, 0.5);
             background: #374151;
             box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3);
+            width: 100%;
+        }
+        
+        /* Ensure footer stays at bottom */
+        html {
+            height: 100%;
+        }
+        
+        body {
+            min-height: 100vh;
+            position: relative;
+            padding-bottom: 0;
         }
     </style>
 

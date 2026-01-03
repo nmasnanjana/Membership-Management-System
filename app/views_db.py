@@ -74,10 +74,13 @@ def database_management(request):
         cursor.execute("SHOW TABLES")
         tables = [row[0] for row in cursor.fetchall()]
 
-    context = {
+    # Import context_data to ensure navbar and footer are shown
+    from .views import context_data
+    context = context_data(request)
+    context.update({
         'tables': tables,
         'page_name': 'Database Management'
-    }
+    })
     return render(request, 'admin/database_management.html', context)
 
 
