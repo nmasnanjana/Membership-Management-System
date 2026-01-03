@@ -71,9 +71,10 @@
 
         .main-content {
             background: var(--bg-primary);
-            min-height: 100vh;
-            margin-left: 260px;
+            min-height: calc(100vh - 80px);
+            margin-left: 280px;
             padding: 2rem;
+            padding-bottom: 100px;
             transition: margin-left 0.3s ease;
         }
         
@@ -81,6 +82,7 @@
             .main-content {
                 margin-left: 0;
                 padding: 1rem;
+                padding-bottom: 100px;
             }
         }
 
@@ -690,13 +692,38 @@
         {% endblock content %}
     </main>
 
-    <footer>
+    <footer class="sticky-footer">
         {% if footer %}
             {% block footer_override %}
                 {% include 'footer.html' %}
             {% endblock footer_override %}
         {% endif %}
     </footer>
+    
+    <style>
+        .sticky-footer {
+            position: fixed;
+            bottom: 0;
+            left: 280px;
+            right: 0;
+            z-index: 100;
+            background: #374151;
+            border-top: 2px solid #3b82f6;
+            box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3);
+            transition: left 0.3s ease;
+        }
+        
+        @media (max-width: 991px) {
+            .sticky-footer {
+                left: 0;
+            }
+        }
+        
+        .sticky-footer footer {
+            margin: 0;
+            border-top: none;
+        }
+    </style>
 
     <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     

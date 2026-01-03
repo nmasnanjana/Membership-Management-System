@@ -137,28 +137,93 @@
             // Get cameras and start scanner
             Instascan.Camera.getCameras().then(function (cameras) {
                 if (cameras.length > 0) {
-                    // Prefer back camera (usually last in array on mobile)
-                    let selectedCamera = cameras[0];
-                    if (cameras.length > 1) {
-                        // Try to find back camera
-                        for (let i = cameras.length - 1; i >= 0; i--) {
-                            if (cameras[i].name && cameras[i].name.toLowerCase().includes('back')) {
+                    let selectedCamera = null;
+                    
+                    // Detect if mobile device
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                                    (window.innerWidth <= 768);
+                    
+                    if (cameras.length === 1) {
+                        // Only one camera available
+                        selectedCamera = cameras[0];
+                    } else {
+                        // Multiple cameras - prefer back camera
+                        // Strategy: Look for back camera by name, facing mode, or position
+                        
+                        // First, try to find by name (most reliable)
+                        for (let i = 0; i < cameras.length; i++) {
+                            const cameraName = cameras[i].name ? cameras[i].name.toLowerCase() : '';
+                            if (cameraName.includes('back') || 
+                                cameraName.includes('rear') || 
+                                cameraName.includes('environment') ||
+                                cameraName.includes('facing back')) {
                                 selectedCamera = cameras[i];
+                                console.log('Found back camera by name:', cameras[i].name);
                                 break;
                             }
                         }
-                        // If no back camera found, use the last one (usually back on mobile)
-                        if (selectedCamera === cameras[0] && cameras.length > 1) {
+                        
+                        // If not found by name, try to find by facing mode (if available)
+                        if (!selectedCamera) {
+                            for (let i = 0; i < cameras.length; i++) {
+                                // Some browsers expose facingMode
+                                if (cameras[i].facingMode === 'environment' || 
+                                    (cameras[i].name && cameras[i].name.includes('environment'))) {
+                                    selectedCamera = cameras[i];
+                                    console.log('Found back camera by facing mode:', cameras[i].name);
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // If still not found and on mobile, prefer the last camera (usually back on mobile)
+                        if (!selectedCamera && isMobile) {
                             selectedCamera = cameras[cameras.length - 1];
+                            console.log('Using last camera (back camera on mobile):', selectedCamera.name);
+                        }
+                        
+                        // If still not found, try to exclude front camera explicitly
+                        if (!selectedCamera) {
+                            for (let i = cameras.length - 1; i >= 0; i--) {
+                                const cameraName = cameras[i].name ? cameras[i].name.toLowerCase() : '';
+                                // Skip front cameras
+                                if (!cameraName.includes('front') && 
+                                    !cameraName.includes('user') && 
+                                    !cameraName.includes('facing user')) {
+                                    selectedCamera = cameras[i];
+                                    console.log('Selected camera (excluding front):', cameras[i].name);
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Fallback: use the last camera if nothing else found
+                        if (!selectedCamera) {
+                            selectedCamera = cameras[cameras.length - 1];
+                            console.log('Fallback: using last camera:', selectedCamera.name);
                         }
                     }
                     
-                    scanner.start(selectedCamera).then(function() {
-                        console.log('Scanner started successfully');
-                    }).catch(function(err) {
-                        console.error('Error starting scanner:', err);
-                        showCameraError('Failed to start camera. Please check permissions.');
-                    });
+                    // Start scanner with selected camera
+                    if (selectedCamera) {
+                        scanner.start(selectedCamera).then(function() {
+                            console.log('Scanner started successfully with camera:', selectedCamera.name);
+                        }).catch(function(err) {
+                            console.error('Error starting scanner:', err);
+                            // Try fallback to first camera if back camera fails
+                            if (cameras.length > 1 && selectedCamera !== cameras[0]) {
+                                console.log('Trying fallback camera...');
+                                scanner.start(cameras[0]).catch(function(fallbackErr) {
+                                    console.error('Fallback camera also failed:', fallbackErr);
+                                    showCameraError('Failed to start camera. Please check permissions.');
+                                });
+                            } else {
+                                showCameraError('Failed to start camera. Please check permissions.');
+                            }
+                        });
+                    } else {
+                        showCameraError('No suitable camera found.');
+                    }
                 } else {
                     showCameraError('No cameras found. Please connect a camera device.');
                 }
