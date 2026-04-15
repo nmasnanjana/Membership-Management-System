@@ -40,6 +40,8 @@ urlpatterns = [
     path('meeting/edit/<meeting_date>', meeting_edit, name="meeting_edit"),
 
     path('attendance/mark/', attendance_mark, name='attendance_mark'),
+    path('attendance/scan/', attendance_scanner, name='attendance_scanner'),
+    path('attendance/mark/api/', attendance_mark_api, name='attendance_mark_api'),
     path('attendance/bulk/', attendance_bulk_mark, name='attendance_bulk_mark'),
     path('attendance/mark-all-present/<meeting_id>', attendance_mark_all_present, name='attendance_mark_all_present'),
     path('attendance/date/all', attendance_full_view, name='attendance_date_all'),
