@@ -156,6 +156,23 @@
         .stat-badge i {
             font-size: 1rem;
         }
+
+        /* Legend swatches: keep all three same size */
+        .legend-swatch {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border-radius: 8px;
+        }
+
+        .legend-swatch.event-meeting,
+        .legend-swatch.event-holiday {
+            padding: 0; /* override event pill styles for legend */
+            text-align: center;
+        }
         
         @media (max-width: 768px) {
             .calendar-day {
@@ -375,21 +392,25 @@
                     </div>
                     <div class="modern-card-body d-flex flex-column justify-content-center" style="min-height: 200px;">
                         <div class="mb-4 d-flex align-items-center gap-3">
-                            <span class="event-meeting d-inline-block" style="width: 100px; text-align: center; padding: 8px; flex-shrink: 0;">Meeting</span>
+                            <span class="event-meeting legend-swatch" aria-hidden="true">
+                                <i class="fas fa-calendar-check"></i>
+                            </span>
                             <div>
                                 <div class="text-white fw-semibold mb-1">Club Meetings</div>
                                 <div class="text-muted small">Click to view attendance details</div>
                             </div>
                         </div>
                         <div class="mb-4 d-flex align-items-center gap-3">
-                            <span class="event-holiday d-inline-block" style="width: 100px; text-align: center; padding: 8px; flex-shrink: 0;">Holiday</span>
+                            <span class="event-holiday legend-swatch" aria-hidden="true">
+                                <i class="fas fa-star"></i>
+                            </span>
                             <div>
                                 <div class="text-white fw-semibold mb-1">Public Holidays</div>
                                 <div class="text-muted small">Sri Lankan national holidays</div>
                             </div>
                         </div>
                         <div class="mb-0 d-flex align-items-center gap-3">
-                            <div class="calendar-day today d-inline-block" style="width: 50px; height: 50px; padding: 0; cursor: default; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <div class="calendar-day today legend-swatch" style="padding: 0; cursor: default;">
                                 <span style="color: white; font-weight: 700; font-size: 1.1rem;">{% now "d" %}</span>
                             </div>
                             <div>
