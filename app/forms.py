@@ -62,7 +62,7 @@ class MemberRegisterForm(forms.ModelForm):
         )]
     )
 
-    member_initials = forms.CharField(max_length=10, widget=forms.TextInput(attrs={
+    member_initials = forms.CharField(required=False, max_length=10, widget=forms.TextInput(attrs={
         "placeholder": "Initials",
         "class": "form-control"}))
 
@@ -70,7 +70,7 @@ class MemberRegisterForm(forms.ModelForm):
         "placeholder": "First Name",
         "class": "form-control"}))
 
-    member_last_name = forms.CharField(max_length=50, widget=forms.TextInput(attrs={
+    member_last_name = forms.CharField(required=False, max_length=50, widget=forms.TextInput(attrs={
         "placeholder": "Last Name",
         "class": "form-control"}))
 
@@ -161,7 +161,7 @@ class MemberEditForm(forms.ModelForm):
         )]
     )
 
-    member_initials = forms.CharField(max_length=10, widget=forms.TextInput(attrs={
+    member_initials = forms.CharField(required=False, max_length=10, widget=forms.TextInput(attrs={
         "placeholder": "Initials",
         "class": "form-control"}))
 
@@ -169,7 +169,7 @@ class MemberEditForm(forms.ModelForm):
         "placeholder": "First Name",
         "class": "form-control"}))
 
-    member_last_name = forms.CharField(max_length=50, widget=forms.TextInput(attrs={
+    member_last_name = forms.CharField(required=False, max_length=50, widget=forms.TextInput(attrs={
         "placeholder": "Last Name",
         "class": "form-control"}))
 
@@ -271,7 +271,10 @@ class AttendanceMarkForm(forms.ModelForm):
         self.fields['meeting_date'].label_from_instance = self.date_label_from_instance
 
     def member_id_label_from_instance(self, obj):
-        return f"{obj.member_id} - {obj.member_initials} {obj.member_first_name} {obj.member_last_name}"
+        initials = obj.member_initials or ''
+        last_name = obj.member_last_name or ''
+        full_name = f"{initials} {obj.member_first_name} {last_name}".strip()
+        return f"{obj.member_id} - {full_name}"
 
     def date_label_from_instance(self, obj):
         return f"{obj.meeting_date}"
