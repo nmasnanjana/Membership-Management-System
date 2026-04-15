@@ -18,19 +18,29 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
     OWASP: Security Misconfiguration, Insecure Design
     """
     def process_response(self, request, response):
-        # Content Security Policy
-        csp = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://ajax.googleapis.com https://code.jquery.com; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
-            "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data:; "
-            "img-src 'self' data: https:; "
-            "connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-            "frame-ancestors 'self'; "
-            "base-uri 'self'; "
-            "form-action 'self';"
-        )
-        response['Content-Security-Policy'] = csp
+        """
+        Note on reverse proxies (Nginx/Cloudflare):
+        If a proxy sets the same security header (e.g., CSP, Permissions-Policy), browsers enforce *all* copies.
+        Two different CSP/Permissions-Policy headers effectively become the intersection (most restrictive),
+        which can break loading external assets and camera access.
+
+        To avoid that, we only set these headers if they are not already present on the response.
+        """
+
+        # Content Security Policy (only if not already set by upstream)
+        if 'Content-Security-Policy' not in response:
+            csp = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://ajax.googleapis.com https://code.jquery.com; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+                "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data:; "
+                "img-src 'self' data: https:; "
+                "connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+                "frame-ancestors 'self'; "
+                "base-uri 'self'; "
+                "form-action 'self';"
+            )
+            response['Content-Security-Policy'] = csp
         
         # Cache-Control headers - always disable caching for dynamic content
         # Only cache static files (CSS, JS, images) in production
@@ -51,27 +61,33 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
         
         # Strict Transport Security (HSTS) - only in production
         if not settings.DEBUG:
-            response['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
+            if 'Strict-Transport-Security' not in response:
+                response['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
         
         # X-Frame-Options
-        response['X-Frame-Options'] = 'DENY'
+        if 'X-Frame-Options' not in response:
+            response['X-Frame-Options'] = 'DENY'
         
         # X-Content-Type-Options
-        response['X-Content-Type-Options'] = 'nosniff'
+        if 'X-Content-Type-Options' not in response:
+            response['X-Content-Type-Options'] = 'nosniff'
         
         # X-XSS-Protection
-        response['X-XSS-Protection'] = '1; mode=block'
+        if 'X-XSS-Protection' not in response:
+            response['X-XSS-Protection'] = '1; mode=block'
         
         # Referrer Policy
-        response['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        if 'Referrer-Policy' not in response:
+            response['Referrer-Policy'] = 'strict-origin-when-cross-origin'
         
         # Permissions Policy
         # Allow camera for on-site QR scanning (same-origin only).
         # Keep everything else locked down.
-        response['Permissions-Policy'] = (
-            "geolocation=(), microphone=(), camera=(self), "
-            "payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
-        )
+        if 'Permissions-Policy' not in response:
+            response['Permissions-Policy'] = (
+                "geolocation=(), microphone=(), camera=(self), "
+                "payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
+            )
         
         return response
 
