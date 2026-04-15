@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+  <div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap">
+      <h1 class="page-title mb-0">
+        <i class="fas fa-qrcode text-primary me-2"></i>Attendance Scanner
+      </h1>
+      <div class="mt-2 mt-md-0 d-flex gap-2">
+        <a href="{% url 'attendance_mark' %}" class="btn btn-secondary btn-modern">
+          <i class="fas fa-pen-to-square me-2"></i>Manual Marking
+        </a>
+        <a href="{% url 'attendance_bulk_mark' %}" class="btn btn-success-modern btn-modern">
+          <i class="fas fa-users me-2"></i>Bulk Marking
+        </a>
+      </div>
+    </div>
+    <p class="text-muted mt-2 mb-0">
+      Scan a member QR code to mark attendance quickly (QR contains Member ID).
+    </p>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-5 col-12">
+      <div class="modern-card h-100">
+        <div class="modern-card-header">
+          <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Scanner Settings</h5>
+        </div>
+        <div class="modern-card-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">
+              <i class="fas fa-calendar me-1 text-primary"></i>Meeting
+              <span class="text-danger">*</span>
+            </label>
+            <select id="meetingSelect" class="form-select">
+              <option value="">Select meeting date...</option>
+              {% for meeting in meetings %}
+                <option value="{{ meeting.meeting_id }}">{{ meeting.meeting_date|date:"d M Y" }} (Fee: Rs.{{ meeting.meeting_fee }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">
+              <i class="fas fa-check-circle me-1 text-primary"></i>Mark as
+            </label>
+            <div class="d-flex gap-2 flex-wrap">
+              <button type="button" class="btn btn-primary btn-sm" id="btnPresent" data-present="true">Present</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="btnAbsent" data-present="false">Absent</button>
+            </div>
+            <small class="text-muted d-block mt-2">Tip: default is Present for faster scanning.</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">
+              <i class="fas fa-money-bill-wave me-1 text-primary"></i>Fee paid
+            </label>
+            <div class="form-check form-switch mt-1">
+              <input class="form-check-input" type="checkbox" id="feePaidToggle">
+              <label class="form-check-label" for="feePaidToggle">Mark fee as paid</label>
+            </div>
+          </div>
+
+          <div id="scanStatus" class="mt-3" style="display:none;"></div>
+
+          <div class="mt-3 small text-muted">
+            This uses a lightweight API write per scan (no full page reloads).
+            Existing attendance rows can only be edited by superusers.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7 col-12">
+      <div class="modern-card">
+        <div class="modern-card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="fas fa-camera me-2"></i>Camera</h5>
+          <button type="button" class="btn btn-sm btn-secondary" id="btnRestart">
+            <i class="fas fa-rotate-right me-1"></i>Restart camera
+          </button>
+        </div>
+        <div class="modern-card-body">
+          <div class="mb-3" style="background:#111827;border:1px solid #374151;border-radius:12px;overflow:hidden;">
+            <video id="preview" autoplay playsinline style="width:100%;height:auto;max-height:520px;object-fit:cover;"></video>
+          </div>
+          <div class="text-muted small">
+            If scanning is slow, bring the QR closer and ensure good lighting.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Attendance Scanner: camera + jsQR (canvas based) + API upsert
+  let videoStream = null;
+  let scanRafId = null;
+  let isBusy = false;
+  let lastValue = '';
+  let lastAt = 0;
+  const cooldownMs = 1500;
+  let scanCanvas = null;
+  let scanCtx = null;
+  let lastDecodeAttemptAt = 0;
+
+  function setStatus(html, type = 'info') {
+    const el = document.getElementById('scanStatus');
+    if (!el) return;
+    el.style.display = 'block';
+    el.innerHTML = `<div class="alert alert-${type} mb-0" role="alert">${html}</div>`;
+  }
+  function clearStatus() {
+    const el = document.getElementById('scanStatus');
+    if (!el) return;
+    el.style.display = 'none';
+    el.innerHTML = '';
+  }
+
+  async function loadJsQr() {
+    if (typeof window.jsQR === 'function') return true;
+    return new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
+      s.async = true;
+      s.onload = () => resolve(typeof window.jsQR === 'function');
+      s.onerror = () => resolve(false);
+      document.head.appendChild(s);
+    });
+  }
+
+  function stopCamera() {
+    if (scanRafId) cancelAnimationFrame(scanRafId);
+    scanRafId = null;
+    if (videoStream) {
+      for (const t of videoStream.getTracks()) {
+        try { t.stop(); } catch (_) {}
+      }
+      videoStream = null;
+    }
+  }
+
+  async function startCamera() {
+    clearStatus();
+    const video = document.getElementById('preview');
+    if (!video) return;
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setStatus('<i class="fas fa-triangle-exclamation me-2"></i>Your browser does not support camera access.', 'warning');
+      return;
+    }
+
+    stopCamera();
+    try {
+      videoStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false
+      });
+      video.srcObject = videoStream;
+      await video.play();
+    } catch (e) {
+      console.error(e);
+      setStatus('<i class="fas fa-triangle-exclamation me-2"></i>Camera permission denied or unavailable. Check browser site settings.', 'warning');
+      return;
+    }
+
+    const ok = await loadJsQr();
+    if (!ok) {
+      setStatus('<i class="fas fa-circle-info me-2"></i>QR decoding library failed to load. Check network/CSP.', 'warning');
+      return;
+    }
+
+    if (!scanCanvas) {
+      scanCanvas = document.createElement('canvas');
+      scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
+    }
+
+    const loop = async () => {
+      try {
+        if (!video || video.readyState < 2 || !scanCtx) {
+          scanRafId = requestAnimationFrame(loop);
+          return;
+        }
+        const now = Date.now();
+        if (now - lastDecodeAttemptAt < 120) {
+          scanRafId = requestAnimationFrame(loop);
+          return;
+        }
+        lastDecodeAttemptAt = now;
+
+        const w = video.videoWidth;
+        const h = video.videoHeight;
+        if (!w || !h) {
+          scanRafId = requestAnimationFrame(loop);
+          return;
+        }
+        scanCanvas.width = w;
+        scanCanvas.height = h;
+        scanCtx.drawImage(video, 0, 0, w, h);
+        const imageData = scanCtx.getImageData(0, 0, w, h);
+        const qr = window.jsQR(imageData.data, w, h, { inversionAttempts: "attemptBoth" });
+        if (qr && qr.data) {
+          const value = String(qr.data).trim();
+          const t = Date.now();
+          if (value && !(value === lastValue && (t - lastAt) < cooldownMs) && !isBusy) {
+            lastValue = value;
+            lastAt = t;
+            await markAttendance(value);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      scanRafId = requestAnimationFrame(loop);
+    };
+
+    scanRafId = requestAnimationFrame(loop);
+  }
+
+  function getCsrfToken() {
+    const input = document.querySelector('#csrfForm input[name="csrfmiddlewaretoken"]');
+    return input ? input.value : '';
+  }
+
+  async function markAttendance(memberId) {
+    const meetingId = document.getElementById('meetingSelect')?.value || '';
+    if (!meetingId) {
+      setStatus('<i class="fas fa-circle-info me-2"></i>Please select a meeting first.', 'warning');
+      return;
+    }
+
+    isBusy = true;
+    const presentBtn = document.getElementById('btnPresent');
+    const absentBtn = document.getElementById('btnAbsent');
+    const present = presentBtn?.classList.contains('btn-primary') ? 'true' : 'false';
+    const feePaid = document.getElementById('feePaidToggle')?.checked ? 'true' : 'false';
+
+    setStatus(`<i class="fas fa-spinner fa-spin me-2"></i>Marking ${memberId}...`, 'info');
+
+    const body = new URLSearchParams();
+    body.set('meeting_id', meetingId);
+    body.set('member_id', memberId);
+    body.set('attendance_status', present);
+    body.set('fee_status', feePaid);
+
+    try {
+      const res = await fetch("{% url 'attendance_mark_api' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+          'X-CSRFToken': getCsrfToken(),
+        },
+        body: body.toString()
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        const kind = data.created ? 'Recorded' : 'Updated';
+        setStatus(`<i class="fas fa-check-circle me-2"></i>${kind}: ${memberId}`, 'success');
+      } else {
+        const msg = data.error || `Failed (${res.status}).`;
+        setStatus(`<i class="fas fa-triangle-exclamation me-2"></i>${msg}`, 'warning');
+      }
+    } catch (e) {
+      console.error(e);
+      setStatus('<i class="fas fa-triangle-exclamation me-2"></i>Network error while saving. Try again.', 'warning');
+    } finally {
+      isBusy = false;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Button toggle styling
+    const btnPresent = document.getElementById('btnPresent');
+    const btnAbsent = document.getElementById('btnAbsent');
+    btnPresent?.addEventListener('click', () => {
+      btnPresent.classList.add('btn-primary');
+      btnPresent.classList.remove('btn-outline-secondary');
+      btnAbsent.classList.remove('btn-primary');
+      btnAbsent.classList.add('btn-outline-secondary');
+    });
+    btnAbsent?.addEventListener('click', () => {
+      btnAbsent.classList.add('btn-primary');
+      btnAbsent.classList.remove('btn-outline-secondary');
+      btnPresent.classList.remove('btn-primary');
+      btnPresent.classList.add('btn-outline-secondary');
+    });
+
+    document.getElementById('btnRestart')?.addEventListener('click', () => startCamera());
+
+    startCamera();
+  });
+
+  window.addEventListener('beforeunload', () => stopCamera());
+</script>
+
+<!-- CSRF token for fetch -->
+<form id="csrfForm" style="display:none;">
+  {% csrf_token %}
+</form>
+{% endblock content %}
+

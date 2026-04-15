@@ -1,9 +1,12 @@
 from django.contrib import messages
 from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.db import IntegrityError, transaction
 
 from .forms import *
-from .models import MemberAttendance, MeetingInfo
+from .models import MemberAttendance, MeetingInfo, Member
 from .views import context_data
 from .constants import PAGINATION_ATTENDANCE_LIST, PAGINATION_ATTENDANCE_FULL
 
@@ -49,6 +52,87 @@ def attendance_mark(request):
     context['form'] = form
 
     return render(request, 'attendance/mark.html', context)
+
+
+@login_required
+def attendance_scanner(request):
+    """
+    High-volume attendance marking via QR scanner + AJAX.
+    Does not replace existing forms; it's an additional optimized workflow.
+    """
+    context = context_data(request)
+    context['page_name'] = "Attendance Scanner"
+    meetings = MeetingInfo.objects.all().order_by('-meeting_date')
+    context['meetings'] = meetings
+    return render(request, 'attendance/scan.html', context)
+
+
+@require_POST
+@login_required
+def attendance_mark_api(request):
+    """
+    API endpoint for marking attendance (optimized for scanner / AJAX).
+
+    Rules:
+    - Creates a new record if missing.
+    - If record exists: only superusers can update it (prevents accidental edits by staff).
+    """
+    meeting_id = (request.POST.get('meeting_id') or '').strip()
+    member_id = (request.POST.get('member_id') or '').strip()
+    attendance_status = (request.POST.get('attendance_status') or '').strip()
+    fee_status = (request.POST.get('fee_status') or '').strip()
+
+    if not meeting_id or not member_id:
+        return JsonResponse({'ok': False, 'error': 'meeting_id and member_id are required.'}, status=400)
+
+    try:
+        meeting = MeetingInfo.objects.get(meeting_id=meeting_id)
+    except MeetingInfo.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Meeting not found.'}, status=404)
+
+    try:
+        member = Member.objects.get(member_id=member_id)
+    except Member.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': f'Member "{member_id}" not found.'}, status=404)
+
+    if not member.member_is_active:
+        return JsonResponse({'ok': False, 'error': f'Member "{member_id}" is inactive.'}, status=400)
+
+    # Convert to bool (default present=True, fee_paid=False for scanner UX)
+    present = True if attendance_status == '' else (attendance_status.lower() in ('true', '1', 'yes', 'present'))
+    fee_paid = fee_status.lower() in ('true', '1', 'yes', 'paid')
+
+    # Members can pay fees even if absent - no validation needed
+    # Use get_or_create to avoid TOCTOU races under concurrent marking
+    try:
+        with transaction.atomic():
+            attendance, created = MemberAttendance.objects.get_or_create(
+                meeting_date=meeting,
+                member_id=member,
+                defaults={
+                    'attendance_status': present,
+                    'attendance_fee_status': fee_paid,
+                }
+            )
+    except IntegrityError:
+        # In case of a concurrent insert, re-fetch the existing row
+        attendance = MemberAttendance.objects.filter(meeting_date=meeting, member_id=member).first()
+        created = False
+
+    if created:
+        return JsonResponse({'ok': True, 'created': True})
+
+    # Existing row
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {'ok': False, 'error': 'Attendance already marked for this member. Only superusers can edit.'},
+            status=409
+        )
+
+    attendance.attendance_status = present
+    attendance.attendance_fee_status = fee_paid
+    attendance.save()
+    return JsonResponse({'ok': True, 'updated': True})
 
 
 @login_required

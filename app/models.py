@@ -24,9 +24,9 @@ class MemberRole(models.TextChoices):
 
 class Member(models.Model):
     member_id = models.CharField(max_length=10, primary_key=True, null=False, unique=True)
-    member_initials = models.CharField(max_length=10, null=False)
+    member_initials = models.CharField(max_length=10, null=True, blank=True)
     member_first_name = models.CharField(max_length=50, null=False)
-    member_last_name = models.CharField(max_length=50, null=False)
+    member_last_name = models.CharField(max_length=50, null=True, blank=True)
     member_address = models.CharField(max_length=255, null=False)
     member_dob = models.DateField()
     member_tp_number = models.CharField(max_length=10, null=False)
@@ -63,8 +63,10 @@ class Member(models.Model):
             ).exclude(member_id=self.member_id).first()
             
             if existing_member:
+                existing_initials = existing_member.member_initials or ''
+                existing_last = existing_member.member_last_name or ''
                 raise ValidationError({
-                    'member_role': f'This role is already assigned to {existing_member.member_initials} {existing_member.member_first_name} {existing_member.member_last_name}. Only one member can have this role.'
+                    'member_role': f'This role is already assigned to {existing_initials} {existing_member.member_first_name} {existing_last}. Only one member can have this role.'
                 })
     
     def save(self, *args, **kwargs):

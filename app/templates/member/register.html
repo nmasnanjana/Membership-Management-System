@@ -64,7 +64,7 @@
                             </label>
                             <div class="row g-2">
                                 <div class="col-md-3">
-                                    <label class="form-label small text-muted">Initials <span class="text-danger">*</span></label>
+                                    <label class="form-label small text-muted">Initials <span class="text-muted">(Optional)</span></label>
                                     {{ form.member_initials }}
                                 </div>
                                 <div class="col-md-4">
@@ -72,7 +72,7 @@
                                     {{ form.member_first_name }}
                                 </div>
                                 <div class="col-md-5">
-                                    <label class="form-label small text-muted">Last Name <span class="text-danger">*</span></label>
+                                    <label class="form-label small text-muted">Last Name <span class="text-muted">(Optional)</span></label>
                                     {{ form.member_last_name }}
                                 </div>
                         </div>
@@ -101,7 +101,7 @@
 
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
-                                <i class="fas fa-university me-1 text-primary"></i>Account Number
+                                <i class="fas fa-university me-1 text-primary"></i>Account Number <span class="text-danger">*</span>
                             </label>
                         {{ form.member_acc_number }}
                         </div>
