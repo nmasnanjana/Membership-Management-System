@@ -66,9 +66,11 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
         response['Referrer-Policy'] = 'strict-origin-when-cross-origin'
         
         # Permissions Policy
+        # Allow camera for on-site QR scanning (same-origin only).
+        # Keep everything else locked down.
         response['Permissions-Policy'] = (
-            'geolocation=(), microphone=(), camera=(), '
-            'payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()'
+            "geolocation=(), microphone=(), camera=(self), "
+            "payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
         )
         
         return response

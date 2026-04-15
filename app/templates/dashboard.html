@@ -36,6 +36,27 @@
         flex-shrink: 1 !important; /* Override flex-shrink: 0 from sb-admin-2.css */
         padding: 0 !important; /* Remove padding from sb-admin-2.css */
     }
+
+    /* Calendar hover fix: highlight only the hovered date cell, not the entire row */
+    #meetingsCalendar table tbody tr:hover {
+        background-color: transparent !important;
+    }
+
+    #meetingsCalendar table tbody td {
+        transition: background-color 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    #meetingsCalendar table tbody td:hover {
+        background-color: rgba(59, 130, 246, 0.18) !important;
+        box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.35);
+        cursor: default;
+    }
+
+    /* Member link affordance in role widgets */
+    .list-group-item a.fw-bold.text-white:hover {
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
 </style>
 {% endblock extra_styles %}
 
@@ -367,14 +388,17 @@
                                                 </div>
                                             {% endif %}
                                             <div>
-                                                <div class="fw-bold" style="font-size: 0.9rem;">{{ member.member_id }} - {{ member.member_first_name }} {{ member.member_last_name }}</div>
+                                                <a class="fw-bold text-white text-decoration-none" style="font-size: 0.9rem;"
+                                                   href="{% url 'member_view' member.member_id %}">
+                                                    {{ member.member_id }} - {{ member.member_first_name }} {{ member.member_last_name }}
+                                                </a>
                                             </div>
                                         </div>
                                     </div>
                                 {% endfor %}
                             </div>
                         {% else %}
-                            <p class="text-muted mb-0 text-center py-3">No main roles assigned yet</p>
+                            <p class="text-white mb-0 text-center py-3">No main roles assigned yet</p>
                         {% endif %}
                     </div>
                 </div>
@@ -404,14 +428,17 @@
                                                 </div>
                                             {% endif %}
                                             <div>
-                                                <div class="fw-bold" style="font-size: 0.9rem;">{{ member.member_id }} - {{ member.member_first_name }} {{ member.member_last_name }}</div>
+                                                <a class="fw-bold text-white text-decoration-none" style="font-size: 0.9rem;"
+                                                   href="{% url 'member_view' member.member_id %}">
+                                                    {{ member.member_id }} - {{ member.member_first_name }} {{ member.member_last_name }}
+                                                </a>
                                             </div>
                                         </div>
                                     </div>
                                 {% endfor %}
                             </div>
                         {% else %}
-                            <p class="text-muted mb-0 text-center py-3">No vice roles assigned yet</p>
+                            <p class="text-white mb-0 text-center py-3">No vice roles assigned yet</p>
                         {% endif %}
                     </div>
                 </div>
@@ -444,7 +471,10 @@
                                                 </div>
                                             {% endif %}
                                             <div>
-                                                <div class="fw-bold text-white" style="font-size: 0.9rem;">{{ member.member_id }} - {{ member.member_first_name }} {{ member.member_last_name }}</div>
+                                                <a class="fw-bold text-white text-decoration-none" style="font-size: 0.9rem;"
+                                                   href="{% url 'member_view' member.member_id %}">
+                                                    {{ member.member_id }} - {{ member.member_first_name }} {{ member.member_last_name }}
+                                                </a>
                                             </div>
                                         </div>
                                     </div>

@@ -1,7 +1,6 @@
 // Service Worker for Membership Management System PWA
-const CACHE_NAME = 'mms-v1';
+const CACHE_NAME = 'mms-v2';
 const urlsToCache = [
-  '/',
   '/static/bootstrap/css/bootstrap.min.css',
   '/static/bootstrap/js/bootstrap.bundle.min.js',
   '/static/icons/mms Icon.png',
@@ -44,6 +43,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
+  // Never cache HTML/documents (dashboard, lists, forms, etc.).
+  // We want updates to reflect immediately everywhere.
+  if (event.request.destination === 'document') {
+    return;
+  }
+
   // Skip API calls and dynamic content
   if (event.request.url.includes('/api/') || 
       event.request.url.includes('/admin/') ||
@@ -75,9 +80,7 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => {
         // Fallback for offline
-        if (event.request.destination === 'document') {
-          return caches.match('/');
-        }
+        // No HTML offline fallback (avoid stale dashboard/pages).
       })
   );
 });
