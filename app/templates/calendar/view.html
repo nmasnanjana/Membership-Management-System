@@ -166,12 +166,19 @@
             justify-content: center;
             flex-shrink: 0;
             border-radius: 8px;
+            box-sizing: border-box;
         }
 
         .legend-swatch.event-meeting,
         .legend-swatch.event-holiday {
             padding: 0; /* override event pill styles for legend */
             text-align: center;
+        }
+
+        /* Prevent calendar cell sizing rules from affecting legend "today" swatch */
+        .calendar-day.legend-swatch {
+            min-height: 50px !important;
+            padding: 0 !important;
         }
         
         @media (max-width: 768px) {
