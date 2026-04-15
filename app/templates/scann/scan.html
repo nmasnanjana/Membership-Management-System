@@ -97,6 +97,10 @@
         let scanCooldown = 2000; // 2 seconds cooldown to prevent duplicate scans
         let detector = null;
         let scanRafId = null;
+        let jsQrLoaded = false;
+        let scanCanvas = null;
+        let scanCtx = null;
+        let lastDecodeAttemptAt = 0;
 
         function stopCamera() {
             if (scanRafId) {
@@ -215,6 +219,86 @@
             });
         }
 
+        async function ensureJsQrLoaded() {
+            if (jsQrLoaded) return true;
+            if (typeof window.jsQR === 'function') {
+                jsQrLoaded = true;
+                return true;
+            }
+            try {
+                // jsQR is a pure JS decoder that works broadly across browsers.
+                await loadScript("https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js");
+                jsQrLoaded = typeof window.jsQR === 'function';
+                return jsQrLoaded;
+            } catch (e) {
+                console.error(e);
+                return false;
+            }
+        }
+
+        async function startJsQrLoop(videoEl) {
+            const ok = await ensureJsQrLoaded();
+            if (!ok) return false;
+
+            if (!scanCanvas) {
+                scanCanvas = document.createElement('canvas');
+                scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
+            }
+
+            const decodeLoop = function() {
+                try {
+                    if (!videoEl || videoEl.readyState < 2 || !scanCtx) {
+                        scanRafId = requestAnimationFrame(decodeLoop);
+                        return;
+                    }
+
+                    // Throttle decode attempts to reduce CPU usage
+                    const now = Date.now();
+                    if (now - lastDecodeAttemptAt < 120) { // ~8 fps decode
+                        scanRafId = requestAnimationFrame(decodeLoop);
+                        return;
+                    }
+                    lastDecodeAttemptAt = now;
+
+                    const w = videoEl.videoWidth;
+                    const h = videoEl.videoHeight;
+                    if (!w || !h) {
+                        scanRafId = requestAnimationFrame(decodeLoop);
+                        return;
+                    }
+
+                    scanCanvas.width = w;
+                    scanCanvas.height = h;
+                    scanCtx.drawImage(videoEl, 0, 0, w, h);
+                    const imageData = scanCtx.getImageData(0, 0, w, h);
+                    const qr = window.jsQR(imageData.data, w, h, { inversionAttempts: "attemptBoth" });
+                    if (qr && qr.data) {
+                        const contentRaw = String(qr.data || '').trim();
+                        const t = Date.now();
+                        if (
+                            contentRaw &&
+                            !(contentRaw === lastScannedContent && (t - lastScanTime) < scanCooldown) &&
+                            !isScanning
+                        ) {
+                            lastScannedContent = contentRaw;
+                            lastScanTime = t;
+                            isScanning = true;
+                            stopCamera();
+                            const memberId = encodeURIComponent(contentRaw);
+                            window.location.href = `/member/view/${memberId}`;
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.error('jsQR decode error:', e);
+                }
+                scanRafId = requestAnimationFrame(decodeLoop);
+            };
+
+            scanRafId = requestAnimationFrame(decodeLoop);
+            return true;
+        }
+
         async function startZxingFallback(videoEl) {
             // Fallback for browsers without BarcodeDetector (e.g., Firefox)
             try {
@@ -296,11 +380,15 @@
             const started = await ensureVideoStream(videoEl);
             if (!started) return;
 
-            // 1) Try BarcodeDetector
+            // 1) Use jsQR (works broadly, does not depend on BarcodeDetector support)
+            const jsQrStarted = await startJsQrLoop(videoEl);
+            if (jsQrStarted) return;
+
+            // 2) Try BarcodeDetector
             const detectorStarted = await startBarcodeDetectorLoop(videoEl);
             if (detectorStarted) return;
 
-            // 2) Fallback to ZXing (self-hosted) for Firefox/others
+            // 3) Fallback to ZXing browser reader
             const zxingStarted = await startZxingFallback(videoEl);
             if (zxingStarted) return;
 
