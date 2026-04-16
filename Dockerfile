@@ -12,6 +12,12 @@ WORKDIR /app
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         gcc \
+        libjpeg62-turbo-dev \
+        zlib1g-dev \
+        libfreetype6-dev \
+        libharfbuzz-dev \
+        libfribidi-dev \
+        libraqm-dev \
         default-libmysqlclient-dev \
         default-mysql-client \
         pkg-config \
@@ -22,7 +28,7 @@ COPY requirements.txt /app/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+    && PIP_NO_BINARY=Pillow pip install --no-cache-dir -r requirements.txt
 
 # Copy project
 COPY . /app/

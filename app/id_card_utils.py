@@ -27,6 +27,13 @@ def _load_font(path: str | None, size: int) -> ImageFont.ImageFont | None:
         return None
     try:
         if os.path.exists(path):
+            # Prefer RAQM layout engine when available (better for complex scripts like Sinhala).
+            layout = getattr(ImageFont, "Layout", None)
+            if layout is not None and hasattr(layout, "RAQM"):
+                try:
+                    return ImageFont.truetype(path, size, layout_engine=layout.RAQM)
+                except Exception:
+                    pass
             return ImageFont.truetype(path, size)
     except Exception:
         return None
