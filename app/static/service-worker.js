@@ -1,5 +1,5 @@
 // Service Worker for Membership Management System PWA
-const CACHE_NAME = 'mms-v2';
+const CACHE_NAME = 'mms-v3';
 const urlsToCache = [
   '/static/bootstrap/css/bootstrap.min.css',
   '/static/bootstrap/js/bootstrap.bundle.min.js',
@@ -52,6 +52,8 @@ self.addEventListener('fetch', (event) => {
   // Skip API calls and dynamic content
   if (event.request.url.includes('/api/') || 
       event.request.url.includes('/admin/') ||
+      event.request.url.includes('/member/id-card/') ||
+      event.request.url.includes('/member/id-cards/') ||
       event.request.url.includes('?') ||
       event.request.url.includes('#')) {
     return;
