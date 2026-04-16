@@ -158,35 +158,28 @@ def generate_member_id_card_images(
     # Centered title (Sinhala)
     title = system_name
     max_title_width = (W - (pad * 2) - 48)
-    # Split into two lines to avoid overlapping/complex shaping issues on long titles.
-    if " - " in title:
-        line1, line2 = title.split(" - ", 1)
-        line2 = "- " + line2.strip()
-    else:
-        line1, line2 = title, ""
-
-    font_title_si_1 = _fit_font_for_text(d, line1, sinhala_font_path, max_title_width, start_size=34, min_size=18, language="si")
-    font_title_si_2 = _fit_font_for_text(d, line2, sinhala_font_path, max_title_width, start_size=30, min_size=16, language="si") if line2 else None
-
     try:
-        b1 = d.textbbox((0, 0), line1, font=font_title_si_1, language="si")
-        w1 = b1[2] - b1[0]
-        h1 = b1[3] - b1[1]
+        # Single-line title; disable kerning to avoid reported glyph overlaps.
+        font_title_si = _fit_font_for_text(
+            d,
+            title,
+            sinhala_font_path,
+            max_title_width,
+            start_size=34,
+            min_size=18,
+            language="si",
+        )
+        tb = d.textbbox((0, 0), title, font=font_title_si, language="si", direction="ltr", features=["-kern"])
+        tw = tb[2] - tb[0]
+        th = tb[3] - tb[1]
     except Exception:
-        w1, h1 = 400, 24
-    if line2 and font_title_si_2:
-        try:
-            b2 = d.textbbox((0, 0), line2, font=font_title_si_2, language="si")
-            w2 = b2[2] - b2[0]
-            h2 = b2[3] - b2[1]
-        except Exception:
-            w2, h2 = 360, 22
-        total_h = h1 + h2 + 6
-        y_start = pad + (90 - total_h) // 2
-        d.text(((W - w1) // 2, y_start), line1, fill=white, font=font_title_si_1, language="si")
-        d.text(((W - w2) // 2, y_start + h1 + 6), line2, fill=white, font=font_title_si_2, language="si")
-    else:
-        d.text(((W - w1) // 2, pad + (90 - h1) // 2), line1, fill=white, font=font_title_si_1, language="si")
+        tw, th = 400, 24
+        font_title_si = font_sub
+    try:
+        d.text(((W - tw) // 2, pad + (90 - th) // 2), title, fill=white, font=font_title_si, language="si", direction="ltr", features=["-kern"])
+    except Exception:
+        # Absolute fallback: don't crash card generation if font rendering fails
+        d.text((pad + 24, pad + 22), "ID Card", fill=white, font=font_sub)
 
     # Left: Profile box
     img_box = (pad + 24, pad + 120, pad + 24 + 240, pad + 120 + 300)
@@ -245,18 +238,9 @@ def generate_member_id_card_images(
     by = pad + 105
     back.paste(qr, (bx, by), qr)
 
-    # Member ID below QR (centered)
+    # Member ID below QR (centered) - same size as GUID
     member_id_text = member_id
-    max_back_id_width = (W - (pad * 2) - 48)
-    # Prefer monospace if available; otherwise fall back.
-    back_id_font = _fit_font_for_text(
-        d2,
-        member_id_text,
-        "DejaVuSansMono.ttf",
-        max_back_id_width,
-        start_size=44,
-        min_size=28,
-    )
+    back_id_font = font_small
     try:
         bbox = d2.textbbox((0, 0), member_id_text, font=back_id_font)
         tw = bbox[2] - bbox[0]
@@ -264,7 +248,7 @@ def generate_member_id_card_images(
     except Exception:
         tw, th = 200, 24
     tx = (W - tw) // 2
-    d2.text((tx, by + 360 + 12), member_id_text, fill=white, font=back_id_font)
+    d2.text((tx, by + 360 + 14), member_id_text, fill=white, font=back_id_font)
 
     # Footer: left property text, right GUID
     footer_y = H - pad - 52
