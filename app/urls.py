@@ -33,6 +33,9 @@ urlpatterns = [
     path('member/edit/<str:member_id>', member_edit, name="member_edit"),
     path('member/bulk-action/', member_bulk_action, name='member_bulk_action'),
     path('member/inline-edit/', member_inline_edit, name='member_inline_edit'),
+    path('member/id-card/<str:member_id>/download/', member_id_card_download, name='member_id_card_download'),
+    path('member/id-cards/download/selected/', member_id_cards_download_selected, name='member_id_cards_download_selected'),
+    path('member/id-cards/download/all/', member_id_cards_download_all, name='member_id_cards_download_all'),
 
     path('meeting/list/', meeting_list, name='meeting_list'),
     path('meeting/delete/<meeting_date>', meeting_delete, name="meeting_delete"),

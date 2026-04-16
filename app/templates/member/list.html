@@ -51,6 +51,14 @@
                         <i class="fas fa-user-plus me-1"></i> Add Member
                     </a>
                     {% if user.is_superuser %}
+                        <a class="btn btn-light btn-sm" href="{% url 'member_id_cards_download_all' %}">
+                            <i class="fas fa-id-card me-1"></i> Download All ID Cards
+                        </a>
+                        <button type="button" class="btn btn-light btn-sm" id="downloadSelectedIdCards" disabled>
+                            <i class="fas fa-id-card me-1"></i> Download Selected ID Cards
+                        </button>
+                    {% endif %}
+                    {% if user.is_superuser %}
                         <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#exportModal">
                             <i class="fas fa-download me-1"></i> Export
                         </button>
@@ -111,6 +119,11 @@
                         <table id="memberTable" class="table modern-table">
                         <thead>
                         <tr>
+                            {% if user.is_superuser %}
+                                <th style="width: 44px;">
+                                    <input type="checkbox" class="form-check-input" id="selectAllMembers" aria-label="Select all members">
+                                </th>
+                            {% endif %}
                             <th>Profile Picture</th>
                             <th>Member ID</th>
                             <th>First Name</th>
@@ -124,6 +137,11 @@
                         <tbody>
                         {% for member in members %}
                             <tr data-member-id="{{ member.member_id }}">
+                                {% if user.is_superuser %}
+                                    <td class="align-middle">
+                                        <input type="checkbox" class="form-check-input member-select" value="{{ member.member_id }}" aria-label="Select {{ member.member_id }}">
+                                    </td>
+                                {% endif %}
                                 <td class="align-middle">
                                     <div class="position-relative d-inline-block">
                                         {% if member.member_profile_picture %}
@@ -196,6 +214,9 @@
                                         </a>
                                         <a class="btn btn-sm btn-warning-modern" href="{% url 'member_edit' member.member_id %}">
                                             <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a class="btn btn-sm btn-secondary" href="{% url 'member_id_card_download' member.member_id %}" title="Download ID card">
+                                            <i class="fas fa-id-card"></i>
                                         </a>
                                         {% if user.is_superuser %}
                                             <a class="btn btn-sm btn-danger-modern" href="{% url 'member_delete' member.member_id %}" 
@@ -276,8 +297,11 @@
             $('#memberTable').DataTable({
                 paging: false,
                 searching: true,
-                order: [[6, 'desc']],  // Date Joined column
+                order: [[{% if user.is_superuser %}7{% else %}6{% endif %}, 'desc']],  // Date Joined column
                 columnDefs: [
+                    {% if user.is_superuser %}
+                    {targets: 0, orderable: false, searchable: false},  // Select checkbox column
+                    {% endif %}
                     {targets: -1, orderable: false},  // Actions column
                 ],
                 info: false,
@@ -376,6 +400,67 @@
                 });
             });
         });
+
+        {% if user.is_superuser %}
+        (function() {
+            const downloadBtn = document.getElementById('downloadSelectedIdCards');
+            const selectAll = document.getElementById('selectAllMembers');
+
+            function getSelectedIds() {
+                return Array.from(document.querySelectorAll('.member-select:checked')).map((el) => el.value);
+            }
+
+            function refreshDownloadState() {
+                const ids = getSelectedIds();
+                downloadBtn.disabled = ids.length === 0;
+            }
+
+            document.addEventListener('change', function(e) {
+                if (e.target && e.target.classList && e.target.classList.contains('member-select')) {
+                    refreshDownloadState();
+                }
+            });
+
+            if (selectAll) {
+                selectAll.addEventListener('change', function() {
+                    const checked = !!selectAll.checked;
+                    document.querySelectorAll('.member-select').forEach((el) => { el.checked = checked; });
+                    refreshDownloadState();
+                });
+            }
+
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', function() {
+                    const ids = getSelectedIds();
+                    if (!ids.length) return;
+
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = "{% url 'member_id_cards_download_selected' %}";
+
+                    const csrf = document.createElement('input');
+                    csrf.type = 'hidden';
+                    csrf.name = 'csrfmiddlewaretoken';
+                    csrf.value = "{{ csrf_token }}";
+                    form.appendChild(csrf);
+
+                    ids.forEach((id) => {
+                        const inp = document.createElement('input');
+                        inp.type = 'hidden';
+                        inp.name = 'member_ids[]';
+                        inp.value = id;
+                        form.appendChild(inp);
+                    });
+
+                    document.body.appendChild(form);
+                    form.submit();
+                    form.remove();
+                });
+            }
+
+            refreshDownloadState();
+        })();
+        {% endif %}
     </script>
 
     <!-- Export Modal -->

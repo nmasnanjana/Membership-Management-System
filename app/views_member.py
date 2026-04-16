@@ -9,8 +9,12 @@ from .utils import generate_qr_code
 from .constants import *
 from .audit_logger import audit_log_user_action
 from django.core.files.uploadedfile import UploadedFile
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse, Http404
 from django.views.decorators.http import require_http_methods
+import tempfile
+import zipfile
+
+from .id_card_utils import generate_member_id_card_images
 
 
 @login_required
@@ -533,4 +537,131 @@ def member_inline_edit(request):
         return JsonResponse({'success': False, 'message': 'Member not found'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
+
+
+@login_required
+@require_http_methods(["GET"])
+def member_id_card_download(request, member_id):
+    """
+    Download a single member's ID card images (front + back) as a ZIP.
+    """
+    try:
+        member = Member.objects.get(member_id=member_id)
+    except Member.DoesNotExist as e:
+        raise Http404("Member not found") from e
+
+    role_label = member.get_member_role_display() if getattr(member, "member_role", None) else None
+    profile_path = None
+    try:
+        if member.member_profile_picture:
+            profile_path = member.member_profile_picture.path
+    except Exception:
+        profile_path = None
+
+    images = generate_member_id_card_images(
+        member_id=member.member_id,
+        first_name=member.member_first_name,
+        last_name=getattr(member, "member_last_name", None),
+        initials=getattr(member, "member_initials", None),
+        role_label=role_label,
+        profile_image_path=profile_path,
+    )
+
+    spool = tempfile.SpooledTemporaryFile(max_size=20 * 1024 * 1024, mode="w+b")
+    with zipfile.ZipFile(spool, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(f"{member.member_id}_front.png", images.front_png)
+        zf.writestr(f"{member.member_id}_back.png", images.back_png)
+    spool.seek(0)
+
+    return FileResponse(
+        spool,
+        as_attachment=True,
+        filename=f"{member.member_id}_id_card.zip",
+        content_type="application/zip",
+    )
+
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_http_methods(["POST"])
+def member_id_cards_download_selected(request):
+    """
+    Download selected members' ID card images as a ZIP.
+
+    Expects POST member_ids[] (or member_ids).
+    """
+    member_ids = request.POST.getlist("member_ids[]") or request.POST.getlist("member_ids")
+    member_ids = [m.strip() for m in member_ids if m and m.strip()]
+    if not member_ids:
+        return JsonResponse({"success": False, "message": "No members selected"}, status=400)
+
+    members = Member.objects.filter(member_id__in=member_ids).order_by("member_id")
+    spool = tempfile.SpooledTemporaryFile(max_size=20 * 1024 * 1024, mode="w+b")
+
+    with zipfile.ZipFile(spool, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for member in members:
+            role_label = member.get_member_role_display() if getattr(member, "member_role", None) else None
+            profile_path = None
+            try:
+                if member.member_profile_picture:
+                    profile_path = member.member_profile_picture.path
+            except Exception:
+                profile_path = None
+
+            images = generate_member_id_card_images(
+                member_id=member.member_id,
+                first_name=member.member_first_name,
+                last_name=getattr(member, "member_last_name", None),
+                initials=getattr(member, "member_initials", None),
+                role_label=role_label,
+                profile_image_path=profile_path,
+            )
+            zf.writestr(f"{member.member_id}/{member.member_id}_front.png", images.front_png)
+            zf.writestr(f"{member.member_id}/{member.member_id}_back.png", images.back_png)
+
+    spool.seek(0)
+    return FileResponse(
+        spool,
+        as_attachment=True,
+        filename="selected_member_id_cards.zip",
+        content_type="application/zip",
+    )
+
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_http_methods(["GET"])
+def member_id_cards_download_all(request):
+    """
+    Download all members' ID card images as a ZIP.
+    """
+    members = Member.objects.all().order_by("member_id")
+    spool = tempfile.SpooledTemporaryFile(max_size=20 * 1024 * 1024, mode="w+b")
+
+    with zipfile.ZipFile(spool, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for member in members:
+            role_label = member.get_member_role_display() if getattr(member, "member_role", None) else None
+            profile_path = None
+            try:
+                if member.member_profile_picture:
+                    profile_path = member.member_profile_picture.path
+            except Exception:
+                profile_path = None
+
+            images = generate_member_id_card_images(
+                member_id=member.member_id,
+                first_name=member.member_first_name,
+                last_name=getattr(member, "member_last_name", None),
+                initials=getattr(member, "member_initials", None),
+                role_label=role_label,
+                profile_image_path=profile_path,
+            )
+            zf.writestr(f"{member.member_id}/{member.member_id}_front.png", images.front_png)
+            zf.writestr(f"{member.member_id}/{member.member_id}_back.png", images.back_png)
+
+    spool.seek(0)
+    return FileResponse(
+        spool,
+        as_attachment=True,
+        filename="all_member_id_cards.zip",
+        content_type="application/zip",
+    )
 
