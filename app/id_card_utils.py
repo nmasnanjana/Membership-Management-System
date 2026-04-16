@@ -22,6 +22,24 @@ class IdCardImages:
     back_png: bytes
 
 
+def _load_font(path: str | None, size: int) -> ImageFont.ImageFont | None:
+    if not path:
+        return None
+    try:
+        if os.path.exists(path):
+            return ImageFont.truetype(path, size)
+    except Exception:
+        return None
+    return None
+
+
+def _load_system_font(name: str, size: int) -> ImageFont.ImageFont | None:
+    try:
+        return ImageFont.truetype(name, size)
+    except Exception:
+        return None
+
+
 def _safe_text(value: str | None) -> str:
     return (value or "").strip()
 
@@ -78,22 +96,19 @@ def generate_member_id_card_images(
     white = (249, 250, 251, 255)
     muted = (209, 213, 219, 255)
 
-    # Fonts (fallback to default if unavailable)
+    # Fonts: load Sinhala title font from bundled file (do NOT depend on OS fonts).
     sinhala_font_path = os.path.join(os.path.dirname(__file__), "static", "fonts", "NotoSansSinhala-Regular.ttf")
-    try:
-        font_title = ImageFont.truetype("DejaVuSans.ttf", 42)
-        font_sub = ImageFont.truetype("DejaVuSans.ttf", 24)
-        font_small = ImageFont.truetype("DejaVuSans.ttf", 20)
-        font_id = ImageFont.truetype("DejaVuSansMono.ttf", 34)
-        font_id_back = ImageFont.truetype("DejaVuSansMono.ttf", 64)
-        font_title_si = ImageFont.truetype(sinhala_font_path, 30)
-    except Exception:
-        font_title = ImageFont.load_default()
-        font_sub = ImageFont.load_default()
-        font_small = ImageFont.load_default()
-        font_id = ImageFont.load_default()
-        font_id_back = ImageFont.load_default()
-        font_title_si = font_sub
+    font_title_si = _load_font(sinhala_font_path, 32)
+    if font_title_si is None:
+        # Hard fail would break downloads; instead fall back to default but keep running.
+        font_title_si = ImageFont.load_default()
+
+    # Other fonts: try common system fonts; fall back safely.
+    font_title = _load_system_font("DejaVuSans.ttf", 42) or ImageFont.load_default()
+    font_sub = _load_system_font("DejaVuSans.ttf", 24) or ImageFont.load_default()
+    font_small = _load_system_font("DejaVuSans.ttf", 20) or ImageFont.load_default()
+    font_id = _load_system_font("DejaVuSansMono.ttf", 34) or ImageFont.load_default()
+    font_id_back = _load_system_font("DejaVuSansMono.ttf", 64) or ImageFont.load_default()
 
     # ---------- FRONT ----------
     front = Image.new("RGBA", (W, H), bg)
