@@ -47,6 +47,36 @@ def _load_system_font(name: str, size: int) -> ImageFont.ImageFont | None:
         return None
 
 
+def _fit_font_for_text(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    font_path: str | None,
+    max_width: int,
+    start_size: int,
+    min_size: int,
+    *,
+    language: str | None = None,
+) -> ImageFont.ImageFont:
+    """
+    Load a font (prefer RAQM if available) and reduce size until text fits max_width.
+    Always returns a usable font (falls back to default).
+    """
+    text = text or ""
+    for size in range(start_size, min_size - 1, -1):
+        f = _load_font(font_path, size) if font_path else None
+        if f is None:
+            continue
+        try:
+            bbox = draw.textbbox((0, 0), text, font=f, language=language)
+            w = bbox[2] - bbox[0]
+        except Exception:
+            # If bbox fails, assume it might fit; return the font.
+            return f
+        if w <= max_width:
+            return f
+    return ImageFont.load_default()
+
+
 def _safe_text(value: str | None) -> str:
     return (value or "").strip()
 
@@ -105,17 +135,14 @@ def generate_member_id_card_images(
 
     # Fonts: load Sinhala title font from bundled file (do NOT depend on OS fonts).
     sinhala_font_path = os.path.join(os.path.dirname(__file__), "static", "fonts", "NotoSansSinhala-Regular.ttf")
-    font_title_si = _load_font(sinhala_font_path, 32)
-    if font_title_si is None:
-        # Hard fail would break downloads; instead fall back to default but keep running.
-        font_title_si = ImageFont.load_default()
+    # We'll auto-fit the Sinhala title later against available width.
 
     # Other fonts: try common system fonts; fall back safely.
     font_title = _load_system_font("DejaVuSans.ttf", 42) or ImageFont.load_default()
     font_sub = _load_system_font("DejaVuSans.ttf", 24) or ImageFont.load_default()
     font_small = _load_system_font("DejaVuSans.ttf", 20) or ImageFont.load_default()
     font_id = _load_system_font("DejaVuSansMono.ttf", 34) or ImageFont.load_default()
-    font_id_back = _load_system_font("DejaVuSansMono.ttf", 64) or ImageFont.load_default()
+    font_id_back = _load_system_font("DejaVuSansMono.ttf", 52) or ImageFont.load_default()
 
     # ---------- FRONT ----------
     front = Image.new("RGBA", (W, H), bg)
@@ -129,14 +156,24 @@ def generate_member_id_card_images(
     d.rectangle((pad, pad + 45, W - pad, pad + 90), fill=(30, 64, 175, 255))
     # Centered title (Sinhala)
     title = system_name
+    max_title_width = (W - (pad * 2) - 48)
+    font_title_si = _fit_font_for_text(
+        d,
+        title,
+        sinhala_font_path,
+        max_title_width,
+        start_size=34,
+        min_size=18,
+        language="si",
+    )
     try:
-        tb = d.textbbox((0, 0), title, font=font_title_si)
+        tb = d.textbbox((0, 0), title, font=font_title_si, language="si")
         tw = tb[2] - tb[0]
         th = tb[3] - tb[1]
     except Exception:
         tw, th = 400, 24
     try:
-        d.text(((W - tw) // 2, pad + (90 - th) // 2), title, fill=white, font=font_title_si)
+        d.text(((W - tw) // 2, pad + (90 - th) // 2), title, fill=white, font=font_title_si, language="si")
     except Exception:
         # Absolute fallback: don't crash card generation if font rendering fails
         d.text((pad + 24, pad + 22), "ID Card", fill=white, font=font_sub)
@@ -206,7 +243,7 @@ def generate_member_id_card_images(
     except Exception:
         tw = 200
     tx = (W - tw) // 2
-    d2.text((tx, by + 360 + 12), member_id_text, fill=white, font=font_id_back)
+    d2.text((tx, by + 360 + 14), member_id_text, fill=white, font=font_id_back)
 
     # Footer: left property text, right GUID
     footer_y = H - pad - 52
