@@ -77,6 +77,23 @@ def _fit_font_for_text(
     return ImageFont.load_default()
 
 
+def _pick_sinhala_font_path() -> str | None:
+    """
+    Prefer Sinhala Unicode fonts that render cleanly.
+    (FM Abaya is legacy non-unicode; we avoid that.)
+    """
+    base = os.path.join(os.path.dirname(__file__), "static", "fonts")
+    candidates = [
+        os.path.join(base, "AbhayaLibre-Regular.ttf"),
+        os.path.join(base, "NotoSerifSinhala-Regular.ttf"),
+        os.path.join(base, "NotoSansSinhala-Regular.ttf"),
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return None
+
+
 def _safe_text(value: str | None) -> str:
     return (value or "").strip()
 
@@ -134,7 +151,7 @@ def generate_member_id_card_images(
     muted = (209, 213, 219, 255)
 
     # Fonts: load Sinhala title font from bundled file (do NOT depend on OS fonts).
-    sinhala_font_path = os.path.join(os.path.dirname(__file__), "static", "fonts", "NotoSansSinhala-Regular.ttf")
+    sinhala_font_path = _pick_sinhala_font_path()
     # We'll auto-fit the Sinhala title later against available width.
 
     # Other fonts: try common system fonts; fall back safely.
@@ -157,8 +174,6 @@ def generate_member_id_card_images(
     d.rectangle((pad, pad + 45, W - pad, pad + 90), fill=(30, 64, 175, 255))
     # Centered title (Sinhala)
     title = system_name
-    # Targeted spacing to avoid reported overlap in specific glyph sequences.
-    title = title.replace("ලාදෙ", "ලා දෙ").replace("මාජ", "මා ජ")
     max_title_width = (W - (pad * 2) - 48)
     try:
         # Single-line title; disable kerning to avoid reported glyph overlaps.
