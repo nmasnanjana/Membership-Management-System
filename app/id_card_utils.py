@@ -120,6 +120,52 @@ def _draw_badge(draw: ImageDraw.ImageDraw, x: int, y: int, label: str, *, r: int
     draw.text((x + r - (tw // 2), y + r - (th // 2) - 1), label, fill=text_fill, font=f)
 
 
+def _draw_icon_badge(draw: ImageDraw.ImageDraw, x: int, y: int, kind: str, *, r: int = 13,
+                     fill=(255, 255, 255, 255), stroke=(17, 24, 39, 255), stroke_w: int = 3):
+    """
+    Draw a small circular badge with a simple vector icon inside.
+    Kinds: 'phone' | 'email' | 'whatsapp'
+    """
+    # Background circle
+    draw.ellipse((x, y, x + (r * 2), y + (r * 2)), fill=fill)
+
+    cx = x + r
+    cy = y + r
+
+    if kind == "phone":
+        # Minimal handset: two arcs + connector
+        # Top arc
+        draw.arc((cx - 9, cy - 10, cx + 9, cy + 8), start=200, end=320, fill=stroke, width=stroke_w)
+        # Bottom arc
+        draw.arc((cx - 9, cy - 8, cx + 9, cy + 10), start=40, end=160, fill=stroke, width=stroke_w)
+        # Connector
+        draw.line((cx - 4, cy - 1, cx + 4, cy + 1), fill=stroke, width=stroke_w)
+
+    elif kind == "email":
+        # Envelope
+        w, h = 18, 12
+        left = cx - w // 2
+        top = cy - h // 2
+        right = left + w
+        bottom = top + h
+        draw.rectangle((left, top, right, bottom), outline=stroke, width=stroke_w)
+        draw.line((left, top, cx, cy), fill=stroke, width=stroke_w)
+        draw.line((right, top, cx, cy), fill=stroke, width=stroke_w)
+
+    elif kind == "whatsapp":
+        # Chat bubble + small phone mark
+        draw.ellipse((cx - 9, cy - 9, cx + 9, cy + 9), outline=stroke, width=stroke_w)
+        # Tail
+        draw.polygon([(cx - 2, cy + 9), (cx - 10, cy + 12), (cx - 6, cy + 4)], outline=stroke, fill=None)
+        # Tiny handset inside
+        draw.arc((cx - 5, cy - 5, cx + 5, cy + 5), start=210, end=330, fill=stroke, width=stroke_w)
+        draw.arc((cx - 5, cy - 3, cx + 5, cy + 7), start=30, end=150, fill=stroke, width=stroke_w)
+
+    else:
+        # Unknown kind: fallback to dot
+        draw.ellipse((cx - 2, cy - 2, cx + 2, cy + 2), fill=stroke)
+
+
 def _safe_text(value: str | None) -> str:
     return (value or "").strip()
 
@@ -321,9 +367,9 @@ def generate_member_id_card_images(
     contact_y = footer_y - 58
     icon_r = 13
     # Left block
-    _draw_badge(d2, pad + 24, contact_y - 2, "T", r=icon_r, fill=white, text_fill=dark_text, font=font_small)
+    _draw_icon_badge(d2, pad + 24, contact_y - 2, "phone", r=icon_r, fill=white, stroke=dark_text, stroke_w=3)
     d2.text((pad + 24 + (icon_r * 2) + 10, contact_y), "0322256755", fill=white, font=font_small)
-    _draw_badge(d2, pad + 24, contact_y + 30 - 2, "W", r=icon_r, fill=white, text_fill=dark_text, font=font_small)
+    _draw_icon_badge(d2, pad + 24, contact_y + 30 - 2, "whatsapp", r=icon_r, fill=white, stroke=dark_text, stroke_w=3)
     d2.text((pad + 24 + (icon_r * 2) + 10, contact_y + 30), "0703488856", fill=white, font=font_small)
     # Right block
     email = "sanasabibiladeniya@gmail.com"
@@ -333,7 +379,7 @@ def generate_member_id_card_images(
     except Exception:
         ew = 320
     right_x = W - pad - 24 - ew
-    _draw_badge(d2, right_x - (icon_r * 2) - 10, contact_y + 14 - 2, "@", r=icon_r, fill=white, text_fill=dark_text, font=font_small)
+    _draw_icon_badge(d2, right_x - (icon_r * 2) - 10, contact_y + 14 - 2, "email", r=icon_r, fill=white, stroke=dark_text, stroke_w=3)
     d2.text((right_x, contact_y + 14), email, fill=white, font=font_small)
 
     # Export bytes
