@@ -14,6 +14,7 @@ from typing import Tuple
 
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
+from datetime import date as _date, datetime as _datetime
 
 
 @dataclass(frozen=True)
@@ -94,6 +95,31 @@ def _pick_sinhala_font_path() -> str | None:
     return None
 
 
+def _format_date(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, (_date, _datetime)):
+        try:
+            return value.strftime("%Y-%m-%d")
+        except Exception:
+            return str(value)
+    return str(value)
+
+
+def _draw_badge(draw: ImageDraw.ImageDraw, x: int, y: int, label: str, *, r: int = 14, fill=(255, 255, 255, 255), text_fill=(31, 41, 55, 255), font=None):
+    draw.ellipse((x, y, x + (r * 2), y + (r * 2)), fill=fill)
+    if not label:
+        return
+    f = font or ImageFont.load_default()
+    try:
+        bb = draw.textbbox((0, 0), label, font=f)
+        tw = bb[2] - bb[0]
+        th = bb[3] - bb[1]
+    except Exception:
+        tw, th = 10, 10
+    draw.text((x + r - (tw // 2), y + r - (th // 2) - 1), label, fill=text_fill, font=f)
+
+
 def _safe_text(value: str | None) -> str:
     return (value or "").strip()
 
@@ -135,6 +161,8 @@ def generate_member_id_card_images(
     initials: str | None,
     role_label: str | None,
     profile_image_path: str | None,
+    dob=None,
+    phone_no: str | None = None,
     guid: str | None = None,
     system_name: str = "බිබිලාදෙණිය - ස.ණ.ස ළමා සමාජය",
 ) -> IdCardImages:
@@ -144,11 +172,13 @@ def generate_member_id_card_images(
     Landscape dimensions: 1016x638 (~credit card ratio, but larger for clarity).
     """
     W, H = 1016, 638
-    bg = (31, 41, 55, 255)  # slate-800
+    bg = (255, 255, 255, 255)  # white (outer background)
     card = (55, 65, 81, 255)  # slate-700
     accent = (59, 130, 246, 255)  # blue-500
     white = (249, 250, 251, 255)
     muted = (209, 213, 219, 255)
+    dark_text = (17, 24, 39, 255)
+    light_border = (229, 231, 235, 255)
 
     # Fonts: load Sinhala title font from bundled file (do NOT depend on OS fonts).
     sinhala_font_path = _pick_sinhala_font_path()
@@ -198,34 +228,42 @@ def generate_member_id_card_images(
         # Absolute fallback: don't crash card generation if font rendering fails
         d.text((pad + 24, pad + 22), "ID Card", fill=white, font=font_sub)
 
-    # Left: Profile box
-    img_box = (pad + 24, pad + 120, pad + 24 + 240, pad + 120 + 300)
-    d.rounded_rectangle(img_box, radius=18, fill=(17, 24, 39, 255), outline=(75, 85, 99, 255), width=2)
-    profile = _load_profile_image(profile_image_path, (220, 280))
+    # Left: Profile box (square photo, slightly longer container)
+    img_box = (pad + 24, pad + 120, pad + 24 + 300, pad + 120 + 320)
+    d.rounded_rectangle(img_box, radius=18, fill=white, outline=light_border, width=2)
+    profile = _load_profile_image(profile_image_path, (260, 260))
     if profile:
-        front.paste(profile, (img_box[0] + 10, img_box[1] + 10), profile)
+        front.paste(profile, (img_box[0] + 20, img_box[1] + 20), profile)
     else:
         # Placeholder
-        d.text((img_box[0] + 70, img_box[1] + 130), "PHOTO", fill=muted, font=font_sub)
+        d.text((img_box[0] + 105, img_box[1] + 145), "PHOTO", fill=dark_text, font=font_sub)
 
     # Right: Member text
     name_initials = " ".join([_safe_text(initials), _safe_text(first_name), _safe_text(last_name)]).strip()
     if not name_initials:
         name_initials = _safe_text(first_name) or member_id
 
-    x0 = pad + 24 + 280
+    x0 = pad + 24 + 330
     y0 = pad + 140
-    d.text((x0, y0), "Member ID Card", fill=white, font=font_title)
-    y0 += 72
-    d.text((x0, y0), name_initials, fill=white, font=font_sub)
-    y0 += 44
-    if role_label:
-        d.text((x0, y0), f"Role: {role_label}", fill=muted, font=font_small)
-        y0 += 34
-    d.text((x0, y0), "Member ID", fill=muted, font=font_small)
-    y0 += 28
-    d.rounded_rectangle((x0, y0, x0 + 320, y0 + 64), radius=14, fill=(17, 24, 39, 255), outline=accent, width=2)
-    d.text((x0 + 18, y0 + 14), member_id, fill=white, font=font_id)
+
+    # Content block (corporate, simple labels)
+    line_gap = 44
+    label_w = 170
+
+    def row(label: str, value: str):
+        nonlocal y0
+        d.text((x0, y0), label, fill=muted, font=font_small)
+        d.text((x0 + label_w, y0), value, fill=white, font=font_sub)
+        y0 += line_gap
+
+    full_name = " ".join([_safe_text(initials), _safe_text(first_name), _safe_text(last_name)]).strip()
+    if not full_name:
+        full_name = _safe_text(first_name) or member_id
+
+    row("Name:", full_name)
+    row("Date of Birth:", _format_date(dob))
+    row("Phone No:", _safe_text(phone_no))
+    row("Member ID:", member_id)
 
     # (Front QR removed — back side contains QR)
 
@@ -278,6 +316,25 @@ def generate_member_id_card_images(
         except Exception:
             gw = 260
         d2.text((W - pad - 24 - gw, footer_y), guid_text, fill=white, font=font_small)
+
+    # Contact info (left: phone + whatsapp, right: email)
+    contact_y = footer_y - 58
+    icon_r = 13
+    # Left block
+    _draw_badge(d2, pad + 24, contact_y - 2, "T", r=icon_r, fill=white, text_fill=dark_text, font=font_small)
+    d2.text((pad + 24 + (icon_r * 2) + 10, contact_y), "0322256755", fill=white, font=font_small)
+    _draw_badge(d2, pad + 24, contact_y + 30 - 2, "W", r=icon_r, fill=white, text_fill=dark_text, font=font_small)
+    d2.text((pad + 24 + (icon_r * 2) + 10, contact_y + 30), "0703488856", fill=white, font=font_small)
+    # Right block
+    email = "sanasabibiladeniya@gmail.com"
+    try:
+        eb = d2.textbbox((0, 0), email, font=font_small)
+        ew = eb[2] - eb[0]
+    except Exception:
+        ew = 320
+    right_x = W - pad - 24 - ew
+    _draw_badge(d2, right_x - (icon_r * 2) - 10, contact_y + 14 - 2, "@", r=icon_r, fill=white, text_fill=dark_text, font=font_small)
+    d2.text((right_x, contact_y + 14), email, fill=white, font=font_small)
 
     # Export bytes
     out_front = io.BytesIO()

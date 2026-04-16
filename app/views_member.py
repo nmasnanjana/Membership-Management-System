@@ -613,6 +613,8 @@ def member_id_card_download(request, member_id):
         initials=getattr(member, "member_initials", None),
         role_label=role_label,
         profile_image_path=profile_path,
+        dob=getattr(member, "member_dob", None),
+        phone_no=getattr(member, "member_tp_number", None),
         guid=str(getattr(member, "member_id_card_guid", "") or ""),
     )
 
@@ -683,6 +685,8 @@ def member_id_card_image(request, member_id, side):
         initials=getattr(member, "member_initials", None),
         role_label=role_label,
         profile_image_path=profile_path,
+        dob=getattr(member, "member_dob", None),
+        phone_no=getattr(member, "member_tp_number", None),
         guid=str(getattr(member, "member_id_card_guid", "") or ""),
     )
 
@@ -725,6 +729,8 @@ def member_id_cards_download_selected(request):
                 initials=getattr(member, "member_initials", None),
                 role_label=role_label,
                 profile_image_path=profile_path,
+                dob=getattr(member, "member_dob", None),
+                phone_no=getattr(member, "member_tp_number", None),
                 guid=str(getattr(member, "member_id_card_guid", "") or ""),
             )
             zf.writestr(f"{member.member_id}/{member.member_id}_front.png", images.front_png)
@@ -765,6 +771,8 @@ def member_id_cards_download_all(request):
                 initials=getattr(member, "member_initials", None),
                 role_label=role_label,
                 profile_image_path=profile_path,
+                dob=getattr(member, "member_dob", None),
+                phone_no=getattr(member, "member_tp_number", None),
                 guid=str(getattr(member, "member_id_card_guid", "") or ""),
             )
             zf.writestr(f"{member.member_id}/{member.member_id}_front.png", images.front_png)
