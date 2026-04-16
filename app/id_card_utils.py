@@ -157,6 +157,8 @@ def generate_member_id_card_images(
     d.rectangle((pad, pad + 45, W - pad, pad + 90), fill=(30, 64, 175, 255))
     # Centered title (Sinhala)
     title = system_name
+    # Targeted spacing to avoid reported overlap in specific glyph sequences.
+    title = title.replace("ලාදෙ", "ලා දෙ").replace("මාජ", "මා ජ")
     max_title_width = (W - (pad * 2) - 48)
     try:
         # Single-line title; disable kerning to avoid reported glyph overlaps.
