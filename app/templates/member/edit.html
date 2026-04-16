@@ -6,6 +6,28 @@
 {% block head %}
     <link rel="stylesheet" href="{% static 'vendor/cropperjs/1.6.2/cropper.min.css' %}">
     <script src="{% static 'vendor/cropperjs/1.6.2/cropper.min.js' %}"></script>
+    <style>
+        .crop-modal-dialog {
+            max-width: 1100px;
+        }
+        .crop-preview-area {
+            height: 70vh;
+            min-height: 520px;
+            background: var(--bg-primary);
+        }
+        #cropImage {
+            max-width: 100%;
+            max-height: calc(70vh - 16px);
+            display: block;
+            margin: 0 auto;
+        }
+        .crop-preview-area .cropper-container,
+        .crop-preview-area .cropper-wrap-box,
+        .crop-preview-area .cropper-canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
 {% endblock head %}
 
 {% block content %}
@@ -183,7 +205,7 @@
 
     <!-- Crop Modal -->
     <div class="modal fade" id="cropModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered crop-modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
@@ -192,8 +214,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="bg-dark rounded p-2">
-                        <img id="cropImage" alt="Crop" style="max-width: 100%; display: block;">
+                    <div class="rounded p-2 crop-preview-area d-flex align-items-center justify-content-center">
+                        <img id="cropImage" alt="Crop">
                     </div>
                     <small class="text-muted d-block mt-2">Drag to reposition. Use corners to zoom/resize.</small>
                 </div>
