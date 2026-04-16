@@ -34,7 +34,7 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://ajax.googleapis.com https://code.jquery.com; "
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
                 "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data:; "
-                "img-src 'self' data: https:; "
+                "img-src 'self' data: blob: https:; "
                 "connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
                 "frame-ancestors 'self'; "
                 "base-uri 'self'; "
