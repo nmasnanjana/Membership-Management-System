@@ -83,11 +83,13 @@ def generate_member_id_card_images(
         font_sub = ImageFont.truetype("DejaVuSans.ttf", 24)
         font_small = ImageFont.truetype("DejaVuSans.ttf", 20)
         font_id = ImageFont.truetype("DejaVuSansMono.ttf", 34)
+        font_id_back = ImageFont.truetype("DejaVuSansMono.ttf", 44)
     except Exception:
         font_title = ImageFont.load_default()
         font_sub = ImageFont.load_default()
         font_small = ImageFont.load_default()
         font_id = ImageFont.load_default()
+        font_id_back = ImageFont.load_default()
 
     # ---------- FRONT ----------
     front = Image.new("RGBA", (W, H), bg)
@@ -146,9 +148,16 @@ def generate_member_id_card_images(
     # Two-tone background inside the card: top stays dark, bottom is light blue
     inner = (pad + 2, pad + 2, W - pad - 2, H - pad - 2)
     mid_y = (inner[1] + inner[3]) // 2
-    # Bottom half light blue (keep rounded corners by drawing over existing fill)
-    light_blue = (186, 230, 253, 255)  # sky-200
-    d2.rectangle((inner[0], mid_y, inner[2], inner[3]), fill=light_blue)
+    # Bottom half blue (clipped to rounded corners)
+    back_blue = (0, 102, 255, 255)  # #0066ff
+    radius_inner = 22
+    mask_bottom = Image.new("L", (W, H), 0)
+    md = ImageDraw.Draw(mask_bottom)
+    md.rounded_rectangle(inner, radius=radius_inner, fill=255)
+    md.rectangle((inner[0], inner[1], inner[2], mid_y), fill=0)  # keep only bottom half
+    blue_layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    ImageDraw.Draw(blue_layer).rectangle((inner[0], mid_y, inner[2], inner[3]), fill=back_blue)
+    back.paste(blue_layer, (0, 0), mask_bottom)
 
     # QR centered (on top of all layers)
     qr = _make_qr(member_id, 360)
@@ -159,16 +168,16 @@ def generate_member_id_card_images(
     # Member ID below QR (centered)
     member_id_text = member_id
     try:
-        bbox = d2.textbbox((0, 0), member_id_text, font=font_id)
+        bbox = d2.textbbox((0, 0), member_id_text, font=font_id_back)
         tw = bbox[2] - bbox[0]
     except Exception:
         tw = 200
     tx = (W - tw) // 2
-    d2.text((tx, by + 360 + 18), member_id_text, fill=(17, 24, 39, 255), font=font_id)
+    d2.text((tx, by + 360 + 18), member_id_text, fill=white, font=font_id_back)
 
     # Footer: left property text, right GUID
     footer_y = H - pad - 52
-    d2.text((pad + 24, footer_y), "This card is property of the club.", fill=(17, 24, 39, 255), font=font_small)
+    d2.text((pad + 24, footer_y), "This card is property of the club.", fill=white, font=font_small)
     guid_text = (guid or "").strip()
     if guid_text:
         try:
@@ -176,7 +185,7 @@ def generate_member_id_card_images(
             gw = gb[2] - gb[0]
         except Exception:
             gw = 260
-        d2.text((W - pad - 24 - gw, footer_y), guid_text, fill=(17, 24, 39, 255), font=font_small)
+        d2.text((W - pad - 24 - gw, footer_y), guid_text, fill=white, font=font_small)
 
     # Export bytes
     out_front = io.BytesIO()
