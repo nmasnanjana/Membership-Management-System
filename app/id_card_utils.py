@@ -83,7 +83,7 @@ def generate_member_id_card_images(
         font_sub = ImageFont.truetype("DejaVuSans.ttf", 24)
         font_small = ImageFont.truetype("DejaVuSans.ttf", 20)
         font_id = ImageFont.truetype("DejaVuSansMono.ttf", 34)
-        font_id_back = ImageFont.truetype("DejaVuSansMono.ttf", 44)
+        font_id_back = ImageFont.truetype("DejaVuSansMono.ttf", 64)
     except Exception:
         font_title = ImageFont.load_default()
         font_sub = ImageFont.load_default()
@@ -173,7 +173,7 @@ def generate_member_id_card_images(
     except Exception:
         tw = 200
     tx = (W - tw) // 2
-    d2.text((tx, by + 360 + 18), member_id_text, fill=white, font=font_id_back)
+    d2.text((tx, by + 360 + 12), member_id_text, fill=white, font=font_id_back)
 
     # Footer: left property text, right GUID
     footer_y = H - pad - 52
