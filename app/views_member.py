@@ -15,6 +15,8 @@ import tempfile
 import zipfile
 
 from .id_card_utils import generate_member_id_card_images
+from PIL import Image, ImageOps, UnidentifiedImageError
+import io
 
 
 @login_required
@@ -180,6 +182,34 @@ def validate_file_security(file):
         return str(e)
 
 
+def _process_and_save_profile_picture(uploaded_file, dest_abs_path):
+    """
+    Force profile pictures into a stable square (2x2 style) PNG.
+    - EXIF orientation safe
+    - center-crop to square
+    - resize to 600x600
+    """
+    try:
+        raw = uploaded_file.read()
+        img = Image.open(io.BytesIO(raw))
+        img.verify()
+        img = Image.open(io.BytesIO(raw))
+        img = ImageOps.exif_transpose(img)
+        img = img.convert("RGB")
+    except (UnidentifiedImageError, OSError, ValueError) as e:
+        raise ValueError("Invalid or corrupt image file") from e
+
+    w, h = img.size
+    side = min(w, h)
+    left = (w - side) // 2
+    top = (h - side) // 2
+    img = img.crop((left, top, left + side, top + side))
+    img = img.resize((600, 600), Image.Resampling.LANCZOS)
+
+    os.makedirs(os.path.dirname(dest_abs_path), exist_ok=True)
+    img.save(dest_abs_path, format="PNG", optimize=True)
+
+
 @login_required
 def member_register(request):
     context = context_data(request)
@@ -220,10 +250,18 @@ def member_register(request):
                     profile_picture_name = f"{member_id}_profile.png"
                     profile_picture_path = os.path.join('profiles', member_id, profile_picture_name)
 
-                    # Save the profile picture
-                    with open(os.path.join(profile_picture_directory, profile_picture_name), 'wb') as profile_file:
-                        for chunk in profile_picture.chunks():
-                            profile_file.write(chunk)
+                    # Save a processed square PNG (2x2 style)
+                    dest_abs_path = os.path.join(profile_picture_directory, profile_picture_name)
+                    try:
+                        profile_picture.seek(0)
+                    except Exception:
+                        pass
+                    try:
+                        _process_and_save_profile_picture(profile_picture, dest_abs_path)
+                    except Exception:
+                        form.add_error('member_profile_picture', 'Unable to process this image. Please upload a clear JPG/PNG photo.')
+                        context['form'] = form
+                        return render(request, 'member/register.html', context)
 
                     member.member_profile_picture = profile_picture_path
 
@@ -389,9 +427,19 @@ def member_edit(request, member_id):
                 os.makedirs(profile_picture_directory, exist_ok=True)
 
                 # Save the new profile picture
-                with open(os.path.join(profile_picture_directory, profile_picture_name), 'wb') as profile_file:
-                    for chunk in profile_picture.chunks():
-                        profile_file.write(chunk)
+                dest_abs_path = os.path.join(profile_picture_directory, profile_picture_name)
+                try:
+                    profile_picture.seek(0)
+                except Exception:
+                    pass
+                try:
+                    _process_and_save_profile_picture(profile_picture, dest_abs_path)
+                except Exception:
+                    from django.contrib import messages
+                    messages.error(request, 'Unable to process this image. Please upload a clear JPG/PNG photo.')
+                    context['form'] = form
+                    context['member'] = member
+                    return render(request, 'member/edit.html', context)
 
                 member.member_profile_picture = profile_picture_path
 

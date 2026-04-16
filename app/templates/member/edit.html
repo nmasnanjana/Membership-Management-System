@@ -2,6 +2,11 @@
 {% load crispy_forms_filters %}
 {% load crispy_forms_tags %}
 
+{% block head %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+{% endblock head %}
+
 {% block content %}
     <div class="container">
         <div class="mb-4">
@@ -174,4 +179,106 @@
         });
     </script>
     {% endif %}
+
+    <!-- Crop Modal -->
+    <div class="modal fade" id="cropModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-crop me-2"></i>Crop Profile Picture (Square 2×2)
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="bg-dark rounded p-2">
+                        <img id="cropImage" alt="Crop" style="max-width: 100%; display: block;">
+                    </div>
+                    <small class="text-muted d-block mt-2">Drag to reposition. Use corners to zoom/resize.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="cropConfirmBtn">
+                        <i class="fas fa-check me-2"></i>Use This Crop
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const input = document.getElementById('member_profile_picture_input');
+            if (!input) return;
+
+            const cropModalEl = document.getElementById('cropModal');
+            const cropImg = document.getElementById('cropImage');
+            const confirmBtn = document.getElementById('cropConfirmBtn');
+            let cropper = null;
+            let originalFile = null;
+
+            function cleanup() {
+                if (cropper) {
+                    cropper.destroy();
+                    cropper = null;
+                }
+                if (cropImg && cropImg.src) {
+                    URL.revokeObjectURL(cropImg.src);
+                    cropImg.src = '';
+                }
+            }
+
+            input.addEventListener('change', function () {
+                const file = input.files && input.files[0];
+                if (!file) return;
+                if (!file.type || !file.type.startsWith('image/')) return;
+
+                originalFile = file;
+                cleanup();
+
+                cropImg.src = URL.createObjectURL(file);
+                const modal = new bootstrap.Modal(cropModalEl);
+                modal.show();
+
+                cropImg.onload = function () {
+                    cropper = new Cropper(cropImg, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        autoCropArea: 1,
+                        background: false,
+                        responsive: true,
+                        movable: true,
+                        zoomable: true,
+                        rotatable: false,
+                        scalable: false,
+                    });
+                };
+            });
+
+            cropModalEl.addEventListener('hidden.bs.modal', function () {
+                cleanup();
+            });
+
+            confirmBtn.addEventListener('click', function () {
+                if (!cropper || !originalFile) return;
+                const canvas = cropper.getCroppedCanvas({
+                    width: 600,
+                    height: 600,
+                    imageSmoothingEnabled: true,
+                    imageSmoothingQuality: 'high',
+                });
+
+                canvas.toBlob(function (blob) {
+                    if (!blob) return;
+                    const croppedFile = new File([blob], (originalFile.name || 'profile') + '.png', {type: 'image/png'});
+                    const dt = new DataTransfer();
+                    dt.items.add(croppedFile);
+                    input.files = dt.files;
+
+                    const modal = bootstrap.Modal.getInstance(cropModalEl);
+                    modal.hide();
+                }, 'image/png', 0.92);
+            });
+        })();
+    </script>
 {% endblock content %}

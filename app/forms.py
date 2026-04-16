@@ -106,7 +106,9 @@ class MemberRegisterForm(forms.ModelForm):
         required=False,
         widget=forms.FileInput(attrs={
             'type': 'file',
-            "class": "form-control"
+            "class": "form-control",
+            "accept": "image/*",
+            "id": "member_profile_picture_input",
         })
     )
 
@@ -205,7 +207,9 @@ class MemberEditForm(forms.ModelForm):
         required=False,
         widget=forms.FileInput(attrs={
             'type': 'file',
-            "class": "form-control"
+            "class": "form-control",
+            "accept": "image/*",
+            "id": "member_profile_picture_input",
         })
     )
 
