@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    {% if breadcrumb_items %}
+        {% include 'breadcrumb.html' %}
+    {% endif %}
+
+    <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h1 class="page-title mb-0">
+            <i class="fas fa-id-card text-primary me-2"></i>ID Card Preview
+        </h1>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-light btn-sm" href="{% url 'member_view' member.member_id %}">
+                <i class="fas fa-arrow-left me-1"></i>Back to Profile
+            </a>
+            <a class="btn btn-secondary btn-sm" href="{% url 'member_id_card_download' member.member_id %}">
+                <i class="fas fa-download me-1"></i>Download ZIP
+            </a>
+        </div>
+    </div>
+
+    <div class="modern-card">
+        <div class="modern-card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-user me-2"></i>{{ member.member_first_name }} {{ member.member_last_name }} ({{ member.member_id }})
+            </h5>
+        </div>
+        <div class="modern-card-body">
+            <div class="row g-4">
+                <div class="col-12">
+                    <h6 class="text-muted mb-2">Front (Landscape)</h6>
+                    <div class="bg-dark rounded p-2 overflow-auto">
+                        <img
+                            src="{% url 'member_id_card_image' member.member_id 'front' %}"
+                            alt="ID Card Front"
+                            style="max-width: 100%; height: auto; display: block;"
+                        />
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <h6 class="text-muted mb-2">Back (Landscape)</h6>
+                    <div class="bg-dark rounded p-2 overflow-auto">
+                        <img
+                            src="{% url 'member_id_card_image' member.member_id 'back' %}"
+                            alt="ID Card Back"
+                            style="max-width: 100%; height: auto; display: block;"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+

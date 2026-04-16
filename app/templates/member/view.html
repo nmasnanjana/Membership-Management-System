@@ -173,6 +173,9 @@
                         <a class="btn btn-info btn-modern" href="{% url 'member_qr_generator' member.member_id %}">
                             <i class="fas fa-qrcode me-2"></i>Generate QR
                         </a>
+                        <a class="btn btn-light btn-modern" href="{% url 'member_id_card_view' member.member_id %}">
+                            <i class="fas fa-id-card me-2"></i>View ID Card
+                        </a>
                         <a class="btn btn-secondary btn-modern" href="{% url 'member_id_card_download' member.member_id %}">
                             <i class="fas fa-id-card me-2"></i>Download ID Card
                         </a>

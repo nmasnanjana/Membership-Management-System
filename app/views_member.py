@@ -9,7 +9,7 @@ from .utils import generate_qr_code
 from .constants import *
 from .audit_logger import audit_log_user_action
 from django.core.files.uploadedfile import UploadedFile
-from django.http import JsonResponse, FileResponse, Http404
+from django.http import JsonResponse, FileResponse, Http404, HttpResponse
 from django.views.decorators.http import require_http_methods
 import tempfile
 import zipfile
@@ -579,6 +579,67 @@ def member_id_card_download(request, member_id):
         filename=f"{member.member_id}_id_card.zip",
         content_type="application/zip",
     )
+
+
+@login_required
+@require_http_methods(["GET"])
+def member_id_card_view(request, member_id):
+    """
+    Browser preview page to view a member's ID card (front + back).
+    """
+    try:
+        member = Member.objects.get(member_id=member_id)
+    except Member.DoesNotExist as e:
+        raise Http404("Member not found") from e
+
+    context = context_data(request)
+    context["page_name"] = "Member ID Card"
+    context["member"] = member
+    context["breadcrumb_items"] = [
+        {"name": "Home", "url": "dashboard"},
+        {"name": "Members", "url": "member_list"},
+        {"name": "View", "url": "member_view", "args": [member_id]},
+        {"name": "ID Card", "url": None},
+    ]
+    return render(request, "member/id_card_view.html", context)
+
+
+@login_required
+@require_http_methods(["GET"])
+def member_id_card_image(request, member_id, side):
+    """
+    Returns a generated PNG for the given member's ID card side.
+    side: 'front' | 'back'
+    """
+    if side not in ("front", "back"):
+        raise Http404("Invalid side")
+
+    try:
+        member = Member.objects.get(member_id=member_id)
+    except Member.DoesNotExist as e:
+        raise Http404("Member not found") from e
+
+    role_label = member.get_member_role_display() if getattr(member, "member_role", None) else None
+    profile_path = None
+    try:
+        if member.member_profile_picture:
+            profile_path = member.member_profile_picture.path
+    except Exception:
+        profile_path = None
+
+    images = generate_member_id_card_images(
+        member_id=member.member_id,
+        first_name=member.member_first_name,
+        last_name=getattr(member, "member_last_name", None),
+        initials=getattr(member, "member_initials", None),
+        role_label=role_label,
+        profile_image_path=profile_path,
+    )
+
+    png = images.front_png if side == "front" else images.back_png
+    resp = HttpResponse(png, content_type="image/png")
+    resp["Cache-Control"] = "no-store"
+    return resp
 
 
 @user_passes_test(lambda u: u.is_superuser)
