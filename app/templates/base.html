@@ -64,6 +64,24 @@
             color: var(--text-primary);
             line-height: 1.6;
         }
+
+        /* Dark theme Bootstrap modal */
+        .modal-content {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+        }
+        .modal-header,
+        .modal-footer {
+            border-color: var(--border-color);
+        }
+        .btn-close {
+            filter: invert(1) grayscale(100%);
+        }
+        .modal-backdrop.show {
+            opacity: 0.7;
+        }
         
         .login-page {
             background: var(--bg-primary);
