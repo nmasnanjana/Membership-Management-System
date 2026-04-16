@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from .constants import UNIQUE_ROLES
+import uuid
 
 
 class MemberRole(models.TextChoices):
@@ -41,6 +42,12 @@ class Member(models.Model):
         default=MemberRole.NONE,
         blank=True,
         help_text='Club role assigned to member (for display purposes only)'
+    )
+    member_id_card_guid = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        help_text="Server-generated authenticity GUID printed on member ID card"
     )
     member_join_at = models.DateField(auto_now_add=True)
     member_updated_at = models.DateTimeField(auto_now=True)

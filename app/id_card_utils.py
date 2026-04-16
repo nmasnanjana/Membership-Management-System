@@ -62,6 +62,7 @@ def generate_member_id_card_images(
     initials: str | None,
     role_label: str | None,
     profile_image_path: str | None,
+    guid: str | None = None,
     system_name: str = "Membership Management System",
 ) -> IdCardImages:
     """
@@ -139,17 +140,43 @@ def generate_member_id_card_images(
     # ---------- BACK ----------
     back = Image.new("RGBA", (W, H), bg)
     d2 = ImageDraw.Draw(back)
+    # Card container
     d2.rounded_rectangle((pad, pad, W - pad, H - pad), radius=24, fill=card, outline=(75, 85, 99, 255), width=2)
-    # Accent bar (thin)
-    d2.rounded_rectangle((pad, pad, W - pad, pad + 28), radius=24, fill=accent)
-    d2.rectangle((pad, pad + 14, W - pad, pad + 28), fill=accent)
 
+    # Two-tone background inside the card: top stays dark, bottom is light blue
+    inner = (pad + 2, pad + 2, W - pad - 2, H - pad - 2)
+    mid_y = (inner[1] + inner[3]) // 2
+    # Bottom half light blue (keep rounded corners by drawing over existing fill)
+    light_blue = (186, 230, 253, 255)  # sky-200
+    d2.rectangle((inner[0], mid_y, inner[2], inner[3]), fill=light_blue)
+
+    # QR centered (on top of all layers)
     qr = _make_qr(member_id, 360)
     bx = (W - 360) // 2
-    by = pad + 90
+    by = pad + 105
     back.paste(qr, (bx, by), qr)
-    d2.text((pad + 24, H - pad - 70), f"Member ID: {member_id}", fill=white, font=font_sub)
-    d2.text((pad + 24, H - pad - 38), "This card is property of the club.", fill=muted, font=font_small)
+
+    # Member ID below QR (centered)
+    member_id_text = member_id
+    try:
+        bbox = d2.textbbox((0, 0), member_id_text, font=font_id)
+        tw = bbox[2] - bbox[0]
+    except Exception:
+        tw = 200
+    tx = (W - tw) // 2
+    d2.text((tx, by + 360 + 18), member_id_text, fill=(17, 24, 39, 255), font=font_id)
+
+    # Footer: left property text, right GUID
+    footer_y = H - pad - 52
+    d2.text((pad + 24, footer_y), "This card is property of the club.", fill=(17, 24, 39, 255), font=font_small)
+    guid_text = (guid or "").strip()
+    if guid_text:
+        try:
+            gb = d2.textbbox((0, 0), guid_text, font=font_small)
+            gw = gb[2] - gb[0]
+        except Exception:
+            gw = 260
+        d2.text((W - pad - 24 - gw, footer_y), guid_text, fill=(17, 24, 39, 255), font=font_small)
 
     # Export bytes
     out_front = io.BytesIO()

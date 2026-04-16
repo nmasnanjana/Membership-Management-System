@@ -565,6 +565,7 @@ def member_id_card_download(request, member_id):
         initials=getattr(member, "member_initials", None),
         role_label=role_label,
         profile_image_path=profile_path,
+        guid=str(getattr(member, "member_id_card_guid", "") or ""),
     )
 
     spool = tempfile.SpooledTemporaryFile(max_size=20 * 1024 * 1024, mode="w+b")
@@ -634,6 +635,7 @@ def member_id_card_image(request, member_id, side):
         initials=getattr(member, "member_initials", None),
         role_label=role_label,
         profile_image_path=profile_path,
+        guid=str(getattr(member, "member_id_card_guid", "") or ""),
     )
 
     png = images.front_png if side == "front" else images.back_png
@@ -675,6 +677,7 @@ def member_id_cards_download_selected(request):
                 initials=getattr(member, "member_initials", None),
                 role_label=role_label,
                 profile_image_path=profile_path,
+                guid=str(getattr(member, "member_id_card_guid", "") or ""),
             )
             zf.writestr(f"{member.member_id}/{member.member_id}_front.png", images.front_png)
             zf.writestr(f"{member.member_id}/{member.member_id}_back.png", images.back_png)
@@ -714,6 +717,7 @@ def member_id_cards_download_all(request):
                 initials=getattr(member, "member_initials", None),
                 role_label=role_label,
                 profile_image_path=profile_path,
+                guid=str(getattr(member, "member_id_card_guid", "") or ""),
             )
             zf.writestr(f"{member.member_id}/{member.member_id}_front.png", images.front_png)
             zf.writestr(f"{member.member_id}/{member.member_id}_back.png", images.back_png)
