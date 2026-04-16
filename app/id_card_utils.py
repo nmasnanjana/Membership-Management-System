@@ -8,6 +8,7 @@ Design is intentionally minimal and can be refined later.
 from __future__ import annotations
 
 import io
+import os
 from dataclasses import dataclass
 from typing import Tuple
 
@@ -63,7 +64,7 @@ def generate_member_id_card_images(
     role_label: str | None,
     profile_image_path: str | None,
     guid: str | None = None,
-    system_name: str = "Membership Management System",
+    system_name: str = "බිබිලාදෙණිය - ස.ණ.ස ළමා සමාජය",
 ) -> IdCardImages:
     """
     Returns PNG bytes for front + back images.
@@ -78,18 +79,21 @@ def generate_member_id_card_images(
     muted = (209, 213, 219, 255)
 
     # Fonts (fallback to default if unavailable)
+    sinhala_font_path = os.path.join(os.path.dirname(__file__), "static", "fonts", "NotoSansSinhala-Regular.ttf")
     try:
         font_title = ImageFont.truetype("DejaVuSans.ttf", 42)
         font_sub = ImageFont.truetype("DejaVuSans.ttf", 24)
         font_small = ImageFont.truetype("DejaVuSans.ttf", 20)
         font_id = ImageFont.truetype("DejaVuSansMono.ttf", 34)
         font_id_back = ImageFont.truetype("DejaVuSansMono.ttf", 64)
+        font_title_si = ImageFont.truetype(sinhala_font_path, 30)
     except Exception:
         font_title = ImageFont.load_default()
         font_sub = ImageFont.load_default()
         font_small = ImageFont.load_default()
         font_id = ImageFont.load_default()
         font_id_back = ImageFont.load_default()
+        font_title_si = font_sub
 
     # ---------- FRONT ----------
     front = Image.new("RGBA", (W, H), bg)
@@ -101,7 +105,19 @@ def generate_member_id_card_images(
     # Accent bar
     d.rounded_rectangle((pad, pad, W - pad, pad + 90), radius=24, fill=(30, 64, 175, 255))
     d.rectangle((pad, pad + 45, W - pad, pad + 90), fill=(30, 64, 175, 255))
-    d.text((pad + 24, pad + 22), system_name, fill=white, font=font_sub)
+    # Centered title (Sinhala)
+    title = system_name
+    try:
+        tb = d.textbbox((0, 0), title, font=font_title_si)
+        tw = tb[2] - tb[0]
+        th = tb[3] - tb[1]
+    except Exception:
+        tw, th = 400, 24
+    try:
+        d.text(((W - tw) // 2, pad + (90 - th) // 2), title, fill=white, font=font_title_si)
+    except Exception:
+        # Absolute fallback: don't crash card generation if font rendering fails
+        d.text((pad + 24, pad + 22), "ID Card", fill=white, font=font_sub)
 
     # Left: Profile box
     img_box = (pad + 24, pad + 120, pad + 24 + 240, pad + 120 + 300)
@@ -132,12 +148,7 @@ def generate_member_id_card_images(
     d.rounded_rectangle((x0, y0, x0 + 320, y0 + 64), radius=14, fill=(17, 24, 39, 255), outline=accent, width=2)
     d.text((x0 + 18, y0 + 14), member_id, fill=white, font=font_id)
 
-    # QR on front (small)
-    qr_small = _make_qr(member_id, 170)
-    qx = W - pad - 24 - 170
-    qy = pad + 140
-    front.paste(qr_small, (qx, qy), qr_small)
-    d.text((qx, qy + 178), "Scan for Member ID", fill=muted, font=font_small)
+    # (Front QR removed — back side contains QR)
 
     # ---------- BACK ----------
     back = Image.new("RGBA", (W, H), bg)
